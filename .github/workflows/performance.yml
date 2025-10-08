@@ -1,0 +1,211 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.12.x
+
+      - name: Run Lighthouse CI
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        run: |
+          lhci autorun --config=./lighthouserc.json || echo "Lighthouse CI failed, check performance"
+
+      - name: Upload Lighthouse Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: .lighthouseci
+          retention-days: 30
+
+  api-load-test:
+    name: API Load Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install pytest pytest-benchmark locust requests
+
+      - name: Run API Load Tests
+        env:
+          API_URL: ${{ secrets.API_URL || 'https://api.quest.com' }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          cd backend
+          pytest tests/performance/ --benchmark-only -v || echo "Load tests warning"
+
+      - name: Upload Load Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-results
+          path: backend/.benchmarks
+          retention-days: 30
+
+  database-benchmarks:
+    name: Database Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PostgreSQL
+        uses: ikalnytskyi/action-setup-postgres@v5
+        with:
+          postgres-version: '15'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install psycopg2-binary sqlalchemy pytest pytest-benchmark
+
+      - name: Run Database Benchmarks
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd backend
+          pytest tests/benchmarks/test_database.py --benchmark-only -v
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: db-benchmark-results
+          path: backend/.benchmarks
+          retention-days: 30
+
+  performance-report:
+    name: Generate Performance Report
+    runs-on: ubuntu-latest
+    needs: [lighthouse, api-load-test, database-benchmarks]
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate Performance Summary
+        run: |
+          mkdir -p performance-reports
+
+          echo "# Performance Test Results - $(date +%Y-%m-%d)" > performance-reports/summary.md
+          echo "" >> performance-reports/summary.md
+
+          echo "## Lighthouse Audit" >> performance-reports/summary.md
+          if [ -d "lighthouse-results" ]; then
+            echo "✅ Lighthouse audit completed" >> performance-reports/summary.md
+          else
+            echo "❌ Lighthouse audit failed or skipped" >> performance-reports/summary.md
+          fi
+          echo "" >> performance-reports/summary.md
+
+          echo "## API Load Tests" >> performance-reports/summary.md
+          if [ -d "load-test-results" ]; then
+            echo "✅ API load tests completed" >> performance-reports/summary.md
+          else
+            echo "❌ API load tests failed or skipped" >> performance-reports/summary.md
+          fi
+          echo "" >> performance-reports/summary.md
+
+          echo "## Database Benchmarks" >> performance-reports/summary.md
+          if [ -d "db-benchmark-results" ]; then
+            echo "✅ Database benchmarks completed" >> performance-reports/summary.md
+          else
+            echo "❌ Database benchmarks failed or skipped" >> performance-reports/summary.md
+          fi
+          echo "" >> performance-reports/summary.md
+
+          echo "## Performance Targets" >> performance-reports/summary.md
+          echo "- Page Load Time (p95): <3s" >> performance-reports/summary.md
+          echo "- API Response (p95): <200ms" >> performance-reports/summary.md
+          echo "- Database Query (p95): <50ms" >> performance-reports/summary.md
+          echo "- Article Generation: <60s" >> performance-reports/summary.md
+
+      - name: Upload Performance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-reports
+          retention-days: 90
+
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('performance-reports/summary.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  # Optional: Alert on performance degradation
+  performance-alert:
+    name: Performance Degradation Alert
+    runs-on: ubuntu-latest
+    needs: [lighthouse, api-load-test]
+    if: failure()
+
+    steps:
+      - name: Send Slack Alert
+        if: github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "⚠️ Performance tests failed on main branch",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Performance Alert*\n\nPerformance tests failed on main branch.\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

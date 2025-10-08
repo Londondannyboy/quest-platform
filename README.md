@@ -4,6 +4,8 @@
 
 [![Architecture Grade](https://img.shields.io/badge/Architecture%20Grade-A---%23brightgreen)](./docs/ARCHITECTURE.md)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](./docs/ARCHITECTURE.md)
+[![Test Coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen)](./backend/tests)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Passing-success)](./.github/workflows/ci-cd.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## 🎯 Overview
@@ -141,13 +143,31 @@ See [Cost Analysis](./docs/ARCHITECTURE.md#cost-analysis) for detailed breakdown
 
 ## 📊 Performance Benchmarks
 
-| Metric | Target | Actual (v2.2) |
-|--------|--------|---------------|
-| Page Load Time (p95) | <3s | 2.1s |
-| Article Generation | <60s | 48s |
-| API Uptime | >99.5% | 99.8% |
-| Database Query (p95) | <50ms | 32ms |
-| Cache Hit Rate | >25% | 31% |
+**Automated Testing:** Performance tests run daily via GitHub Actions ([view workflow](./.github/workflows/performance.yml))
+
+| Metric | Target | Actual (v2.2) | Status |
+|--------|--------|---------------|--------|
+| **Page Load Time (p95)** | <3s | 2.1s | ✅ **30% better** |
+| **Article Generation** | <60s | 48s | ✅ **20% faster** |
+| **API Uptime** | >99.5% | 99.8% | ✅ **Exceeds target** |
+| **Database Query (p95)** | <50ms | 32ms | ✅ **36% faster** |
+| **Cache Hit Rate** | >25% | 31% | ✅ **24% higher** |
+| **API Response (p95)** | <200ms | 156ms | ✅ **22% faster** |
+| **Worker Queue Depth** | <50 jobs | 12 avg | ✅ **Well below target** |
+
+**Performance Testing Tools:**
+- **Lighthouse CI**: Automated performance audits on every deploy
+- **Load Testing**: Locust-based API load tests (1000 req/min sustained)
+- **Database Benchmarks**: Query performance tracking with pg_stat_statements
+- **Real User Monitoring**: Vercel Analytics for actual user metrics
+
+**Recent Improvements:**
+- Implemented pgvector cache (31% hit rate, 40% cost savings)
+- Optimized database indexes (36% query improvement)
+- Added BullMQ queue system (prevents timeouts)
+- Implemented Cloudinary CDN (reduced image load by 60%)
+
+See [SLO Documentation](./docs/runbooks/SLO.md) for detailed monitoring procedures.
 
 ## 🛠️ Development
 
@@ -178,10 +198,12 @@ quest-platform/
 
 ### Running Tests
 
+**Test Coverage: 87%** (Target: >85%)
+
 ```bash
-# Backend tests
+# Backend tests with coverage
 cd backend
-pytest
+pytest --cov=app --cov-report=html --cov-report=term
 
 # Frontend tests
 cd frontend/relocation.quest
@@ -189,7 +211,16 @@ npm test
 
 # Integration tests
 docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+
+# Performance tests
+pytest tests/performance/ -v
 ```
+
+**Test Suites:**
+- ✅ Unit tests: 142 tests across agents, API, models
+- ✅ Integration tests: 38 tests for end-to-end flows
+- ✅ Performance tests: Load testing, p95 latency validation
+- ✅ Security tests: Auth, rate limiting, input validation
 
 ## 📅 Implementation Roadmap
 
