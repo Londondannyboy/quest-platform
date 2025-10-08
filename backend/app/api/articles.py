@@ -279,7 +279,7 @@ async def list_articles(
 
         async with pool.acquire() as conn:
             articles = await conn.fetch(query, *params)
-            return [dict(article) for article in articles]
+            return {"articles": [dict(article) for article in articles]}
 
     except Exception as e:
         logger.error("api.articles.list_failed", error=str(e), exc_info=e)
