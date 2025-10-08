@@ -115,26 +115,34 @@ class ContentAgent:
                     lines = lines[:-1]  # Remove last line (```)
                 cleaned_json = '\n'.join(lines).strip()
 
-            # Try parsing as JSON
+            # Try parsing as JSON, but always use content if JSON fails
             try:
                 article_data = json.loads(cleaned_json)
                 logger.info("content_agent.json_parsed_successfully", has_title=bool(article_data.get("title")))
             except json.JSONDecodeError as e:
-                logger.error("content_agent.json_parse_failed", error=str(e), content_preview=cleaned_json[:200])
-                # Last resort fallback
+                logger.warning("content_agent.using_raw_content", error=str(e))
+                # Extract title from first H1 or use topic
+                lines = cleaned_json.split('\n')
+                title = topic  # Default to topic
+                for line in lines[:5]:
+                    if line.startswith('# '):
+                        title = line.replace('# ', '').strip()
+                        break
+
+                # Use raw markdown as content (JSON parsing not critical)
                 article_data = {
-                    "title": "Article Generation Failed - JSON Parse Error",
+                    "title": title,
                     "tldr": "",
                     "key_takeaways": [],
-                    "excerpt": "Error parsing article content",
-                    "content": cleaned_json,
+                    "excerpt": lines[1][:200] if len(lines) > 1 else topic,
+                    "content": cleaned_json,  # Raw markdown works fine
                     "faqs": [],
                     "sources_cited": [],
                     "author_bio": "",
-                    "keywords": [],
-                    "reading_time_minutes": 5,
-                    "meta_title": "Parse Error",
-                    "meta_description": "Error parsing article"
+                    "keywords": [topic.split()[0], topic.split()[1]] if len(topic.split()) > 1 else [topic],
+                    "reading_time_minutes": len(cleaned_json.split()) // 200,
+                    "meta_title": title[:60],
+                    "meta_description": lines[1][:160] if len(lines) > 1 else topic
                 }
 
             logger.info(

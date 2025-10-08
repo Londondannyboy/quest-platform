@@ -158,31 +158,38 @@ class ArticleOrchestrator:
                 job_id, "processing", 90, "image", article_id=article_id
             )
 
-            # STEP 4: Image Generation (parallel, non-blocking for high-quality only)
-            if decision == "publish" and settings.ENABLE_IMAGE_GENERATION:
-                # High quality - auto-publish with image
+            # STEP 4: Image Generation (ALWAYS generate hero, content images only for high quality)
+            if settings.ENABLE_IMAGE_GENERATION:
+                # Generate URL-safe slug for images
+                import re
+                safe_slug = re.sub(r'[^a-z0-9-]', '', content_result["article"]["title"]
+                    .lower()
+                    .replace(" ", "-"))[:50]
+
+                # Generate hero image for ALL articles + content images for high quality
                 image_result = await self.image_agent.generate(
                     content_result["article"],
                     target_site,
-                    content_result["article"]["title"]
-                    .lower()
-                    .replace(" ", "-")[:50],
+                    safe_slug,
                 )
                 costs["image"] = image_result["cost"]
 
                 # Update article with all images
                 await self._update_article_images(article_id, image_result)
 
-                # Auto-publish
-                if settings.ENABLE_AUTO_PUBLISH:
-                    await self._publish_article(article_id)
-                    final_status = "published"
+                # Determine final status and auto-publish if high quality
+                if decision == "publish":
+                    if settings.ENABLE_AUTO_PUBLISH:
+                        await self._publish_article(article_id)
+                        final_status = "published"
+                    else:
+                        final_status = "approved"
                 else:
-                    final_status = "approved"
-
+                    # Medium quality - human review required
+                    final_status = "review"
             else:
-                # Medium quality - human review required
-                final_status = "review"
+                # No image generation
+                final_status = "review" if decision != "publish" else "approved"
 
             # Update job as completed
             total_cost = sum(costs.values())
