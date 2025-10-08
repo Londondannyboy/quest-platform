@@ -31,9 +31,13 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("quest.database.connected", pool_size=settings.DB_POOL_SIZE)
 
-    # Initialize Redis connection
-    await init_redis()
-    logger.info("quest.redis.connected", url=settings.REDIS_URL.split("@")[1] if "@" in settings.REDIS_URL else "localhost")
+    # Initialize Redis connection (optional for now)
+    try:
+        await init_redis()
+        logger.info("quest.redis.connected", url=settings.REDIS_URL.split("@")[1] if "@" in settings.REDIS_URL else "localhost")
+    except Exception as e:
+        logger.warning("quest.redis.connection_failed", error=str(e), msg="Continuing without Redis - queue features disabled")
+        # Continue without Redis - queue features will be disabled
 
     yield
 
