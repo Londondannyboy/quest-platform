@@ -90,7 +90,7 @@ class ContentAgent:
         try:
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=3000,
+                max_tokens=4096,  # Increased to ensure complete JSON
                 temperature=0.7,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -104,23 +104,38 @@ class ContentAgent:
             cost = self._calculate_cost(input_tokens, output_tokens)
 
             # Parse JSON response (strip markdown code fences if present)
-            try:
-                # Strip markdown code fences (```json ... ```)
-                cleaned_json = content_json.strip()
-                if cleaned_json.startswith('```'):
-                    # Remove ```json at start and ``` at end
-                    lines = cleaned_json.split('\n')
-                    if lines[0].startswith('```'):
-                        lines = lines[1:]  # Remove first line
-                    if lines and lines[-1].strip() == '```':
-                        lines = lines[:-1]  # Remove last line
-                    cleaned_json = '\n'.join(lines)
+            cleaned_json = content_json.strip()
 
+            # Remove markdown code fences if present
+            if cleaned_json.startswith('```'):
+                lines = cleaned_json.split('\n')
+                if lines[0].startswith('```'):
+                    lines = lines[1:]  # Remove first line (```json or ```)
+                if lines and lines[-1].strip() == '```':
+                    lines = lines[:-1]  # Remove last line (```)
+                cleaned_json = '\n'.join(lines).strip()
+
+            # Try parsing as JSON
+            try:
                 article_data = json.loads(cleaned_json)
-            except json.JSONDecodeError:
-                # If Claude didn't return valid JSON, extract content manually
-                logger.warning("content_agent.json_parse_failed", attempting_extraction=True)
-                article_data = self._extract_article_data(content_json)
+                logger.info("content_agent.json_parsed_successfully", has_title=bool(article_data.get("title")))
+            except json.JSONDecodeError as e:
+                logger.error("content_agent.json_parse_failed", error=str(e), content_preview=cleaned_json[:200])
+                # Last resort fallback
+                article_data = {
+                    "title": "Article Generation Failed - JSON Parse Error",
+                    "tldr": "",
+                    "key_takeaways": [],
+                    "excerpt": "Error parsing article content",
+                    "content": cleaned_json,
+                    "faqs": [],
+                    "sources_cited": [],
+                    "author_bio": "",
+                    "keywords": [],
+                    "reading_time_minutes": 5,
+                    "meta_title": "Parse Error",
+                    "meta_description": "Error parsing article"
+                }
 
             logger.info(
                 "content_agent.complete",
@@ -168,12 +183,14 @@ REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
 2. Key Takeaways section (3-5 bullet points) - actionable insights
 3. Clear H1/H2/H3 hierarchy - LLMs read headings first
 4. FAQ section (4-10 Q&A pairs) - LLMs love Q&A format
-5. Cited sources with links - authority signal for AI
-6. Expert quotes or credentials - builds trust
-7. Data-driven insights from research (specific statistics)
-8. Conversational, direct tone - avoid hedging language
-9. 1500-2500 words total
-10. Markdown formatting
+5. **CRITICAL: Include 8-12 external links throughout content** - Link to authoritative sources (government sites, official docs, reputable news)
+6. **CRITICAL: Include 3-5 internal links** - Link to related topics using markdown: [Digital Nomad Visas](/digital-nomad-visas), [Cost of Living](/cost-of-living-portugal), [Best Cities](/best-cities-digital-nomads)
+7. Expert quotes or credentials - builds trust
+8. Data-driven insights from research (specific statistics)
+9. Conversational, direct tone - avoid hedging language
+10. 1500-2500 words total
+11. Markdown formatting with proper link syntax: [Link Text](https://example.com)
+12. **Include image placeholders** in content - Add `![Alt text](IMAGE_PLACEHOLDER)` where relevant images should appear (2-3 per article)
 
 OUTPUT FORMAT (JSON):
 {{
@@ -224,23 +241,43 @@ IMPORTANT: Return ONLY the JSON object, no additional text before or after."""
         Returns:
             Dict with extracted article data
         """
-        # Simple extraction logic
-        lines = content.split("\n")
+        # Try to extract JSON from content (handle markdown code fences)
+        cleaned = content.strip()
+
+        # Remove markdown code fences if present
+        if cleaned.startswith('```'):
+            lines = cleaned.split('\n')
+            # Remove first line (```json or ```)
+            if lines[0].startswith('```'):
+                lines = lines[1:]
+            # Remove last line if it's ```)
+            if lines and lines[-1].strip() == '```':
+                lines = lines[:-1]
+            cleaned = '\n'.join(lines)
+
+        # Try parsing as JSON one more time
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # If still can't parse, return raw content
+        lines = cleaned.split("\n")
         title = lines[0].replace("#", "").strip() if lines else "Untitled Article"
 
         return {
             "title": title,
             "tldr": "",
             "key_takeaways": [],
-            "excerpt": content[:150],
-            "content": content,
+            "excerpt": cleaned[:150],
+            "content": cleaned,
             "faqs": [],
             "sources_cited": [],
             "author_bio": "",
             "keywords": [],
-            "reading_time_minutes": len(content.split()) // 200,  # ~200 words/min
+            "reading_time_minutes": len(cleaned.split()) // 200,  # ~200 words/min
             "meta_title": title[:60],
-            "meta_description": content[:160],
+            "meta_description": cleaned[:160],
         }
 
     def _build_listicle_prompt(self, research: Dict, style: Dict, topic: str) -> str:

@@ -27,8 +27,9 @@ class ImageAgent:
     """
 
     def __init__(self):
-        # Configure Replicate
-        self.replicate_token = settings.REPLICATE_API_KEY
+        # Configure Replicate with token
+        import os
+        os.environ["REPLICATE_API_TOKEN"] = settings.REPLICATE_API_KEY
         self.replicate_model = settings.REPLICATE_MODEL
 
         # Configure Cloudinary
@@ -49,7 +50,7 @@ class ImageAgent:
         self, article: Dict, target_site: str, slug: str
     ) -> Dict:
         """
-        Generate hero image for article
+        Generate hero + 3 content images for article
 
         Args:
             article: Article data with title and excerpt
@@ -57,7 +58,7 @@ class ImageAgent:
             slug: Article slug for CDN storage
 
         Returns:
-            Dict with image URL and cost
+            Dict with all image URLs and cost
         """
         logger.info("image_agent.start", slug=slug, target_site=target_site)
 
@@ -66,31 +67,59 @@ class ImageAgent:
             logger.info("image_agent.skipped", reason="disabled")
             return {
                 "hero_image_url": None,
+                "content_image_1_url": None,
+                "content_image_2_url": None,
+                "content_image_3_url": None,
                 "cost": Decimal("0.00"),
             }
 
         try:
-            # Step 1: Craft image prompt
-            prompt = self._create_prompt(article, target_site)
+            # Step 1: Craft prompts for all 4 images
+            prompts = self._create_all_prompts(article, target_site)
 
-            # Step 2: Generate via FLUX
-            image_url = await self._generate_via_flux(prompt)
+            # Step 2: Generate all 4 images in parallel (60s total instead of 240s)
+            image_tasks = [
+                self._generate_via_flux(prompts["hero"]),
+                self._generate_via_flux(prompts["content_1"]),
+                self._generate_via_flux(prompts["content_2"]),
+                self._generate_via_flux(prompts["content_3"]),
+            ]
+            generated_urls = await asyncio.gather(*image_tasks, return_exceptions=True)
 
-            # Step 3: Upload to Cloudinary
-            cdn_url = await self._upload_to_cloudinary(
-                image_url, target_site, slug
-            )
+            # Step 3: Upload all to Cloudinary in parallel
+            upload_tasks = []
+            suffixes = ["hero", "content-1", "content-2", "content-3"]
+            for i, url in enumerate(generated_urls):
+                if isinstance(url, Exception):
+                    upload_tasks.append(asyncio.create_task(asyncio.sleep(0)))  # Placeholder
+                else:
+                    upload_tasks.append(
+                        self._upload_to_cloudinary(url, target_site, f"{slug}-{suffixes[i]}")
+                    )
+
+            cdn_urls = await asyncio.gather(*upload_tasks, return_exceptions=True)
+
+            # Parse results with fallback
+            result = {
+                "hero_image_url": cdn_urls[0] if not isinstance(cdn_urls[0], Exception) else None,
+                "content_image_1_url": cdn_urls[1] if not isinstance(cdn_urls[1], Exception) else None,
+                "content_image_2_url": cdn_urls[2] if not isinstance(cdn_urls[2], Exception) else None,
+                "content_image_3_url": cdn_urls[3] if not isinstance(cdn_urls[3], Exception) else None,
+                "cost": Decimal("0.012"),  # 4 images × $0.003
+            }
 
             logger.info(
                 "image_agent.complete",
                 slug=slug,
-                cdn_url=cdn_url,
+                hero=bool(result["hero_image_url"]),
+                content_images=sum([
+                    bool(result["content_image_1_url"]),
+                    bool(result["content_image_2_url"]),
+                    bool(result["content_image_3_url"]),
+                ])
             )
 
-            return {
-                "hero_image_url": cdn_url,
-                "cost": Decimal("0.003"),  # Replicate FLUX cost
-            }
+            return result
 
         except Exception as e:
             logger.error(
@@ -100,9 +129,12 @@ class ImageAgent:
                 exc_info=e,
             )
 
-            # Graceful degradation: Article succeeds without image
+            # Graceful degradation: Article succeeds without images
             return {
                 "hero_image_url": None,
+                "content_image_1_url": None,
+                "content_image_2_url": None,
+                "content_image_3_url": None,
                 "cost": Decimal("0.00"),
                 "error": str(e),
             }
@@ -148,6 +180,61 @@ Mood: Inspirational and informative"""
 
         logger.debug("image_agent.prompt_created", prompt=prompt[:100])
         return prompt
+
+    def _create_all_prompts(self, article: Dict, target_site: str) -> Dict[str, str]:
+        """
+        Create prompts for all 4 images (hero + 3 content)
+
+        Args:
+            article: Article with title and content
+            target_site: Site for style guide
+
+        Returns:
+            Dict with keys: hero, content_1, content_2, content_3
+        """
+        title = article.get("title", "")
+        content = article.get("content", "")
+        style = self.style_guides.get(target_site, self.style_guides["relocation"])
+
+        # Extract sections from content for varied images
+        sections = content.split('\n\n')[:10] if content else []
+
+        # Hero prompt (main topic)
+        hero_prompt = self._create_prompt(article, target_site)
+
+        # Content image 1: Focus on first major section
+        content_1_context = sections[1] if len(sections) > 1 else title
+        content_1_prompt = f"""Professional editorial photograph illustrating: {content_1_context[:150]}
+
+Style: {style}
+Format: 16:9 aspect ratio, high quality, photorealistic
+Lighting: Natural, professional
+Mood: Engaging and informative"""
+
+        # Content image 2: Mid-article visual
+        content_2_context = sections[3] if len(sections) > 3 else f"{title} - practical aspects"
+        content_2_prompt = f"""Professional editorial photograph showing: {content_2_context[:150]}
+
+Style: {style}
+Format: 16:9 aspect ratio, high quality, photorealistic
+Lighting: Natural, professional
+Mood: Practical and helpful"""
+
+        # Content image 3: Supporting visual
+        content_3_context = sections[5] if len(sections) > 5 else f"{title} - key details"
+        content_3_prompt = f"""Professional editorial photograph depicting: {content_3_context[:150]}
+
+Style: {style}
+Format: 16:9 aspect ratio, high quality, photorealistic
+Lighting: Natural, professional
+Mood: Detailed and informative"""
+
+        return {
+            "hero": hero_prompt,
+            "content_1": content_1_prompt,
+            "content_2": content_2_prompt,
+            "content_3": content_3_prompt,
+        }
 
     async def _generate_via_flux(self, prompt: str) -> str:
         """

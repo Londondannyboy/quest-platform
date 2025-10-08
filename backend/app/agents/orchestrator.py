@@ -170,11 +170,8 @@ class ArticleOrchestrator:
                 )
                 costs["image"] = image_result["cost"]
 
-                # Update article with image
-                if image_result["hero_image_url"]:
-                    await self._update_article_image(
-                        article_id, image_result["hero_image_url"]
-                    )
+                # Update article with all images
+                await self._update_article_images(article_id, image_result)
 
                 # Auto-publish
                 if settings.ENABLE_AUTO_PUBLISH:
@@ -357,9 +354,9 @@ class ArticleOrchestrator:
             )
             raise
 
-    async def _update_article_image(self, article_id: str, image_url: str):
+    async def _update_article_images(self, article_id: str, image_result: Dict):
         """
-        Update article with hero image URL
+        Update article with all image URLs (hero + 3 content images)
         """
         pool = get_db()
 
@@ -368,22 +365,33 @@ class ArticleOrchestrator:
                 await conn.execute(
                     """
                     UPDATE articles
-                    SET hero_image_url = $1
-                    WHERE id = $2
+                    SET hero_image_url = $1,
+                        content_image_1_url = $2,
+                        content_image_2_url = $3,
+                        content_image_3_url = $4
+                    WHERE id = $5
                     """,
-                    image_url,
+                    image_result.get("hero_image_url"),
+                    image_result.get("content_image_1_url"),
+                    image_result.get("content_image_2_url"),
+                    image_result.get("content_image_3_url"),
                     article_id,
                 )
 
             logger.info(
-                "orchestrator.image_updated",
+                "orchestrator.images_updated",
                 article_id=article_id,
-                image_url=image_url[:50],
+                hero=bool(image_result.get("hero_image_url")),
+                content_images=sum([
+                    bool(image_result.get("content_image_1_url")),
+                    bool(image_result.get("content_image_2_url")),
+                    bool(image_result.get("content_image_3_url")),
+                ])
             )
 
         except Exception as e:
             logger.error(
-                "orchestrator.image_update_failed",
+                "orchestrator.images_update_failed",
                 error=str(e),
                 exc_info=e,
             )
