@@ -4,7 +4,11 @@
 builder = "NIXPACKS"
 watchPatterns = ["backend/**"]
 
+[build.nixpacksPlan]
+buildCmd = "pip install -r requirements.txt"
+
 [deploy]
+startCommand = "python -m app.main"
 numReplicas = 1
 sleepApplication = false
 restartPolicyType = "ON_FAILURE"
