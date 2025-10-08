@@ -133,6 +133,48 @@ async def generate_article(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/by-slug/{slug}")
+async def get_article_by_slug(slug: str):
+    """
+    Get article by slug (for frontend routing)
+
+    Args:
+        slug: Article slug (URL-friendly identifier)
+
+    Returns:
+        Article data
+    """
+    pool = get_db()
+
+    try:
+        query = """
+            SELECT
+                id, title, slug, content, excerpt,
+                hero_image_url, target_site, status,
+                quality_score, reading_time_minutes,
+                keywords, meta_title, meta_description,
+                published_date, created_at, updated_at
+            FROM articles
+            WHERE slug = $1
+        """
+
+        async with pool.acquire() as conn:
+            article = await conn.fetchrow(query, slug)
+
+            if not article:
+                raise HTTPException(status_code=404, detail="Article not found")
+
+            return dict(article)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "api.articles.get_by_slug_failed", slug=slug, error=str(e), exc_info=e
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{article_id}")
 async def get_article(article_id: str):
     """
