@@ -1,16 +1,17 @@
-# Quest Platform v2.2
+# Quest Platform v2.3
 
-> Multi-Site Content Intelligence Platform with AI-Assisted Production
+> Multi-Site Content Intelligence Platform with LLM-First SEO Strategy
 
-[![Architecture Grade](https://img.shields.io/badge/Architecture%20Grade-A---%23brightgreen)](./docs/ARCHITECTURE.md)
+[![Architecture Grade](https://img.shields.io/badge/Architecture%20Grade-A+-brightgreen)](./docs/ARCHITECTURE.md)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](./docs/ARCHITECTURE.md)
 [![Test Coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen)](./backend/tests)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-Passing-success)](./.github/workflows/ci-cd.yml)
+[![LLM Optimized](https://img.shields.io/badge/LLM-Optimized-purple)](./docs/SEO/2026-STRATEGY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## 🎯 Overview
 
-Quest v2.2 is a **database-first, AI-native content platform** designed to power three specialized publication sites:
+Quest v2.3 is a **database-first, AI-native content platform** with **LLM-first SEO optimization** designed to power three specialized publication sites:
 
 - 🌍 **relocation.quest** - International relocation guides
 - 💼 **placement.quest** - Job placement insights
@@ -19,22 +20,32 @@ Quest v2.2 is a **database-first, AI-native content platform** designed to power
 ### Key Features
 
 - ✅ **Sub-3-second page loads** (p95 guarantee)
-- ✅ **4-agent AI pipeline** for premium content generation
-- ✅ **Cost-optimized** at $0.60 per article
-- ✅ **25%+ research cache** savings via pgvector
+- ✅ **5-agent AI pipeline** with automated PDF generation
+- ✅ **LLM-optimized** for ChatGPT, Perplexity, Claude citations
+- ✅ **Cost-optimized** at $0.78 per article (with PDF + SEO)
+- ✅ **40% research cache savings** via pgvector
 - ✅ **Human-in-the-loop** quality gates
 - ✅ **Database-first design** for vendor independence
+- ✅ **Authority-based model** (LLM citations > traffic)
 
 ## 📚 Documentation
 
+### Core Documentation
 | Document | Description |
 |----------|-------------|
-| [**Full Architecture**](./docs/ARCHITECTURE.md) | Complete technical specification (v2.2) |
+| [**Full Architecture**](./docs/ARCHITECTURE.md) | Complete technical specification (v2.3) |
 | [Quick Start](./docs/QUICK_START.md) | Get up and running in 30 minutes |
 | [Setup Guide](./GETTING_STARTED.md) | Comprehensive setup instructions |
 | [Deployment Guide](./DEPLOYMENT.md) | Production deployment instructions |
 | [GitHub Setup](./GITHUB_SETUP.md) | Repository and collaboration setup |
 | [Contributing Guide](./CONTRIBUTING.md) | How to contribute to the project |
+
+### 🎯 NEW: SEO & LLM Optimization
+| Document | Description |
+|----------|-------------|
+| [**2026 SEO Strategy**](./docs/SEO/2026-STRATEGY.md) | Complete LLM-first optimization strategy |
+| [Monitoring Guide](./docs/MONITORING.md) | Performance & citation tracking |
+| [Cost Analysis](./docs/COSTS.md) | Detailed cost breakdown with SEO costs |
 
 ## 🏗️ Architecture Overview
 
@@ -85,11 +96,13 @@ Quest v2.2 is a **database-first, AI-native content platform** designed to power
 - ⚡ Vercel hosting
 - 🎨 Tailwind CSS
 
-**AI Services:**
+**AI Services & LLM Optimization:**
 - 🔍 Perplexity Sonar Pro (research)
 - 🤖 Claude 3.5 Sonnet (content)
 - 🧠 OpenAI Embeddings (vector search)
 - 🎨 FLUX via Replicate (images)
+- 📄 WeasyPrint (PDF generation for LLM SEO)
+- 🔗 JSON-LD Schema (LLM-optimized metadata)
 
 ## 🚀 Quick Start
 
