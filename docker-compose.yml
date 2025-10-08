@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: quest-postgres
+    environment:
+      POSTGRES_USER: quest_user
+      POSTGRES_PASSWORD: quest_password
+      POSTGRES_DB: quest_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quest_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: quest-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Directus CMS
+  directus:
+    image: directus/directus:latest
+    container_name: quest-directus
+    ports:
+      - "8055:8055"
+    environment:
+      KEY: "replace-with-random-key"
+      SECRET: "replace-with-random-secret"
+      
+      # Database
+      DB_CLIENT: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: quest_dev
+      DB_USER: quest_user
+      DB_PASSWORD: quest_password
+      
+      # Admin User
+      ADMIN_EMAIL: admin@quest.local
+      ADMIN_PASSWORD: admin_password
+      
+      # Redis Cache
+      CACHE_ENABLED: "true"
+      CACHE_STORE: redis
+      REDIS: redis://redis:6379
+      
+      # File Storage (Local for dev)
+      STORAGE_LOCATIONS: local
+      STORAGE_LOCAL_ROOT: ./uploads
+      
+      # Public URL
+      PUBLIC_URL: http://localhost:8055
+      
+      # Extensions
+      EXTENSIONS_PATH: ./extensions
+      
+      # CORS
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "http://localhost:4321,http://localhost:3000"
+    
+    volumes:
+      - directus_uploads:/directus/uploads
+      - directus_extensions:/directus/extensions
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8055/server/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway (Development)
+  # Uncomment to run API in Docker (or run locally with uvicorn)
+  # api:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.api
+  #   container_name: quest-api
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     DATABASE_URL: postgresql://quest_user:quest_password@postgres:5432/quest_dev
+  #     REDIS_URL: redis://redis:6379
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   volumes:
+  #     - ./backend:/app
+
+  # Workers (Development)
+  # Uncomment to run workers in Docker (or run locally with Python)
+  # workers:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.workers
+  #   container_name: quest-workers
+  #   environment:
+  #     DATABASE_URL: postgresql://quest_user:quest_password@postgres:5432/quest_dev
+  #     REDIS_URL: redis://redis:6379
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   volumes:
+  #     - ./backend:/app
+
+volumes:
+  postgres_data:
+  redis_data:
+  directus_uploads:
+  directus_extensions:
+
+networks:
+  default:
+    name: quest-network

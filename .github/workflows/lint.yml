@@ -1,0 +1,84 @@
+name: Lint & Format
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  python-lint:
+    name: Python Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        pip install black ruff mypy bandit
+
+    - name: Black - Code Formatting
+      run: |
+        cd backend
+        black --check --diff app/
+
+    - name: Ruff - Fast Linter
+      run: |
+        cd backend
+        ruff check app/ --output-format=github
+
+    - name: MyPy - Type Checking
+      run: |
+        cd backend
+        mypy app/ --ignore-missing-imports
+
+    - name: Bandit - Security Linting
+      run: |
+        cd backend
+        bandit -r app/ -ll
+
+  markdown-lint:
+    name: Markdown Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Markdown Lint
+      uses: DavidAnson/markdownlint-cli2-action@v13
+      with:
+        globs: '**/*.md'
+
+  sql-lint:
+    name: SQL Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install sqlfluff
+      run: pip install sqlfluff
+
+    - name: Lint SQL files
+      run: |
+        cd backend/migrations
+        sqlfluff lint *.sql --dialect postgres || true
+
+  yaml-lint:
+    name: YAML Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: YAML Lint
+      uses: ibiqlik/action-yamllint@v3
+      with:
+        config_file: .yamllint.yml
+        file_or_dir: .
+        strict: false
