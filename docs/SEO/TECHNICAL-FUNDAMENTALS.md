@@ -128,12 +128,14 @@ https://pagespeed.web.dev/
 
 **Optimization Checklist:**
 
-**Images:**
+**Images (Julian Goldie: < 150KB target):**
 - [ ] Use WebP format (60-80% smaller than JPEG)
 - [ ] Lazy load images below the fold
 - [ ] Cloudinary auto-optimization enabled
 - [ ] Responsive images with srcset
-- [ ] Compress images (target: < 200KB each)
+- [ ] Compress images (target: **< 150KB each** per Julian Goldie)
+- [ ] Quality: 85 (balance size vs appearance)
+- [ ] Dimensions: Max 1200×630 for hero images
 
 **Code:**
 - [ ] Minify CSS and JavaScript
@@ -157,15 +159,21 @@ https://pagespeed.web.dev/
 - [ ] Enable HTTP/2 or HTTP/3
 - [ ] Minimize redirects (each adds latency)
 
-**Astro-Specific:**
+**Astro-Specific (Julian Goldie Image Optimization):**
 ```javascript
 // astro.config.mjs
+import { defineConfig } from 'astro/config';
+import { squooshImageService } from 'astro/assets';
+
 export default defineConfig({
   build: {
     inlineStylesheets: 'auto', // Inline critical CSS
   },
   image: {
     service: squooshImageService(), // Optimize images at build
+    // Julian Goldie recommendations
+    formats: ['webp'], // WebP format
+    quality: 85, // Balance quality vs size
   },
   vite: {
     build: {
@@ -174,6 +182,27 @@ export default defineConfig({
     },
   },
 });
+```
+
+**Astro Image Component (Julian Goldie Optimized):**
+```astro
+---
+import { Image } from 'astro:assets';
+import heroImage from '../assets/hero.jpg';
+---
+
+<!-- Julian Goldie: WebP, quality 85, lazy loading, < 150KB -->
+<Image
+  src={heroImage}
+  alt="Portugal Digital Nomad Visa Guide"
+  format="webp"
+  quality={85}
+  loading="lazy"
+  width={1200}
+  height={630}
+/>
+
+<!-- Result: Optimized image < 150KB, fast loading -->
 ```
 
 ---

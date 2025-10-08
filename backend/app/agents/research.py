@@ -164,19 +164,53 @@ class ResearchAgent:
             "Content-Type": "application/json",
         }
 
+        # Julian Goldie AI SEO: Gap analysis for AI overview opportunities
+        gap_analysis_prompt = f"""Research "{topic}" with AI overview gap analysis:
+
+## 1. CURRENT AI OVERVIEW
+What do AI systems (ChatGPT, Perplexity, Claude) currently say about {topic}?
+Provide the typical 2-3 sentence AI overview response.
+
+## 2. SOURCES USED
+Which websites and sources do AI systems commonly cite when answering about {topic}?
+List 5-10 authoritative sources.
+
+## 3. MISSING SUBTOPICS
+What important aspects of {topic} are NOT well-covered in AI overviews?
+Identify 5-7 content gaps.
+
+## 4. COMMON QUESTIONS
+What questions do users ask about {topic} that AI can't answer well?
+List 5-10 frequently asked questions with incomplete AI answers.
+
+## 5. LATEST DEVELOPMENTS
+What's new in 2024-2025 regarding {topic}?
+Recent trends, policy changes, or updates.
+
+## 6. DATA & STATISTICS
+Key numbers, facts, and figures about {topic} with sources.
+
+## 7. EXPERT PERSPECTIVES
+What do industry experts or authorities say about {topic}?
+
+## 8. OPPORTUNITY AREAS
+Where can Quest Platform add unique value that AI overviews are missing?
+
+Provide comprehensive, factual information with specific citations."""
+
         payload = {
             "model": settings.PERPLEXITY_MODEL,
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a research assistant. Provide factual, well-sourced information with statistics and expert insights.",
+                    "content": "You are a research assistant specializing in AI SEO gap analysis. Identify what AI overviews are missing and where new content can add value.",
                 },
                 {
                     "role": "user",
-                    "content": f"Research topic: {topic}\n\nProvide comprehensive factual information, statistics, trends, and expert insights. Include specific data points and sources.",
+                    "content": gap_analysis_prompt,
                 },
             ],
-            "max_tokens": 2000,
+            "max_tokens": 3000,  # Increased for comprehensive gap analysis
             "temperature": 0.2,
             "return_citations": True,
         }
