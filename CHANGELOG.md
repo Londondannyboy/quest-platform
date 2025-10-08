@@ -8,9 +8,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Coming Soon
-- Automated performance testing in CI/CD
-- Real-time SLO monitoring dashboard
-- Example content sandbox database
+- Citation tracking system dashboard
+- Additional SEO strategy documents
+- Full LLM citation analytics
+
+## [2.3.0] - 2025-10-08
+
+### 🚀 Major SEO Pivot: LLM-First Optimization Strategy
+
+Based on Income Stream Surfers' 2026 SEO analysis, Quest Platform shifts from traffic-based to authority-based content model. Traditional SEO dying due to AI Overviews/ChatGPT/Perplexity killing informational site traffic. New strategy: Become THE authoritative source that LLMs cite.
+
+**Strategic Shift: Traffic → Authority**
+
+### Added
+
+#### New Agents
+- **PDFAgent** - Automated PDF generation for LLM SEO
+  - Generates SEO-optimized PDFs for every article
+  - LLMs search positions 1-100 (PDFs rank easily in 11-100)
+  - Diverse format = higher LLM citation chances
+  - Auto-upload to Cloudinary `/pdfs/`
+
+- **SEOEnhancer** - LLM-optimized JSON schema generation
+  - Verbose, LLM-friendly JSON-LD schema
+  - Includes FAQs, entity mentions, citations
+  - LLMs read schema FIRST before body content
+  - Embedded in `<head>` for immediate consumption
+
+#### SEO Strategy Documentation
+- **docs/SEO/2026-STRATEGY.md** - Complete LLM-first SEO strategy
+- Press release workflow (Press Wire for strategic content)
+- PDF SEO tactics and best practices
+- JSON schema optimization guide
+- Citation tracking methodology
+
+#### Infrastructure Updates
+- 5-agent pipeline (added PDFAgent after ImageAgent)
+- LLM citation tracking groundwork
+- PDF hosting and delivery infrastructure
+
+### Changed
+- Architecture: 4-agent → 5-agent pipeline
+- SEO focus: Google rankings → LLM citations
+- Success metrics: Traffic → Authority Score
+- Cost model: $0.60 → $0.78/article (blended with PDFs + press releases)
+
+### Cost Impact
+- Per-article base: $0.60 (unchanged)
+- Per-article with PDF: $0.65 (+$0.05)
+- Strategic articles with press release: $2.34 (10% of articles)
+- Monthly operating: +$800-1,750 (press releases + monitoring)
+
+### Performance Targets
+- Month 3: 10% article citation rate by LLMs
+- Month 6: 30% citation rate
+- Month 12: 60% citation rate, brand recognition in AI responses
+
+### Deployment
+- PDFAgent: Automatic for all new articles
+- SEOEnhancer: Automatic schema generation
+- Press releases: Manual for strategic content (5-10/month)
+- Citation tracking: Coming in v2.3.1
 
 ## [2.2.0] - 2025-10-08
 
