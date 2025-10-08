@@ -34,9 +34,22 @@ class Settings(BaseSettings):
     # DATABASE (Neon PostgreSQL)
     # ========================================================================
     DATABASE_URL: str = Field(
-        ...,
+        default="",
         description="PostgreSQL connection URL",
     )
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def validate_database_url(cls, v):
+        if not v or v == "":
+            raise ValueError(
+                "DATABASE_URL is required. Please set it in Railway environment variables."
+            )
+        if not v.startswith(("postgresql://", "postgres://")):
+            raise ValueError(
+                f"DATABASE_URL must start with 'postgresql://' or 'postgres://', got: {v[:20]}"
+            )
+        return v
     DB_POOL_SIZE: int = Field(default=20, description="Database connection pool size")
     DB_MAX_OVERFLOW: int = Field(default=10, description="Max overflow connections")
     DB_POOL_TIMEOUT: int = Field(default=30, description="Pool timeout in seconds")
