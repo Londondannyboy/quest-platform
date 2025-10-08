@@ -1,0 +1,118 @@
+# Quest Platform v2.2 - Directus Configuration
+# Database-first CMS with auto-generated GraphQL API
+# Deploy: docker-compose up -d
+
+version: '3.8'
+
+services:
+  directus:
+    image: directus/directus:latest
+    restart: unless-stopped
+    ports:
+      - "8055:8055"
+    environment:
+      # =====================================================================
+      # DATABASE (Neon PostgreSQL - Restricted User)
+      # =====================================================================
+      DB_CLIENT: 'postgres'
+      DB_HOST: '${NEON_HOST}'  # e.g., ep-xxx.neon.tech
+      DB_PORT: '5432'
+      DB_DATABASE: '${NEON_DATABASE}'  # e.g., neondb
+      DB_USER: 'directus_user'  # RESTRICTED USER (no DDL)
+      DB_PASSWORD: '${DIRECTUS_DB_PASSWORD}'
+      DB_SSL: 'true'
+
+      # =====================================================================
+      # ADMIN ACCOUNT
+      # =====================================================================
+      ADMIN_EMAIL: '${ADMIN_EMAIL}'
+      ADMIN_PASSWORD: '${ADMIN_PASSWORD}'
+
+      # =====================================================================
+      # SECURITY
+      # =====================================================================
+      KEY: '${DIRECTUS_KEY}'  # Random 32-char string
+      SECRET: '${DIRECTUS_SECRET}'  # Random 32-char string
+      ACCESS_TOKEN_TTL: '15m'
+      REFRESH_TOKEN_TTL: '7d'
+      REFRESH_TOKEN_COOKIE_SECURE: 'true'
+      REFRESH_TOKEN_COOKIE_SAME_SITE: 'lax'
+
+      # =====================================================================
+      # SCHEMA MANAGEMENT (DISABLED - Database-First Principle)
+      # =====================================================================
+      SCHEMA_APPLY_AFTER: 'false'  # Do NOT auto-apply schema changes
+      COLLECTIONS_ADMIN_ACCESS: 'read_only'  # Prevent UI schema editing
+
+      # =====================================================================
+      # API CONFIGURATION
+      # =====================================================================
+      GRAPHQL_ENABLED: 'true'
+      GRAPHQL_INTROSPECTION: 'true'
+      REST_ENABLED: 'true'
+
+      # Rate limiting
+      RATE_LIMITER_ENABLED: 'true'
+      RATE_LIMITER_POINTS: '50'
+      RATE_LIMITER_DURATION: '1'
+
+      # CORS
+      CORS_ENABLED: 'true'
+      CORS_ORIGIN: 'https://relocation.quest,https://placement.quest,https://rainmaker.quest,http://localhost:3000,http://localhost:4321'
+
+      # =====================================================================
+      # CACHING (Redis)
+      # =====================================================================
+      CACHE_ENABLED: 'true'
+      CACHE_STORE: 'redis'
+      CACHE_TTL: '5m'
+      REDIS: '${REDIS_URL}'
+
+      # =====================================================================
+      # ASSET STORAGE (Cloudinary CDN)
+      # =====================================================================
+      STORAGE_LOCATIONS: 'cloudinary'
+      STORAGE_CLOUDINARY_DRIVER: 'cloudinary'
+      STORAGE_CLOUDINARY_CLOUD_NAME: '${CLOUDINARY_CLOUD_NAME}'
+      STORAGE_CLOUDINARY_API_KEY: '${CLOUDINARY_API_KEY}'
+      STORAGE_CLOUDINARY_API_SECRET: '${CLOUDINARY_API_SECRET}'
+
+      # =====================================================================
+      # EMAIL (Optional - for user invites)
+      # =====================================================================
+      EMAIL_FROM: 'noreply@quest.com'
+      EMAIL_TRANSPORT: 'smtp'
+      EMAIL_SMTP_HOST: '${SMTP_HOST:-smtp.gmail.com}'
+      EMAIL_SMTP_PORT: '${SMTP_PORT:-587}'
+      EMAIL_SMTP_USER: '${SMTP_USER}'
+      EMAIL_SMTP_PASSWORD: '${SMTP_PASSWORD}'
+
+      # =====================================================================
+      # LOGGING
+      # =====================================================================
+      LOG_LEVEL: 'info'
+      LOG_STYLE: 'pretty'
+
+      # =====================================================================
+      # PERFORMANCE
+      # =====================================================================
+      QUERY_LIMIT_DEFAULT: '100'
+      QUERY_LIMIT_MAX: '500'
+
+    volumes:
+      # Extensions and custom code (optional)
+      - ./extensions:/directus/extensions
+
+    networks:
+      - quest-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8055/server/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  quest-network:
+    driver: bridge

@@ -1,0 +1,74 @@
+# Quest Platform v2.2 - Python Dependencies
+# Install: pip install -r requirements.txt
+
+# ============================================================================
+# WEB FRAMEWORK
+# ============================================================================
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# ============================================================================
+# DATABASE
+# ============================================================================
+asyncpg==0.29.0                 # Async PostgreSQL driver
+psycopg2-binary==2.9.9          # Sync PostgreSQL driver (for migrations)
+sqlalchemy[asyncio]==2.0.25     # ORM
+alembic==1.13.1                 # Database migrations (alternative to raw SQL)
+pgvector==0.2.4                 # Vector similarity search
+
+# ============================================================================
+# QUEUE & CACHING
+# ============================================================================
+redis==5.0.1                    # Redis client
+hiredis==2.3.2                  # Fast Redis protocol parser
+python-bullmq==0.1.0            # BullMQ Python client (if available, else use redis directly)
+
+# ============================================================================
+# AI APIs
+# ============================================================================
+anthropic==0.17.0               # Claude API
+openai==1.10.0                  # OpenAI Embeddings API
+httpx==0.26.0                   # HTTP client for Perplexity, Replicate
+replicate==0.22.0               # FLUX image generation
+
+# ============================================================================
+# IMAGE PROCESSING & CDN
+# ============================================================================
+cloudinary==1.38.0              # Cloudinary CDN
+pillow==10.2.0                  # Image manipulation
+
+# ============================================================================
+# UTILITIES
+# ============================================================================
+python-dotenv==1.0.0            # Environment variables
+tenacity==8.2.3                 # Retry logic with exponential backoff
+pydantic-extra-types==2.3.0     # Extra Pydantic types
+email-validator==2.1.0          # Email validation
+python-multipart==0.0.6         # Form data parsing
+
+# ============================================================================
+# MONITORING & LOGGING
+# ============================================================================
+structlog==24.1.0               # Structured logging
+prometheus-client==0.19.0       # Metrics export
+sentry-sdk[fastapi]==1.39.2     # Error tracking
+
+# ============================================================================
+# TESTING
+# ============================================================================
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+httpx==0.26.0                   # Test client
+faker==22.2.0                   # Test data generation
+
+# ============================================================================
+# DEVELOPMENT
+# ============================================================================
+black==23.12.1                  # Code formatter
+ruff==0.1.11                    # Linter
+mypy==1.8.0                     # Type checker
+pre-commit==3.6.0               # Git hooks
