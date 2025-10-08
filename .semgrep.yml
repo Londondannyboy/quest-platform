@@ -1,0 +1,216 @@
+# Semgrep Security Configuration for Quest Platform
+# Scans Python backend for common vulnerabilities
+
+rules:
+  # SQL Injection Prevention
+  - id: sql-injection-risk
+    patterns:
+      - pattern-either:
+          - pattern: execute($QUERY)
+          - pattern: executemany($QUERY, ...)
+      - pattern-not: execute("...")
+      - pattern-not: executemany("...", ...)
+    message: |
+      Potential SQL injection vulnerability. Use parameterized queries.
+      Bad:  cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
+      Good: cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A1: Injection"
+
+  # Hardcoded Secrets
+  - id: hardcoded-password
+    patterns:
+      - pattern-either:
+          - pattern: password = "..."
+          - pattern: PASSWORD = "..."
+          - pattern: api_key = "..."
+          - pattern: API_KEY = "..."
+          - pattern: secret = "..."
+          - pattern: SECRET = "..."
+          - pattern: token = "..."
+          - pattern: TOKEN = "..."
+    message: |
+      Hardcoded credentials detected. Use environment variables.
+      Bad:  API_KEY = "sk-1234567890"
+      Good: API_KEY = os.getenv("API_KEY")
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Hardcoded Credentials"
+
+  # Insecure Random
+  - id: insecure-random
+    pattern: random.$FUNC(...)
+    message: |
+      Using insecure random for security. Use secrets module instead.
+      Bad:  token = random.randint(1000, 9999)
+      Good: token = secrets.token_urlsafe(32)
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+
+  # Unsafe YAML Loading
+  - id: unsafe-yaml-load
+    pattern: yaml.load($X)
+    message: |
+      Unsafe YAML loading can execute arbitrary code.
+      Bad:  yaml.load(user_input)
+      Good: yaml.safe_load(user_input)
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+
+  # Debug Mode in Production
+  - id: debug-mode-enabled
+    patterns:
+      - pattern-either:
+          - pattern: debug=True
+          - pattern: DEBUG=True
+    message: |
+      Debug mode should be disabled in production.
+      Use: debug=settings.DEBUG where DEBUG defaults to False
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+
+  # Insecure Hash Functions
+  - id: insecure-hash-md5
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
+    message: |
+      MD5 and SHA1 are cryptographically broken. Use SHA256 or better.
+      Bad:  hashlib.md5(password.encode())
+      Good: hashlib.sha256(password.encode())
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of Broken Cryptographic Algorithm"
+
+  # Command Injection
+  - id: command-injection-shell-true
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: |
+      Using shell=True can lead to command injection.
+      Bad:  subprocess.run(f"ls {user_input}", shell=True)
+      Good: subprocess.run(["ls", user_input])
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+
+  # Unchecked User Input in Paths
+  - id: path-traversal-risk
+    patterns:
+      - pattern: open($PATH, ...)
+      - metavariable-pattern:
+          metavariable: $PATH
+          patterns:
+            - pattern: $USER_INPUT + ...
+            - pattern: ... + $USER_INPUT
+    message: |
+      Potential path traversal vulnerability.
+      Validate and sanitize file paths from user input.
+      Use: pathlib.Path(base_dir).joinpath(user_input).resolve()
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-22: Path Traversal"
+
+  # Insecure Deserialization
+  - id: insecure-pickle
+    pattern: pickle.loads($X)
+    message: |
+      Pickle deserialization of untrusted data can execute arbitrary code.
+      Use JSON or msgpack for untrusted data.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+
+  # Missing Error Handling
+  - id: bare-except
+    pattern: |
+      try:
+          ...
+      except:
+          ...
+    message: |
+      Bare except catches all exceptions including SystemExit and KeyboardInterrupt.
+      Bad:  except:
+      Good: except Exception as e:
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: best-practice
+
+  # Weak Cryptographic Key
+  - id: weak-crypto-key
+    patterns:
+      - pattern-either:
+          - pattern: Fernet($KEY)
+          - pattern: AES.new($KEY, ...)
+      - metavariable-pattern:
+          metavariable: $KEY
+          pattern: "..."
+    message: |
+      Hardcoded encryption key detected.
+      Generate keys securely: Fernet.generate_key()
+      Store in environment: os.getenv("ENCRYPTION_KEY")
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-321: Use of Hard-coded Cryptographic Key"
+
+  # JWT Security
+  - id: jwt-none-algorithm
+    patterns:
+      - pattern: jwt.decode(..., algorithms=["none"], ...)
+    message: |
+      JWT 'none' algorithm allows token forgery.
+      Use: algorithms=["HS256"] or ["RS256"]
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+
+  # FastAPI Security Headers
+  - id: missing-cors-config
+    patterns:
+      - pattern: CORSMiddleware(..., allow_origins=["*"], ...)
+    message: |
+      CORS configured to allow all origins (*).
+      Restrict to specific domains: allow_origins=["https://yourdomain.com"]
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+
+  # Database Connection Security
+  - id: database-ssl-disabled
+    patterns:
+      - pattern-either:
+          - pattern: create_engine(..., connect_args={"sslmode": "disable"}, ...)
+          - pattern: psycopg.connect(..., sslmode="disable", ...)
+    message: |
+      Database SSL is disabled. Use sslmode="require" for production.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
