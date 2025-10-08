@@ -256,7 +256,7 @@ class ArticleOrchestrator:
             query = """
                 INSERT INTO job_status
                 (job_id, status, progress, current_step, article_id, cost_breakdown, total_cost, error_message, started_at, completed_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+                VALUES ($1::varchar(255), $2::varchar(50), $3::integer, $4::varchar(100), $5::uuid, $6::jsonb, $7::decimal, $8::text,
                         CASE WHEN $2 = 'processing' THEN NOW() ELSE NULL END,
                         CASE WHEN $2 IN ('completed', 'failed') THEN NOW() ELSE NULL END)
                 ON CONFLICT (job_id) DO UPDATE SET

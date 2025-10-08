@@ -4,7 +4,7 @@ Pydantic Settings for environment variables
 """
 
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     # ========================================================================
     # MONITORING
     # ========================================================================
-    SENTRY_DSN: str | None = Field(default=None, description="Sentry DSN")
+    SENTRY_DSN: Optional[str] = Field(default=None, description="Sentry DSN")
     SENTRY_ENVIRONMENT: str = Field(default="development", description="Sentry environment")
     SENTRY_TRACES_SAMPLE_RATE: float = Field(
         default=0.1, description="Sentry traces sample rate"
@@ -163,7 +163,7 @@ class Settings(BaseSettings):
     DIRECTUS_URL: str = Field(
         default="http://localhost:8055", description="Directus URL"
     )
-    DIRECTUS_API_TOKEN: str | None = Field(
+    DIRECTUS_API_TOKEN: Optional[str] = Field(
         default=None, description="Directus API token"
     )
 
@@ -186,7 +186,7 @@ class Settings(BaseSettings):
     # ========================================================================
     # TESTING
     # ========================================================================
-    TEST_DATABASE_URL: str | None = Field(
+    TEST_DATABASE_URL: Optional[str] = Field(
         default=None, description="Test database URL"
     )
     MOCK_AI_APIS: bool = Field(default=False, description="Mock AI APIs for testing")

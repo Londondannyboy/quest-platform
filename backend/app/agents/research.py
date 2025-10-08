@@ -126,9 +126,12 @@ class ResearchAgent:
                 LIMIT 1
             """
 
+            # Convert Python list to pgvector format string
+            embedding_str = '[' + ','.join(map(str, embedding)) + ']'
+
             async with pool.acquire() as conn:
                 result = await conn.fetchrow(
-                    query, embedding, self.similarity_threshold
+                    query, embedding_str, self.similarity_threshold
                 )
 
                 if result:
@@ -263,16 +266,19 @@ Provide comprehensive, factual information with specific citations."""
             query = """
                 INSERT INTO article_research
                 (topic_query, embedding, research_json, expires_at)
-                VALUES ($1, $2, $3, NOW() + INTERVAL '{} days')
+                VALUES ($1::text, $2::vector, $3::jsonb, NOW() + INTERVAL '{} days')
             """.format(
                 self.cache_ttl_days
             )
+
+            # Convert Python list to pgvector format string
+            embedding_str = '[' + ','.join(map(str, embedding)) + ']'
 
             async with pool.acquire() as conn:
                 await conn.execute(
                     query,
                     topic,
-                    embedding,
+                    embedding_str,
                     json.dumps(research_data),
                 )
 

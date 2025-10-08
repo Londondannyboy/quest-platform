@@ -3,6 +3,7 @@ Quest Platform v2.2 - ImageAgent
 Generates hero images using FLUX Schnell via Replicate + Cloudinary CDN
 """
 
+import asyncio
 from decimal import Decimal
 from typing import Dict, Optional
 
@@ -195,7 +196,10 @@ Mood: Inspirational and informative"""
             Cloudinary CDN URL
         """
         try:
-            result = cloudinary.uploader.upload(
+            # Wrap synchronous Cloudinary upload in thread to prevent event loop blocking
+            # This prevents 100-500ms blocking for every concurrent request
+            result = await asyncio.to_thread(
+                cloudinary.uploader.upload,
                 image_url,
                 folder=f"quest/{target_site}",
                 public_id=slug,
@@ -208,6 +212,7 @@ Mood: Inspirational and informative"""
                     {"fetch_format": "auto"},
                 ],
                 overwrite=True,
+                timeout=5,  # 5 second timeout to prevent hanging
             )
 
             cdn_url = result["secure_url"]

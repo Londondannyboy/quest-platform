@@ -84,6 +84,22 @@ async def generate_article(
         # Generate job ID
         job_id = str(uuid4())
 
+        # Insert initial job status in database BEFORE returning
+        # This ensures /api/jobs/{job_id} polling works immediately
+        pool = get_db()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO job_status (job_id, status, progress, current_step, cost_breakdown, created_at)
+                VALUES ($1::varchar(255), $2::varchar(50), $3::integer, $4::varchar(100), $5::jsonb, NOW())
+                """,
+                job_id,
+                "queued",
+                0,
+                "initializing",
+                "{}",  # Empty JSONB object
+            )
+
         # Queue job in Redis (BullMQ simulation)
         redis_client = get_redis()
         job_data = {

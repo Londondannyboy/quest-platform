@@ -1,326 +1,279 @@
-# Quest Platform v2.3
+# Quest Platform - AI Content Intelligence System
 
-> Multi-Site Content Intelligence Platform with LLM-First SEO Strategy
+**AI-powered content generation and management for authority websites**
 
-[![Architecture Grade](https://img.shields.io/badge/Architecture%20Grade-A+-brightgreen)](./docs/ARCHITECTURE.md)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](./docs/ARCHITECTURE.md)
-[![Test Coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen)](./backend/tests)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-Passing-success)](./.github/workflows/ci-cd.yml)
-[![LLM Optimized](https://img.shields.io/badge/LLM-Optimized-purple)](./docs/SEO/2026-STRATEGY.md)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-beta-yellow)](https://github.com/Londondannyboy/quest-platform)
+[![Backend](https://img.shields.io/badge/backend-FastAPI-009688)](https://fastapi.tiangolo.com/)
+[![Database](https://img.shields.io/badge/database-PostgreSQL-336791)](https://neon.tech/)
+[![AI](https://img.shields.io/badge/AI-Claude%20%2B%20Perplexity-7C3AED)](https://anthropic.com/)
 
-## 🎯 Overview
+---
 
-Quest v2.3 is a **database-first, AI-native content platform** with **LLM-first SEO optimization** designed to power three specialized publication sites:
+## 🎯 What is Quest Platform?
 
-- 🌍 **relocation.quest** - International relocation guides
-- 💼 **placement.quest** - Job placement insights
-- 💰 **rainmaker.quest** - Entrepreneurship content
+Quest generates high-quality, SEO-optimized articles using a **4-agent AI orchestration system**. Each article goes through:
 
-### Key Features
+1. **ResearchAgent** → Gathers intelligence from multiple sources
+2. **ContentAgent** → Generates 2000-3000 word articles with Claude
+3. **EditorAgent** → Scores quality and determines if human review needed
+4. **ImageAgent** → Creates hero images with AI (parallel processing)
 
-- ✅ **Sub-3-second page loads** (p95 guarantee)
-- ✅ **5-agent AI pipeline** with automated PDF generation
-- ✅ **LLM-optimized** for ChatGPT, Perplexity, Claude citations
-- ✅ **Cost-optimized** at $0.78 per article (with PDF + SEO)
-- ✅ **40% research cache savings** via pgvector
-- ✅ **Human-in-the-loop** quality gates
-- ✅ **Database-first design** for vendor independence
-- ✅ **Authority-based model** (LLM citations > traffic)
+**Generation time:** 2-3 minutes per article
+**Cost per article:** ~$0.44
 
-## 📚 Documentation
+---
 
-### Core Documentation
-| Document | Description |
-|----------|-------------|
-| [**Full Architecture**](./docs/ARCHITECTURE.md) | Complete technical specification (v2.3) |
-| [Quick Start](./docs/QUICK_START.md) | Get up and running in 30 minutes |
-| [Setup Guide](./GETTING_STARTED.md) | Comprehensive setup instructions |
-| [Deployment Guide](./DEPLOYMENT.md) | Production deployment instructions |
-| [GitHub Setup](./GITHUB_SETUP.md) | Repository and collaboration setup |
-| [Contributing Guide](./CONTRIBUTING.md) | How to contribute to the project |
-
-### 🎯 NEW: SEO & LLM Optimization
-| Document | Description |
-|----------|-------------|
-| [**2026 SEO Strategy**](./docs/SEO/2026-STRATEGY.md) | Complete LLM-first optimization strategy |
-| [Monitoring Guide](./docs/MONITORING.md) | Performance & citation tracking |
-| [Cost Analysis](./docs/COSTS.md) | Detailed cost breakdown with SEO costs |
-
-## 🏗️ Architecture Overview
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         PUBLIC INTERNET                          │
-└─────────────────────────────────────────────────────────────────┘
-                                 │
-                    ┌────────────┼────────────┐
-                    │            │            │
-              ┌─────▼─────┐ ┌───▼────┐ ┌────▼─────┐
-              │ Relocation│ │Placement│ │Rainmaker │
-              │   .quest  │ │ .quest  │ │  .quest  │
-              │  (Astro)  │ │ (Astro) │ │ (Astro)  │
-              └─────┬─────┘ └────┬────┘ └────┬─────┘
-                    │            │            │
-                    └────────────┼────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │   DIRECTUS CMS          │
-                    │   GraphQL API Layer     │
-                    └────────────┬────────────┘
-                                 │
-              ┌──────────────────┼──────────────────┐
-              │                  │                  │
-    ┌─────────▼─────────┐  ┌────▼─────┐  ┌───────▼────────┐
-    │  FastAPI Gateway  │  │  BullMQ  │  │   Neon Launch  │
-    │  (Railway Svc 1)  │◄─┤  Workers │  │   PostgreSQL   │
-    │  Job Submission   │  │ (Svc 2)  │  │   (Always-On)  │
-    └───────────────────┘  └────┬─────┘  └───────┬────────┘
-                                 │                │
-                    ┌────────────▼────────────────▼──┐
-                    │      Upstash Redis             │
-                    │      BullMQ Queue              │
-                    └────────────────────────────────┘
+┌─────────────┐
+│  Directus   │  ← Admin UI (pending setup)
+└──────┬──────┘
+       │
+┌──────▼──────────┐
+│  Neon Database  │  ← Single source of truth
+│  (PostgreSQL)   │     10 tables + pgvector
+└──────┬──────────┘
+       │
+┌──────▼──────────┐
+│  FastAPI API    │  ← 4-agent orchestration
+│  + BullMQ       │     Background job processing
+└─────────────────┘
+       │
+┌──────▼──────────┐
+│  Astro Sites    │  ← Frontend (pending)
+│  (Vercel)       │     relocation | placement | rainmaker
+└─────────────────┘
 ```
 
-### Technology Stack
+---
 
-**Backend:**
-- 🐍 FastAPI (Python 3.11+)
-- 🐘 PostgreSQL (Neon Launch tier)
-- 📦 BullMQ (job queue)
-- 🎨 Directus CMS
+## 📊 Current Status
 
-**Frontend:**
-- 🚀 Astro 4.x
-- ⚡ Vercel hosting
-- 🎨 Tailwind CSS
+### ✅ Completed (Backend - 95%)
+- [x] Neon PostgreSQL with pgvector
+- [x] FastAPI server with BullMQ queue
+- [x] 4-agent pipeline working
+- [x] **First article successfully generated!**
 
-**AI Services & LLM Optimization:**
-- 🔍 Perplexity Sonar Pro (research)
-- 🤖 Claude 3.5 Sonnet (content)
-- 🧠 OpenAI Embeddings (vector search)
-- 🎨 FLUX via Replicate (images)
-- 📄 WeasyPrint (PDF generation for LLM SEO)
-- 🔗 JSON-LD Schema (LLM-optimized metadata)
+### ⏳ In Progress
+- [ ] Fix JSON parsing bug (title/slug fields)
+- [ ] Create article retrieval API
+- [ ] Setup Directus CMS on Railway
+- [ ] Create first Astro frontend site
+
+### 📋 Coming Soon
+- [ ] Deploy backend to Railway
+- [ ] Launch relocation.quest
+- [ ] Launch placement.quest
+- [ ] Launch rainmaker.quest
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Python 3.11+
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL client tools
+- PostgreSQL (or Neon account)
+- Redis (or Upstash account)
+- API keys (Anthropic, Perplexity, OpenAI)
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/quest-platform.git
-cd quest-platform
+# 1. Clone the repo
+git clone https://github.com/Londondannyboy/quest-platform.git
+cd quest-platform/backend
 
-# Setup backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# Setup frontend
-cd ../frontend
-npm install
-
-# Configure environment variables
+# 3. Configure environment
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your credentials
 
-# Start development servers
-docker-compose up -d
+# 4. Run migrations (if needed)
+python3 run_full_migration.py
+
+# 5. Start the server
+python3 -m app.main
 ```
 
-See [Quick Start Guide](./docs/QUICK_START.md) for detailed instructions.
-
-## 💰 Cost Structure
-
-| Category | Monthly Cost | Details |
-|----------|--------------|---------|
-| **Infrastructure** | $145 | Neon ($60) + Railway ($75) + Redis ($10) |
-| **AI APIs** | $455.60 | Perplexity, Claude, OpenAI, Replicate |
-| **Total** | **$600.60** | ~$0.60 per article at 1000/month |
-
-**Scales to:**
-- 2000 articles/month: $0.30 per article
-- 5000 articles/month: $0.18 per article
-
-See [Cost Analysis](./docs/ARCHITECTURE.md#cost-analysis) for detailed breakdown.
-
-## 📊 Performance Benchmarks
-
-**Automated Testing:** Performance tests run daily via GitHub Actions ([view workflow](./.github/workflows/performance.yml))
-
-| Metric | Target | Actual (v2.2) | Status |
-|--------|--------|---------------|--------|
-| **Page Load Time (p95)** | <3s | 2.1s | ✅ **30% better** |
-| **Article Generation** | <60s | 48s | ✅ **20% faster** |
-| **API Uptime** | >99.5% | 99.8% | ✅ **Exceeds target** |
-| **Database Query (p95)** | <50ms | 32ms | ✅ **36% faster** |
-| **Cache Hit Rate** | >25% | 31% | ✅ **24% higher** |
-| **API Response (p95)** | <200ms | 156ms | ✅ **22% faster** |
-| **Worker Queue Depth** | <50 jobs | 12 avg | ✅ **Well below target** |
-
-**Performance Testing Tools:**
-- **Lighthouse CI**: Automated performance audits on every deploy
-- **Load Testing**: Locust-based API load tests (1000 req/min sustained)
-- **Database Benchmarks**: Query performance tracking with pg_stat_statements
-- **Real User Monitoring**: Vercel Analytics for actual user metrics
-
-**Recent Improvements:**
-- Implemented pgvector cache (31% hit rate, 40% cost savings)
-- Optimized database indexes (36% query improvement)
-- Added BullMQ queue system (prevents timeouts)
-- Implemented Cloudinary CDN (reduced image load by 60%)
-
-See [SLO Documentation](./docs/runbooks/SLO.md) for detailed monitoring procedures.
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-quest-platform/
-├── backend/
-│   ├── app/
-│   │   ├── agents/        # AI agent implementations
-│   │   ├── api/           # FastAPI endpoints
-│   │   ├── models/        # SQLAlchemy models
-│   │   └── workers/       # BullMQ workers
-│   ├── migrations/        # Database migrations
-│   └── tests/
-├── frontend/
-│   ├── relocation.quest/  # Astro site 1
-│   ├── placement.quest/   # Astro site 2
-│   └── rainmaker.quest/   # Astro site 3
-├── directus/
-│   ├── docker-compose.yml
-│   └── .env.example
-├── docs/                  # Documentation
-│   ├── ARCHITECTURE.md    # Complete architecture
-│   └── QUICK_START.md     # Quick start guide
-└── README.md
-```
-
-### Running Tests
-
-**Test Coverage: 87%** (Target: >85%)
+### Test Article Generation
 
 ```bash
-# Backend tests with coverage
-cd backend
-pytest --cov=app --cov-report=html --cov-report=term
+# Generate an article
+curl -X POST http://localhost:8000/api/articles/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Best Digital Nomad Cities in Portugal 2025",
+    "target_site": "relocation"
+  }'
 
-# Frontend tests
-cd frontend/relocation.quest
-npm test
+# Response: {"job_id": "...", "status": "queued"}
 
-# Integration tests
-docker-compose -f docker-compose.test.yml up --abort-on-container-exit
-
-# Performance tests
-pytest tests/performance/ -v
+# Check status
+curl http://localhost:8000/api/jobs/{job_id}
 ```
-
-**Test Suites:**
-- ✅ Unit tests: 142 tests across agents, API, models
-- ✅ Integration tests: 38 tests for end-to-end flows
-- ✅ Performance tests: Load testing, p95 latency validation
-- ✅ Security tests: Auth, rate limiting, input validation
-
-## 📅 Implementation Roadmap
-
-### Phase 1: Foundation (Weeks 1-2)
-- ✅ Neon PostgreSQL setup
-- ✅ Railway service deployment
-- ✅ AI pipeline foundation
-- ✅ Research cache pilot
-
-### Phase 2: CMS & Frontend (Weeks 3-4)
-- ✅ Directus configuration
-- ✅ HITL workflow
-- ✅ ImageAgent integration
-- ✅ Astro site deployment
-
-### Phase 3: Production Hardening (Weeks 5-6)
-- ✅ Monitoring & alerting
-- ✅ Security audit
-- ✅ Load testing
-- ✅ Production launch
-
-See [Full Architecture](./docs/ARCHITECTURE.md) for details.
-
-## 🔒 Security
-
-- 🔐 Role-separated database users
-- 🛡️ API rate limiting (100 req/min)
-- 🔒 CORS whitelist (*.quest domains only)
-- 🧹 Content sanitization (XSS prevention)
-- 🔑 Secrets management via environment variables
-
-See [Security Policy](SECURITY.md) for reporting vulnerabilities.
-
-## 📈 Monitoring
-
-We track these key metrics:
-
-**Infrastructure:**
-- API Gateway: Request rate, p95 latency, error rate
-- Workers: Queue depth, job latency, concurrency
-- Database: Query time, connection pool, storage
-- Cache: Hit rate, memory usage, eviction rate
-
-**Business:**
-- Articles generated per day
-- Average quality score
-- Cost per article
-- Auto-publish rate
-
-See [Architecture Guide](./docs/ARCHITECTURE.md#monitoring) for dashboard setup.
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Peer Reviews:** ChatGPT 4.0 (Grade: A-), Gemini 2.0 Flash (Grade: A-)
-- **Architecture Author:** DK (with AI assistance)
-- **Last Updated:** October 8, 2025
-
-## 📞 Support
-
-- 📧 Email: support@quest.com
-- 💬 Discord: [Join our community](https://discord.gg/quest)
-- 🐛 Bug Reports: [GitHub Issues](https://github.com/yourusername/quest-platform/issues)
-
-## 🔗 Links
-
-- [Production Sites](https://relocation.quest)
-- [API Documentation](https://api.quest.com/docs)
-- [Status Page](https://status.quest.com)
 
 ---
 
-**Status:** Production-Ready Architecture ✅
-**Version:** 2.2
-**Last Updated:** October 8, 2025
+## 📖 Documentation
+
+- **[CLAUDE.md](./CLAUDE.md)** - Complete project overview, architecture, and setup
+- **[TRACKING.md](./TRACKING.md)** - Detailed progress tracking and sprint goals
+- **[END-TO-END-TEST-RESULTS.md](./END-TO-END-TEST-RESULTS.md)** - Test results and validation
+
+### Additional Docs
+- [Project Structure](./PROJECT_STRUCTURE.md)
+- [Deployment Guide](./DEPLOYMENT.md)
+- [API Inventory](./COMPLETE-API-INVENTORY.md)
+- [Environment Variables](./ENVIRONMENT-VARIABLES-GUIDE.md)
+
+---
+
+## 🧪 Test Results
+
+### First Article Generated ✅
+- **Topic:** "Best Digital Nomad Cities in Portugal 2025"
+- **Content Length:** 10,990 characters (~3000 words)
+- **Quality Score:** 75/100
+- **Status:** Marked for human review
+- **Generation Time:** 2 minutes 25 seconds
+
+**What Worked:**
+- ✅ Research gathering from Perplexity
+- ✅ Content generation with Claude Sonnet 4.5
+- ✅ Quality scoring and review flagging
+- ✅ Database storage with pgvector embeddings
+
+**Known Issues:**
+- ⚠️ Title/slug show "```json" (JSON parsing bug - fix in progress)
+
+---
+
+## 🔧 Tech Stack
+
+| Component | Technology | Why? |
+|-----------|------------|------|
+| **Database** | Neon PostgreSQL 16 | Serverless, pgvector support |
+| **Backend** | FastAPI + Python 3.11 | Async, fast, type-safe |
+| **Queue** | BullMQ + Redis | Background jobs, no timeouts |
+| **CMS** | Directus | Free, database-first |
+| **Frontend** | Astro + Tailwind | Fast, SEO-friendly |
+| **AI APIs** | Claude, Perplexity, OpenAI | Best-in-class models |
+| **Images** | FLUX Schnell + Cloudinary | Fast generation + CDN |
+| **Hosting** | Railway + Vercel | Simple, scalable |
+
+---
+
+## 💰 Cost Breakdown
+
+### Monthly (1000 articles)
+- **Infrastructure:** $80/month (Neon + Railway + Vercel free tier)
+- **AI APIs:** $355/month (Perplexity + Claude + OpenAI + Images)
+- **Total:** ~$435/month = **$0.44 per article**
+
+### Cost Optimization
+- **40% research savings** via vector cache (pgvector similarity search)
+- **Free hosting** for frontends (Vercel free tier)
+- **Free CMS** (self-hosted Directus vs $15/user/month)
+
+---
+
+## 🤖 Agent Details
+
+### ResearchAgent
+- Queries Perplexity Sonar API
+- Generates embeddings for caching
+- Checks vector similarity (pgvector)
+- 30-day cache TTL
+- **Time:** 30-60 seconds
+
+### ContentAgent
+- Uses Claude Sonnet 4.5 (200K context)
+- Site-specific brand voice
+- SEO-optimized structure
+- 2000-3000 words
+- **Time:** 60-90 seconds
+
+### EditorAgent
+- Quality scoring (0-100)
+- Flesch Reading Ease
+- Grammar checking
+- Review threshold (< 80 = human review)
+- **Time:** 20-30 seconds
+
+### ImageAgent
+- FLUX Schnell (fast AI image generation)
+- Cloudinary permanent storage
+- Responsive transformations
+- Runs in parallel (non-blocking)
+- **Time:** 60 seconds
+
+---
+
+## 📈 Roadmap
+
+### Phase 1: Backend (Current)
+- [x] Database setup with pgvector
+- [x] 4-agent pipeline
+- [x] Job queue system
+- [x] First article generated
+- [ ] Bug fixes and polish
+
+### Phase 2: CMS (Next Week)
+- [ ] Deploy Directus to Railway
+- [ ] Connect to Neon database
+- [ ] Custom "Generate Article" workflow
+- [ ] Review and publish UI
+
+### Phase 3: Frontend (Next Week)
+- [ ] Initialize relocation.quest (Astro)
+- [ ] GraphQL client for Directus
+- [ ] Article display pages
+- [ ] Deploy to Vercel
+
+### Phase 4: Launch (2 Weeks)
+- [ ] Deploy backend to Railway
+- [ ] Generate first 30 articles
+- [ ] Launch 3 sites
+- [ ] Monitor performance and costs
+
+---
+
+## 🔗 Links
+
+- **GitHub:** [Londondannyboy/quest-platform](https://github.com/Londondannyboy/quest-platform)
+- **Neon Database:** [console.neon.tech](https://console.neon.tech/)
+- **Anthropic Console:** [console.anthropic.com](https://console.anthropic.com/)
+- **Perplexity API:** [docs.perplexity.ai](https://docs.perplexity.ai/)
+
+---
+
+## 🤝 Contributing
+
+This is currently a solo project by Dan Keegan. Contributions welcome once v1.0 is live!
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📝 License
+
+MIT License - See [LICENSE](./LICENSE) for details
+
+---
+
+## 🎯 Success Metrics (Target Month 6)
+
+- **1000 articles/month** published
+- **100K visitors/month** across 3 sites
+- **$25K revenue/month** from partnerships
+- **<$0.50 per article** operating cost
+
+---
+
+**Current Phase:** Backend complete → Moving to CMS setup
+**Next Milestone:** Directus operational + First Astro site live
+**Last Updated:** December 8, 2024
