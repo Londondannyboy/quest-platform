@@ -31,7 +31,6 @@ async def init_redis() -> redis.Redis:
             encoding="utf-8",
             decode_responses=True,
             max_connections=settings.REDIS_MAX_CONNECTIONS,
-            ssl_cert_reqs=None,  # Upstash Redis requires SSL but no cert verification
         )
 
         # Test connection
