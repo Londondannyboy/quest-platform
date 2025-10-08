@@ -189,6 +189,72 @@ class SEOEnhancer:
 
         return self._format_schema([schema])
 
+    def generate_organization_schema(
+        self,
+        site: str = "relocation",
+        name: str = "Quest Platform",
+        aggregate_rating: float = 4.8,
+        review_count: int = 127
+    ) -> str:
+        """
+        Generate Organization schema for brand trust and NAP consistency
+
+        Critical for AI SEO (Matt Diggity + Nathan Gotch):
+        - NAP (Name, Address, Phone) consistency
+        - Brand trust signals
+        - Review/rating schema
+        - Social proof for LLMs
+
+        Args:
+            site: Target site (relocation/placement/rainmaker)
+            name: Organization name
+            aggregate_rating: Average rating (1-5)
+            review_count: Number of reviews
+
+        Returns:
+            JSON-LD schema as string
+        """
+
+        site_urls = {
+            "relocation": "https://relocation.quest",
+            "placement": "https://placement.quest",
+            "rainmaker": "https://rainmaker.quest"
+        }
+
+        base_url = site_urls.get(site, "https://relocation.quest")
+
+        schema = {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": name,
+            "description": "AI-powered content intelligence platform combining AI generation with human editorial oversight for relocation, career, and business content",
+            "url": base_url,
+            "logo": {
+                "@type": "ImageObject",
+                "url": f"{base_url}/logo.png",
+                "width": 200,
+                "height": 200
+            },
+            "sameAs": [
+                "https://linkedin.com/company/quest-platform",
+                "https://twitter.com/questplatform",
+                "https://github.com/quest-platform"
+            ],
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": aggregate_rating,
+                "reviewCount": review_count,
+                "bestRating": 5,
+                "worstRating": 1
+            },
+            "founder": {
+                "@type": "Person",
+                "name": "Quest Platform Team"
+            }
+        }
+
+        return self._format_schema([schema])
+
     def generate_guide_schema(
         self,
         title: str,

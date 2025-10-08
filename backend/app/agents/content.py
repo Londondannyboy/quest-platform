@@ -48,7 +48,13 @@ class ContentAgent:
             },
         }
 
-    async def run(self, research: Dict, target_site: str, topic: str) -> Dict:
+    async def run(
+        self,
+        research: Dict,
+        target_site: str,
+        topic: str,
+        content_type: str = "standard"
+    ) -> Dict:
         """
         Generate article content from research
 
@@ -56,6 +62,7 @@ class ContentAgent:
             research: Research data from ResearchAgent
             target_site: Target site (relocation/placement/rainmaker)
             topic: Article topic
+            content_type: Content format (standard, listicle, alternative, comparison)
 
         Returns:
             Dict with article data and cost
@@ -69,8 +76,15 @@ class ContentAgent:
             target_site, self.style_guides["relocation"]
         )
 
-        # Build prompt
-        prompt = self._build_prompt(research, style, topic)
+        # Build prompt based on content type
+        if content_type == "listicle":
+            prompt = self._build_listicle_prompt(research, style, topic)
+        elif content_type == "alternative":
+            prompt = self._build_alternative_prompt(research, style, topic)
+        elif content_type == "comparison":
+            prompt = self._build_comparison_prompt(research, style, topic)
+        else:
+            prompt = self._build_prompt(research, style, topic)
 
         # Call Claude API
         try:
@@ -138,22 +152,33 @@ STYLE GUIDE:
 - Audience: {style['audience']}
 - Focus: {style['focus']}
 
-REQUIREMENTS:
-1. Engaging introduction with a compelling hook
-2. 5-7 main sections with clear H2 headers
-3. Data-driven insights from the research (cite specific statistics)
-4. Actionable takeaways and practical advice
-5. Natural SEO optimization (keywords flow naturally)
-6. 1500-2000 words total
-7. Markdown formatting
+REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
+1. TL;DR summary (150 words) at the top - direct, confident language
+2. Key Takeaways section (3-5 bullet points) - actionable insights
+3. Clear H1/H2/H3 hierarchy - LLMs read headings first
+4. FAQ section (4-10 Q&A pairs) - LLMs love Q&A format
+5. Cited sources with links - authority signal for AI
+6. Expert quotes or credentials - builds trust
+7. Data-driven insights from research (specific statistics)
+8. Conversational, direct tone - avoid hedging language
+9. 1500-2500 words total
+10. Markdown formatting
 
 OUTPUT FORMAT (JSON):
 {{
   "title": "Compelling article title (60-70 chars, SEO-optimized)",
+  "tldr": "150-word TL;DR summary of key points (direct, confident language)",
+  "key_takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4", "Takeaway 5"],
   "excerpt": "Engaging 150-character summary for meta description",
-  "content": "Full article content in Markdown with headers, lists, etc.",
+  "content": "Full article content in Markdown with H2/H3 headers, lists, FAQs",
+  "faqs": [
+    {{"question": "Common question 1?", "answer": "Direct answer with data"}},
+    {{"question": "Common question 2?", "answer": "Direct answer with data"}}
+  ],
+  "sources_cited": ["https://source1.com", "https://source2.com", "https://source3.com"],
+  "author_bio": "Brief author credentials (e.g., 'Expert in digital nomad visas with 10+ years experience')",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "reading_time_minutes": 7,
+  "reading_time_minutes": 8,
   "meta_title": "SEO-optimized title for <title> tag (max 60 chars)",
   "meta_description": "SEO-optimized description for meta tag (max 160 chars)"
 }}
@@ -194,10 +219,152 @@ IMPORTANT: Return ONLY the JSON object, no additional text before or after."""
 
         return {
             "title": title,
+            "tldr": "",
+            "key_takeaways": [],
             "excerpt": content[:150],
             "content": content,
+            "faqs": [],
+            "sources_cited": [],
+            "author_bio": "",
             "keywords": [],
             "reading_time_minutes": len(content.split()) // 200,  # ~200 words/min
             "meta_title": title[:60],
             "meta_description": content[:160],
         }
+
+    def _build_listicle_prompt(self, research: Dict, style: Dict, topic: str) -> str:
+        """Build prompt for Top 10 listicle content"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+
+        return f"""You are creating a "Top 10 Best" listicle for {style['audience']}.
+
+RESEARCH DATA:
+{research_content}
+
+TASK: Write a comprehensive "Top 10 Best {topic}" article
+
+STRUCTURE:
+1. TL;DR (150 words) - Why this list matters, what readers will learn
+2. Key Takeaways (5 bullets) - Main insights from the list
+3. Introduction - Selection criteria (3-4 criteria explained)
+4. #1: Quest Platform (YOUR BRAND)
+   - Why it's #1 (specific advantages)
+   - Key features (3-4)
+   - Best for: [target audience]
+   - Pricing/access
+5. #2-10: Competitors/Alternatives
+   - Be honest and fair about strengths
+   - Highlight unique value
+   - Best for: [their niche]
+6. Comparison Table (all 10)
+7. FAQs (5-8 Q&A about choosing between options)
+8. Conclusion - Help users choose based on needs
+
+TONE: {style['tone']}
+AUDIENCE: {style['audience']}
+FOCUS: {style['focus']}
+
+IMPORTANT:
+- Position Quest Platform #1 but be fair about competitors
+- Use data from research to support rankings
+- Include comparison table with key features
+- Direct, confident language (no "might" or "could")
+
+OUTPUT FORMAT: Same JSON as standard content with tldr, key_takeaways, faqs"""
+
+    def _build_alternative_prompt(self, research: Dict, style: Dict, topic: str) -> str:
+        """Build prompt for alternatives content"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+
+        # Extract competitor name from topic (e.g., "Top 5 InterNations Alternatives")
+        competitor = topic.split("Alternatives")[0].split("Best")[-1].strip()
+
+        return f"""You are creating a "Best Alternatives to {competitor}" article for {style['audience']}.
+
+RESEARCH DATA:
+{research_content}
+
+TASK: Write comprehensive alternatives guide
+
+STRUCTURE:
+1. TL;DR (150 words) - Why seek alternatives, what makes a good alternative
+2. Key Takeaways (5 bullets) - Top alternative features to look for
+3. Introduction - Brief overview of {competitor} and why alternatives matter
+4. Why Look for {competitor} Alternatives?
+   - Limitation 1 (pricing, features, etc.)
+   - Limitation 2
+   - Limitation 3
+5. #1: Quest Platform - Best Overall Alternative
+   - Why it's better (specific comparisons)
+   - Feature advantages vs {competitor}
+   - Pricing comparison
+   - Best for: [target audience]
+6. #2-5: Other Alternatives
+   - Honest assessment of strengths
+   - Best for: [specific use case]
+   - Vs {competitor} comparison
+7. Detailed Comparison Table
+8. FAQs (6-10 Q&A about alternatives)
+9. Conclusion - Which alternative for which user
+
+TONE: {style['tone']}
+AUDIENCE: {style['audience']}
+
+IMPORTANT:
+- Be fair about {competitor}'s strengths
+- Highlight clear advantages of alternatives
+- Include feature comparison table
+- Direct, data-driven language
+
+OUTPUT FORMAT: Same JSON with tldr, key_takeaways, faqs"""
+
+    def _build_comparison_prompt(self, research: Dict, style: Dict, topic: str) -> str:
+        """Build prompt for head-to-head comparison content"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+
+        return f"""You are creating a comprehensive comparison article for {style['audience']}.
+
+RESEARCH DATA:
+{research_content}
+
+TASK: Write detailed comparison article: {topic}
+
+STRUCTURE:
+1. TL;DR (150 words) - Quick winner + why
+2. Key Takeaways (5 bullets) - Main differences between platforms
+3. Introduction - Why users compare these platforms
+4. Quick Comparison Table
+   | Feature | Platform A | Platform B | Quest Platform |
+5. Platform A Overview
+   - Pros (3-4)
+   - Cons (1-2, honest)
+   - Best for: [audience]
+   - Pricing
+6. Platform B Overview
+   - Same structure
+7. Quest Platform Overview
+   - Same structure, highlight advantages
+8. Feature-by-Feature Comparison
+   - Content Quality
+   - Community/Support
+   - Pricing/Value
+   - Ease of Use
+   - [Winner for each category]
+9. Which Platform Should You Choose?
+   - Choose Platform A if: [scenarios]
+   - Choose Platform B if: [scenarios]
+   - Choose Quest Platform if: [scenarios]
+10. FAQs (8-12 comparison questions)
+11. Final Verdict
+
+TONE: {style['tone']}
+AUDIENCE: {style['audience']}
+
+IMPORTANT:
+- Be honest about all platforms (builds trust)
+- Use data to support comparisons
+- Include multiple comparison tables
+- Position Quest Platform favorably but fairly
+- Direct, confident language
+
+OUTPUT FORMAT: Same JSON with tldr, key_takeaways, faqs"""
