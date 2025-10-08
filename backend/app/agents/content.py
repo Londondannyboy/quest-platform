@@ -103,9 +103,20 @@ class ContentAgent:
             output_tokens = response.usage.output_tokens
             cost = self._calculate_cost(input_tokens, output_tokens)
 
-            # Parse JSON response
+            # Parse JSON response (strip markdown code fences if present)
             try:
-                article_data = json.loads(content_json)
+                # Strip markdown code fences (```json ... ```)
+                cleaned_json = content_json.strip()
+                if cleaned_json.startswith('```'):
+                    # Remove ```json at start and ``` at end
+                    lines = cleaned_json.split('\n')
+                    if lines[0].startswith('```'):
+                        lines = lines[1:]  # Remove first line
+                    if lines and lines[-1].strip() == '```':
+                        lines = lines[:-1]  # Remove last line
+                    cleaned_json = '\n'.join(lines)
+
+                article_data = json.loads(cleaned_json)
             except json.JSONDecodeError:
                 # If Claude didn't return valid JSON, extract content manually
                 logger.warning("content_agent.json_parse_failed", attempting_extraction=True)

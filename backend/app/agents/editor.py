@@ -64,9 +64,20 @@ class EditorAgent:
             output_tokens = response.usage.output_tokens
             cost = self._calculate_cost(input_tokens, output_tokens)
 
-            # Parse evaluation
+            # Parse evaluation (strip markdown code fences if present)
             try:
-                evaluation = json.loads(evaluation_json)
+                # Strip markdown code fences (```json ... ```)
+                cleaned_json = evaluation_json.strip()
+                if cleaned_json.startswith('```'):
+                    # Remove ```json at start and ``` at end
+                    lines = cleaned_json.split('\n')
+                    if lines[0].startswith('```'):
+                        lines = lines[1:]  # Remove first line
+                    if lines and lines[-1].strip() == '```':
+                        lines = lines[:-1]  # Remove last line
+                    cleaned_json = '\n'.join(lines)
+
+                evaluation = json.loads(cleaned_json)
             except json.JSONDecodeError:
                 logger.warning("editor_agent.json_parse_failed")
                 evaluation = self._fallback_evaluation()
