@@ -150,7 +150,8 @@ async def get_article_by_slug(slug: str):
         query = """
             SELECT
                 id, title, slug, content, excerpt,
-                hero_image_url, target_site, status,
+                hero_image_url, content_image_1_url, content_image_2_url, content_image_3_url,
+                target_site, status,
                 quality_score, reading_time_minutes,
                 keywords, meta_title, meta_description,
                 published_date, created_at, updated_at
@@ -192,7 +193,8 @@ async def get_article(article_id: str):
         query = """
             SELECT
                 id, title, slug, content, excerpt,
-                hero_image_url, target_site, status,
+                hero_image_url, content_image_1_url, content_image_2_url, content_image_3_url,
+                target_site, status,
                 quality_score, reading_time_minutes,
                 keywords, meta_title, meta_description,
                 published_date, created_at, updated_at
@@ -267,6 +269,7 @@ async def list_articles(
         query = f"""
             SELECT
                 id, title, slug, excerpt, hero_image_url,
+                content_image_1_url, content_image_2_url, content_image_3_url,
                 target_site, status, quality_score,
                 reading_time_minutes, published_date,
                 created_at
