@@ -40,6 +40,7 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 - `QUEST_PEER_REVIEW.md` - Vision vs. reality review guide (for external LLMs/reviewers)
 - `QUEST_RESTART_PROMPT.md` - Session restart instructions & current state
 - `QUEST_TRACKER.md` - Progress tracking, tasks, and metrics
+- **`QUEST_GENERATION.md`** - PRIMARY script documentation for article generation (generate_full_article.py)
 - `CLAUDE.md` - Technical reference & historical record (this file)
 
 ### Deleted Files
@@ -92,12 +93,13 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 
 Quest is an **AI-powered content intelligence platform** that generates, manages, and publishes high-quality articles across multiple authority websites using a 7-agent orchestration system.
 
-### ✅ TIER 0 Implementation Complete (October 9, 2025 - Opus)
+### ✅ TIER 0 Implementation Complete (October 10, 2025 - Opus)
 - Research Governance with strategic topic prioritization
 - Multi-API research with parallel fallback chains
 - Redis Queue + BullMQ Worker implementation
 - Research quality scoring (60/100 threshold)
 - All 7 agents operational (Research, Content, Editor, Image, SEO, PDF, Orchestrator)
+- **PRIMARY SCRIPT: `generate_full_article.py` - Production-ready with CLI args for batch generation**
 
 ### Production Architecture
 
