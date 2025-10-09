@@ -99,7 +99,7 @@ Quest is an **AI-powered content intelligence platform** that generates, manages
 - Redis Queue + BullMQ Worker implementation
 - Research quality scoring (60/100 threshold)
 - All 7 agents operational (Research, Content, Editor, Image, SEO, PDF, Orchestrator)
-- **PRIMARY SCRIPT: `generate_full_article.py` - Production-ready with CLI args for batch generation**
+- **PRIMARY SCRIPT: `generate_full_article.py` - Production-ready with CLI args for batch generation (100+ articles)**
 
 ### Production Architecture
 
