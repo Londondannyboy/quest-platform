@@ -1,9 +1,9 @@
 # Quest Platform - Article Generation Guide
 
 **Purpose:** Authoritative documentation for the primary article generation script
-**Script:** `generate_article.py` (at root level)
-**Created:** October 10, 2025
-**Status:** Production Ready
+**Script:** `backend/generate_article.py`
+**Last Updated:** October 10, 2025 (Evening)
+**Status:** ✅ Production Ready (Haiku Model, 6-API Research)
 
 ---
 
@@ -53,17 +53,18 @@ python3 generate_article.py --batch topics.txt --count 50
 
 ---
 
-## 🏗️ ARCHITECTURE FLOW
+## 🏗️ ARCHITECTURE FLOW (Updated Oct 10, 2025)
 
 ```
-generate_full_article.py
+backend/generate_article.py
     ↓
-ArticleOrchestrator (4 Agents + LinkValidator)
-    ├── ResearchAgent (Perplexity API)
+ArticleOrchestrator (5 Agents + LinkValidator)
+    ├── KeywordResearcher (DataForSEO + Perplexity)
+    ├── ResearchAgent (6 APIs: Serper → Firecrawl → Perplexity + Tavily + LinkUp + DataForSEO)
     ├── LinkValidator (External URL validation)
-    ├── ContentAgent (Claude Sonnet 4.5)
-    ├── EditorAgent (Quality scoring)
-    └── ImageAgent (FLUX + Cloudinary)
+    ├── ContentAgent (Claude Haiku - 25x cheaper!)
+    ├── EditorAgent (Quality scoring + citation validation)
+    └── ImageAgent (FLUX + Cloudinary - 4 images/article)
     ↓
 Database (Neon PostgreSQL)
     ↓
@@ -72,8 +73,12 @@ Directus CMS (Publishing workflow)
 Frontend (relocation.quest)
 ```
 
-**Note:** SEOAgent and PDFAgent are planned for future implementation (TIER 1).
-Currently, SEO metadata is generated within the ContentAgent.
+**Major Updates:**
+- ✅ Multi-API research (6 APIs integrated)
+- ✅ Haiku model ($0.03 vs $0.75 Sonnet)
+- ✅ Pure markdown output (no JSON wrapper)
+- ✅ DataForSEO keyword validation
+- ✅ Citation validation (minimum 5 required)
 
 ---
 
