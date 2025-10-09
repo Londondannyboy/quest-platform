@@ -395,9 +395,11 @@ class LinkUpProvider(ResearchProvider):
         }
 
         payload = {
-            "query": query,
-            "depth": "standard",
-            "outputType": "searchResults"
+            "q": query,
+            "depth": "deep",
+            "outputType": "sourcedAnswer",
+            "includeImages": False,
+            "includeInlineCitations": False
         }
 
         try:
