@@ -74,7 +74,8 @@ class QuestQueue:
         job_type: str,
         data: Dict,
         priority: int = 0,
-        delay: int = 0
+        delay: int = 0,
+        job_id: Optional[str] = None
     ) -> Optional[str]:
         """
         Add job to queue
@@ -84,6 +85,7 @@ class QuestQueue:
             data: Job data
             priority: Job priority (higher = more important)
             delay: Delay in milliseconds before processing
+            job_id: Optional external job ID (if None, generates new UUID)
 
         Returns:
             Job ID if successful, None otherwise
@@ -92,7 +94,8 @@ class QuestQueue:
             if not await self.connect():
                 return None
 
-        job_id = str(uuid4())
+        # Use provided job_id or generate new one
+        job_id = job_id or str(uuid4())
         job_key = f"{self.job_prefix}{job_id}"
 
         job_data = {

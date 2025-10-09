@@ -215,6 +215,18 @@ class ArticleOrchestrator:
                 total_cost=total_cost,
             )
 
+            # Fetch article metadata from database for return payload
+            pool = get_db()
+            async with pool.acquire() as conn:
+                article = await conn.fetchrow(
+                    """
+                    SELECT title, slug, LENGTH(content) as word_count
+                    FROM articles
+                    WHERE id = $1
+                    """,
+                    article_id
+                )
+
             logger.info(
                 "orchestrator.complete",
                 job_id=job_id,
@@ -230,6 +242,9 @@ class ArticleOrchestrator:
                 "article_status": final_status,
                 "quality_score": quality_score,
                 "decision": decision,
+                "title": article["title"] if article else None,
+                "slug": article["slug"] if article else None,
+                "word_count": article["word_count"] if article else None,
                 "costs": {k: float(v) for k, v in costs.items()},
                 "total_cost": float(total_cost),
             }

@@ -26,8 +26,9 @@ from datetime import datetime
 from typing import List, Optional
 import uuid
 
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add backend directory to path since we're now at root
+backend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
+sys.path.insert(0, backend_path)
 
 from app.agents.orchestrator import ArticleOrchestrator
 from app.core.config import settings

@@ -113,7 +113,8 @@ async def generate_article(
                 "target_site": request.target_site,
                 "priority": priority_value,
             },
-            priority=priority_value
+            priority=priority_value,
+            job_id=job_id  # Pass the external job_id
         )
 
         # If queue is not available, fall back to background task

@@ -58,14 +58,12 @@ python3 generate_article.py --batch topics.txt --count 50
 ```
 generate_full_article.py
     ↓
-ArticleOrchestrator (7 Agents)
-    ├── ResearchAgent (Perplexity + fallbacks)
+ArticleOrchestrator (4 Agents + LinkValidator)
+    ├── ResearchAgent (Perplexity API)
     ├── LinkValidator (External URL validation)
     ├── ContentAgent (Claude Sonnet 4.5)
     ├── EditorAgent (Quality scoring)
-    ├── ImageAgent (FLUX + Cloudinary)
-    ├── SEOAgent (Meta optimization)
-    └── PDFAgent (Export capability)
+    └── ImageAgent (FLUX + Cloudinary)
     ↓
 Database (Neon PostgreSQL)
     ↓
@@ -73,6 +71,9 @@ Directus CMS (Publishing workflow)
     ↓
 Frontend (relocation.quest)
 ```
+
+**Note:** SEOAgent and PDFAgent are planned for future implementation (TIER 1).
+Currently, SEO metadata is generated within the ContentAgent.
 
 ---
 
@@ -120,7 +121,8 @@ The script generates summary files for tracking:
 | `--auto` | Use default high-value topics | `--auto` |
 | `--count` | Number of articles to generate | `--count 100` |
 | `--site` | Target site (relocation/placement/rainmaker) | `--site relocation` |
-| `--concurrent` | Max concurrent generations | `--concurrent 1` |
+
+**Note:** `--concurrent` flag exists in code but is not currently implemented (planned for TIER 1).
 
 ---
 
