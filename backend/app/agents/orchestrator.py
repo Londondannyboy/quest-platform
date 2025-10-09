@@ -189,13 +189,11 @@ class ArticleOrchestrator:
                 # Update article with all images
                 await self._update_article_images(article_id, image_result)
 
-                # Determine final status and auto-publish if high quality
+                # Determine final status and publish if quality threshold met
                 if decision == "publish":
-                    if settings.ENABLE_AUTO_PUBLISH:
-                        await self._publish_article(article_id)
-                        final_status = "published"
-                    else:
-                        final_status = "approved"
+                    # Always publish high-quality articles (set status + published_at)
+                    await self._publish_article(article_id)
+                    final_status = "published"
                 else:
                     # Medium quality - human review required
                     final_status = "review"
