@@ -287,26 +287,17 @@ REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
    - Add `![Content Image 3 Alt](IMAGE_PLACEHOLDER_3)` before the FAQ section
    - Use descriptive alt text that explains what the image should show
 
-OUTPUT FORMAT (JSON):
-{{
-  "title": "Compelling article title (60-70 chars, SEO-optimized)",
-  "tldr": "150-word TL;DR summary of key points (direct, confident language)",
-  "key_takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4", "Takeaway 5"],
-  "excerpt": "Engaging 150-character summary for meta description",
-  "content": "Full article content in Markdown with H2/H3 headers, lists, FAQs",
-  "faqs": [
-    {{"question": "Common question 1?", "answer": "Direct answer with data"}},
-    {{"question": "Common question 2?", "answer": "Direct answer with data"}}
-  ],
-  "sources_cited": ["https://source1.com", "https://source2.com", "https://source3.com"],
-  "author_bio": "Brief author credentials (e.g., 'Expert in digital nomad visas with 10+ years experience')",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "reading_time_minutes": 8,
-  "meta_title": "SEO-optimized title for <title> tag (max 60 chars)",
-  "meta_description": "SEO-optimized description for meta tag (max 160 chars)"
-}}
+OUTPUT FORMAT: Pure markdown article
 
-IMPORTANT: Return ONLY the JSON object, no additional text before or after."""
+Write the complete article in markdown format with:
+- H1 title at the top (# Title)
+- TL;DR section immediately after title
+- Key Takeaways section
+- Full article content with H2/H3 headers
+- FAQ section near the end
+- References section at the very end (## References with numbered citations)
+
+IMPORTANT: Output ONLY the markdown article. No JSON, no code fences, just pure markdown content starting with # and the title.
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
         """
