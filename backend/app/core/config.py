@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         default="claude-3-5-sonnet-20241022", description="Claude model"
     )
 
-    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key (optional - only for embeddings cache)")
     OPENAI_EMBEDDING_MODEL: str = Field(
         default="text-embedding-ada-002", description="OpenAI embedding model"
     )
@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     # CACHE CONFIGURATION
     # ========================================================================
     RESEARCH_CACHE_ENABLED: bool = Field(
-        default=True, description="Enable research cache"
+        default=False, description="Enable research cache (requires OPENAI_API_KEY)"
     )
     RESEARCH_CACHE_SIMILARITY_THRESHOLD: float = Field(
         default=0.75, description="Cache similarity threshold"
