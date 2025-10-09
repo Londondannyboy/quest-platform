@@ -4,8 +4,9 @@ Endpoints for article generation and management
 """
 
 from uuid import uuid4
-from typing import Literal, Dict, Any
+from typing import Literal, Dict, Any, Optional
 import json
+import re
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 import structlog
@@ -144,10 +145,7 @@ def _serialize_article(row) -> Dict[str, Any]:
     structured = None
 
     if isinstance(raw_content, str):
-        try:
-            structured = json.loads(raw_content)
-        except json.JSONDecodeError:
-            structured = None
+        structured = _load_structured_content(raw_content)
 
     if isinstance(structured, dict):
         article["content_structured"] = structured
@@ -177,6 +175,83 @@ def _serialize_article(row) -> Dict[str, Any]:
             article["hero_image_url"] = hero_image
 
     return article
+
+
+def _load_structured_content(raw_content: str) -> Optional[Dict[str, Any]]:
+    """
+    Attempt to load structured JSON content, handling partially truncated blobs.
+    """
+    stripped = raw_content.strip()
+
+    if not stripped.startswith("{"):
+        return None
+
+    # First, try normal JSON parsing.
+    try:
+        parsed = json.loads(stripped)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        parsed = None
+
+    # Fallback: extract known fields via regex from malformed JSON strings.
+    pattern_content = re.compile(
+        r'"content"\s*:\s*"(.*?)"(?:\s*,\s*[\r\n]?\s*"\w+"|\s*}$)',
+        re.DOTALL,
+    )
+    match = pattern_content.search(stripped)
+
+    if not match:
+        return None
+
+    def decode_fragment(fragment: str) -> str:
+        try:
+            return json.loads(f'"{fragment}"')
+        except json.JSONDecodeError:
+            return bytes(fragment, "utf-8").decode("unicode_escape", "ignore")
+
+    structured: Dict[str, Any] = {
+        "content": decode_fragment(match.group(1))
+    }
+
+    # Optional string fields we care about.
+    optional_keys = (
+        "title",
+        "tldr",
+        "excerpt",
+        "meta_title",
+        "meta_description",
+        "author_bio",
+    )
+    for key in optional_keys:
+        key_match = re.search(rf'"{key}"\s*:\s*"(.*?)"', stripped, re.DOTALL)
+        if key_match:
+            structured[key] = decode_fragment(key_match.group(1))
+
+    # Keywords array.
+    keywords_match = re.search(r'"keywords"\s*:\s*(\[[^\]]*\])', stripped, re.DOTALL)
+    if keywords_match:
+        try:
+            structured["keywords"] = json.loads(keywords_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Hero image + content images.
+    hero_match = re.search(r'"hero_image_url"\s*:\s*"(.*?)"', stripped)
+    if hero_match:
+        structured["hero_image_url"] = decode_fragment(hero_match.group(1))
+
+    content_images = []
+    for idx in range(1, 4):
+        img_match = re.search(
+            rf'"content_image_{idx}_url"\s*:\s*"(.*?)"', stripped
+        )
+        if img_match:
+            content_images.append(decode_fragment(img_match.group(1)))
+    if content_images:
+        structured["content_images"] = content_images
+
+    return structured
 
 
 @router.get("/by-slug/{slug}")
