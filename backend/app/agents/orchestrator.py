@@ -13,6 +13,7 @@ import structlog
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.agents.keyword_researcher import KeywordResearcher
 from app.agents.research import ResearchAgent
 from app.agents.content import ContentAgent
 from app.agents.editor import EditorAgent
@@ -26,18 +27,21 @@ TargetSite = Literal["relocation", "placement", "rainmaker"]
 
 class ArticleOrchestrator:
     """
-    Orchestrates the 4-agent pipeline for article generation
+    Orchestrates the enhanced 5-agent pipeline for article generation
 
-    Pipeline:
-    1. ResearchAgent (30-60s) → Gather intelligence
-    2. ContentAgent (60-90s) → Generate article
-    3. EditorAgent (20-30s) → Score quality
-    4. ImageAgent (60s, parallel) → Generate hero image
+    Enhanced Pipeline (with keyword research):
+    1. KeywordResearcher (20-30s) → Identify & validate keywords with DataForSEO
+    2. ResearchAgent (30-60s) → Gather intelligence from 6 APIs
+    3. ContentAgent (60-90s) → Generate article with SEO optimization
+    4. EditorAgent (20-30s) → Score quality with citation validation
+    5. ImageAgent (60s, parallel) → Generate 4 specialized images
 
-    Total: 2-3 minutes per article
+    Total: 2.5-3.5 minutes per article
+    Cost: ~$0.77 per article (with all APIs)
     """
 
     def __init__(self):
+        self.keyword_researcher = KeywordResearcher()
         self.research_agent = ResearchAgent()
         self.content_agent = ContentAgent()
         self.editor_agent = EditorAgent()
@@ -72,6 +76,7 @@ class ArticleOrchestrator:
 
         # Initialize cost tracking
         costs = {
+            "keyword_research": Decimal("0.00"),
             "research": Decimal("0.00"),
             "content": Decimal("0.00"),
             "editor": Decimal("0.00"),
@@ -79,12 +84,37 @@ class ArticleOrchestrator:
         }
 
         try:
-            # Update job status
+            # STEP 0: Keyword Research (20-30s) - NEW!
             await self._update_job_status(
-                job_id, "processing", 10, "research"
+                job_id, "processing", 5, "keyword_research"
+            )
+
+            keyword_result = await self.keyword_researcher.research_keywords(
+                topic, target_site
+            )
+            costs["keyword_research"] = keyword_result["cost"]
+
+            # Extract SEO data for content optimization
+            seo_data = {
+                "primary_keyword": keyword_result["primary_keyword"],
+                "secondary_keywords": keyword_result["secondary_keywords"],
+                "search_volume": keyword_result["seo_metrics"].get("search_volume", 0),
+                "competition": keyword_result["seo_metrics"].get("competition", "unknown"),
+                "cpc": keyword_result["seo_metrics"].get("cpc", 0),
+            }
+
+            logger.info(
+                "orchestrator.keywords_identified",
+                primary=seo_data["primary_keyword"],
+                volume=seo_data["search_volume"],
+                competition=seo_data["competition"]
             )
 
             # STEP 1: Research (30-60s)
+            await self._update_job_status(
+                job_id, "processing", 15, "research"
+            )
+
             research_result = await self.research_agent.run(topic)
             costs["research"] = research_result["cost"]
 
@@ -94,16 +124,19 @@ class ArticleOrchestrator:
                 topic, sources
             )
 
+            # Add SEO data to link context for content generation
+            link_context["seo_data"] = seo_data
+
             await self._update_job_status(
-                job_id, "processing", 30, "content"
+                job_id, "processing", 35, "content"
             )
 
-            # STEP 2: Content Generation (60-90s) - Pass link context
+            # STEP 2: Content Generation (60-90s) - Pass link context with SEO data
             content_result = await self.content_agent.run(
                 research_result["research"],
                 target_site,
                 topic,
-                link_context=link_context  # Pass validated links
+                link_context=link_context  # Pass validated links + SEO data
             )
             costs["content"] = content_result["cost"]
 

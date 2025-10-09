@@ -27,7 +27,7 @@ class ContentAgent:
 
     def __init__(self):
         self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = settings.ANTHROPIC_MODEL
+        self.model = settings.CONTENT_MODEL  # Configurable: Sonnet or Haiku
 
         # Site-specific writing styles
         self.style_guides = {
@@ -89,10 +89,16 @@ class ContentAgent:
 
         # Call Claude API
         try:
+            # System prompt for role specialization
+            system_prompt = f"""You are an expert content writer specializing in {style['focus']} for {style['audience']}.
+
+You write comprehensive, well-researched articles that provide real value to readers. Every claim you make is backed by citations using [1], [2] format, with a complete References section at the end."""
+
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,  # Increased to ensure complete JSON
                 temperature=0.7,
+                system=system_prompt,  # Add system prompt for better context
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -201,11 +207,44 @@ Internal Links (use 3-5 of these for related content):
 
 **IMPORTANT**: Only use the links provided above. Do NOT make up or hallucinate any links."""
 
-        return f"""You are a professional content writer for {style['audience']}.
+        # SEO instructions if provided
+        seo_instructions = ""
+        if link_context and link_context.get('seo_data'):
+            seo_data = link_context['seo_data']
+            seo_instructions = f"""
 
-RESEARCH DATA:
+**SEO OPTIMIZATION REQUIREMENTS:**
+- Primary Keyword: "{seo_data.get('primary_keyword', topic)}"
+- Target keyword density: 1-2% (use naturally, not forced)
+- Include keyword in: Title, first paragraph, H2 headers, conclusion
+- Search Volume: {seo_data.get('search_volume', 'N/A')}/month
+- Competition: {seo_data.get('competition', 'N/A')}
+- Secondary Keywords: {', '.join(seo_data.get('secondary_keywords', [])[:3])}
+"""
+
+        return f"""You are an expert content writer specializing in {style['focus']} for {style['audience']}.
+
+You write comprehensive, well-researched articles that provide real value to readers. Every claim is backed by citations using [1], [2] format.
+
+RESEARCH DATA (Multi-Source Intelligence):
 {research_content}
 {link_instructions}
+{seo_instructions}
+
+**CRITICAL INSTRUCTIONS FOR USING RESEARCH:**
+The research data above comes from multiple sources:
+- **Serper.dev**: Top-ranking Google competitor analysis - these are the articles currently winning on page 1
+- **Firecrawl**: Actual scraped content from competitors - see what they wrote and write BETTER
+- **Perplexity**: Deep factual research and gap analysis - use this to find what competitors are missing
+- **Tavily**: Comprehensive search results - additional context and sources
+- **DataForSEO**: SEO metrics showing search volume and competition level
+
+YOUR JOB: Analyze the competitor content and write an article that BEATS them by:
+1. **Covering all their key points** (so you rank alongside them)
+2. **Adding insights they missed** (from Perplexity gap analysis)
+3. **Better structure and readability** (TL;DR, key takeaways, FAQs)
+4. **More authoritative sources** (use links from research)
+5. **Deeper, more actionable advice** (specific numbers, steps, examples)
 
 TASK: Write a comprehensive, SEO-optimized article about: {topic}
 
@@ -214,6 +253,19 @@ STYLE GUIDE:
 - Audience: {style['audience']}
 - Focus: {style['focus']}
 
+ARTICLE STRUCTURE (Follow this exact outline):
+1. **Compelling Introduction** - Hook the reader, establish authority, preview what they'll learn
+2. **Overview** - What is this topic? Why does it matter? Who needs this information?
+3. **Key Benefits and Advantages** - Clear value propositions
+4. **Step-by-Step Process or Methodology** - Actionable how-to guide
+5. **Common Challenges and Solutions** - Address pain points
+6. **Cost Considerations and Budgeting** - Practical financial guidance
+7. **Legal and Regulatory Aspects** (if applicable) - Compliance and requirements
+8. **Expert Tips and Best Practices** - Insider knowledge
+9. **Case Studies or Success Stories** - Real-world examples
+10. **Future Trends and Outlook** - What's changing in this space
+11. **Conclusion with Clear Call-to-Action** - Summarize and guide next steps
+
 REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
 1. TL;DR summary (150 words) at the top - direct, confident language
 2. Key Takeaways section (3-5 bullet points) - actionable insights
@@ -221,12 +273,14 @@ REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
 4. FAQ section (4-10 Q&A pairs) - LLMs love Q&A format
 5. **CRITICAL: Include 8-12 external links throughout content** - Link to authoritative sources (government sites, official docs, reputable news)
 6. **CRITICAL: Include 3-5 internal links** - Link to related topics using markdown: [Digital Nomad Visas](/digital-nomad-visas), [Cost of Living](/cost-of-living-portugal), [Best Cities](/best-cities-digital-nomads)
-7. Expert quotes or credentials - builds trust
-8. Data-driven insights from research (specific statistics)
-9. Conversational, direct tone - avoid hedging language
-10. 1500-2500 words total
-11. Markdown formatting with proper link syntax: [Link Text](https://example.com)
-12. **Include image placeholders strategically throughout content**:
+7. **CRITICAL: Use inline citations [1], [2], [3] for all factual claims** - Minimum 5 citations required
+8. **CRITICAL: Add References section at the end** - List all sources in [1], [2], [3] format with URLs
+9. Expert quotes or credentials - builds trust
+10. Data-driven insights from research (specific statistics with citations)
+11. Conversational, direct tone - avoid hedging language
+12. **Minimum 2000 words** (aim for 2500 words for comprehensive coverage)
+13. Markdown formatting with proper link syntax: [Link Text](https://example.com)
+14. **Include image placeholders strategically throughout content**:
    - Add `![Hero Image Alt](IMAGE_PLACEHOLDER_HERO)` after the TL;DR section
    - Add `![Content Image 1 Alt](IMAGE_PLACEHOLDER_1)` after the first major section
    - Add `![Content Image 2 Alt](IMAGE_PLACEHOLDER_2)` in the middle of the article

@@ -4,6 +4,7 @@ Quality scoring and HITL (Human-in-the-Loop) decision gate
 """
 
 import json
+import re
 from decimal import Decimal
 from typing import Dict, Literal
 
@@ -47,8 +48,11 @@ class EditorAgent:
         """
         logger.info("editor_agent.start", title=article.get("title", "Unknown"))
 
+        # Validate citations before scoring
+        citation_validation = self._validate_citations(article.get("content", ""))
+
         # Build evaluation prompt
-        prompt = self._build_prompt(article)
+        prompt = self._build_prompt(article, citation_validation)
 
         try:
             response = await self.client.messages.create(
@@ -122,6 +126,7 @@ class EditorAgent:
                 "dimensions": evaluation.get("dimensions", {}),
                 "feedback": evaluation.get("feedback", ""),
                 "decision": decision,
+                "citation_validation": citation_validation,  # Add citation validation results
                 "cost": cost,
                 "tokens": {
                     "input": input_tokens,
@@ -143,7 +148,63 @@ class EditorAgent:
             logger.error("editor_agent.scoring_failed", error=str(e), exc_info=e)
             raise
 
-    def _build_prompt(self, article: Dict) -> str:
+    def _validate_citations(self, content: str) -> Dict:
+        """
+        Validate citation format and count
+
+        Args:
+            content: Article content
+
+        Returns:
+            {
+                "citation_count": int,
+                "has_references_section": bool,
+                "format_valid": bool,
+                "passed": bool
+            }
+        """
+        # Count inline citations [1], [2], etc.
+        citations = re.findall(r'\[\d+\]', content)
+        citation_count = len(set(citations))  # Unique citations
+
+        # Check for References section
+        has_references = bool(re.search(r'##\s*References?\s*\n', content, re.IGNORECASE))
+
+        # Format validation: citations should be numeric and sequential
+        format_valid = all(c.strip('[]').isdigit() for c in citations)
+
+        # Word count check
+        word_count = len(content.split())
+
+        # Validation passed if:
+        # - At least 5 unique citations
+        # - References section exists
+        # - Format is valid
+        # - At least 2000 words
+        passed = (
+            citation_count >= 5 and
+            has_references and
+            format_valid and
+            word_count >= 2000
+        )
+
+        logger.info(
+            "editor_agent.citation_validation",
+            citations=citation_count,
+            references_section=has_references,
+            word_count=word_count,
+            passed=passed
+        )
+
+        return {
+            "citation_count": citation_count,
+            "has_references_section": has_references,
+            "format_valid": format_valid,
+            "word_count": word_count,
+            "passed": passed
+        }
+
+    def _build_prompt(self, article: Dict, citation_validation: Dict = None) -> str:
         """
         Build evaluation prompt for Claude
         """
@@ -153,6 +214,20 @@ class EditorAgent:
 
         # Truncate content for evaluation (reduce tokens)
         content_preview = content[:2000] + "..." if len(content) > 2000 else content
+
+        # Add citation validation context
+        citation_context = ""
+        if citation_validation:
+            citation_context = f"""
+
+CITATION VALIDATION:
+- Inline Citations Found: {citation_validation['citation_count']} (minimum required: 5)
+- References Section: {'✅ Present' if citation_validation['has_references_section'] else '❌ Missing'}
+- Format Valid: {'✅ Yes' if citation_validation['format_valid'] else '❌ No'}
+- Word Count: {citation_validation['word_count']} (minimum required: 2000)
+- Overall: {'✅ PASSED' if citation_validation['passed'] else '❌ FAILED'}
+
+**IMPORTANT**: Articles MUST have at least 5 citations and a References section. Penalize score if missing."""
 
         return f"""You are a content quality analyst. Evaluate this article on a 0-100 scale.
 
@@ -164,31 +239,38 @@ ARTICLE CONTENT (preview):
 
 KEYWORDS:
 {', '.join(keywords)}
+{citation_context}
 
 EVALUATION CRITERIA:
 
 1. Factual Accuracy (0-100):
-   - Citations and data correctness
+   - **CRITICAL: At least 5 inline citations [1], [2], [3] required**
+   - **CRITICAL: References section at the end required**
    - Claims supported by evidence
    - No misleading information
+   - Data sources cited properly
 
 2. Writing Quality (0-100):
+   - **CRITICAL: Minimum 2000 words required**
    - Grammar and spelling
    - Readability (clear, concise)
    - Logical flow and structure
    - Engaging style
+   - Professional tone
 
 3. SEO Optimization (0-100):
    - Keyword usage (natural, not stuffed)
    - Title and headers optimization
    - Meta description quality
    - Content structure (H1, H2, lists)
+   - Internal and external links
 
 4. Engagement (0-100):
    - Compelling hook
    - Actionable insights
    - Clear takeaways
    - Audience relevance
+   - FAQ section included
 
 OUTPUT FORMAT (JSON):
 {{

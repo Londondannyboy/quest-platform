@@ -4,6 +4,7 @@ Integrates multiple research APIs with fallback chain
 """
 import asyncio
 import json
+import base64
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
 from abc import ABC, abstractmethod
@@ -443,11 +444,138 @@ class LinkUpProvider(ResearchProvider):
         return bool(self.api_key)
 
 
+class DataForSEOProvider(ResearchProvider):
+    """DataForSEO - Keyword validation and SEO metrics"""
+
+    def __init__(self):
+        self.login = settings.DATAFORSEO_LOGIN
+        self.password = settings.DATAFORSEO_PASSWORD
+
+        # Create Base64 auth for DataForSEO (uses Basic auth, not Bearer)
+        if self.login and self.password:
+            auth_string = f"{self.login}:{self.password}"
+            self.auth = base64.b64encode(auth_string.encode()).decode()
+        else:
+            self.auth = None
+
+        self.api_url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
+
+    async def validate_keywords(self, keywords: List[str], location_code: int = 2826) -> Dict:
+        """
+        Validate keyword SEO value
+
+        Args:
+            keywords: List of keywords to validate
+            location_code: Location code (2826 = UK, 2196 = Cyprus, 2840 = USA)
+
+        Returns:
+            {
+                "keywords": [
+                    {
+                        "keyword": "relocation services Cyprus",
+                        "search_volume": 1200,
+                        "competition": "medium",
+                        "cpc": 2.5
+                    }
+                ]
+            }
+        """
+        if not self.is_available():
+            logger.warning("dataforseo_not_configured")
+            return {}
+
+        headers = {
+            "Authorization": f"Basic {self.auth}",
+            "Content-Type": "application/json"
+        }
+
+        payload = [{
+            "keywords": keywords[:20],  # Limit to 20 keywords
+            "location_code": location_code,
+            "language_code": "en"
+        }]
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.api_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract keyword data from response
+                validated = []
+                if data.get("tasks") and data["tasks"][0].get("result"):
+                    results = data["tasks"][0]["result"]
+
+                    for item in results:
+                        if isinstance(item, dict) and item.get("keyword"):
+                            validated.append({
+                                "keyword": item["keyword"],
+                                "search_volume": item.get("search_volume") or 0,
+                                "competition": item.get("competition", "unknown"),
+                                "cpc": item.get("cpc") or 0,
+                                "competition_level": item.get("competition_level", "unknown")
+                            })
+
+                    # Sort by search volume
+                    validated.sort(key=lambda x: x.get("search_volume", 0) or 0, reverse=True)
+
+                logger.info("dataforseo_validation_complete", keywords_validated=len(validated))
+
+                return {
+                    "provider": "dataforseo",
+                    "keywords": validated,
+                    "cost": self.get_cost()
+                }
+        except Exception as e:
+            logger.error("dataforseo_validation_failed", error=str(e))
+            return {}
+
+    async def search(self, query: str) -> Dict:
+        """
+        Search method for ResearchProvider interface
+        Validates the query as a keyword
+        """
+        result = await self.validate_keywords([query])
+        if result and result.get("keywords"):
+            keyword_data = result["keywords"][0]
+            content = f"""**SEO Metrics for "{query}":**
+- Search Volume: {keyword_data.get('search_volume', 'N/A')}/month
+- Competition: {keyword_data.get('competition', 'unknown')}
+- CPC: ${keyword_data.get('cpc', 0):.2f}
+- Competition Level: {keyword_data.get('competition_level', 'unknown')}"""
+
+            return {
+                "provider": "dataforseo",
+                "content": content,
+                "sources": [],
+                "seo_data": keyword_data,
+                "cost": self.get_cost()
+            }
+        return {}
+
+    def get_cost(self) -> Decimal:
+        return Decimal("0.02")
+
+    def is_available(self) -> bool:
+        return bool(self.login and self.password)
+
+
 class MultiAPIResearch:
     """
     Orchestrates multiple research APIs with fallback chain
     Priority: Perplexity -> Tavily -> LinkUp -> SerpDev
     Specialized: Firecrawl (scraping), Critique Labs (fact-checking)
+
+    Optimal Flow:
+    1. Serper → Get top 10 competitor URLs
+    2. Firecrawl → Scrape competitor content
+    3. Perplexity → Gap analysis
+    4. Tavily → Additional research
     """
 
     def __init__(self):
@@ -457,7 +585,8 @@ class MultiAPIResearch:
             "firecrawl": FirecrawlProvider(),
             "serper": SerperProvider(),
             "critique_labs": CritiqueLabsProvider(),
-            "linkup": LinkUpProvider()
+            "linkup": LinkUpProvider(),
+            "dataforseo": DataForSEOProvider()
         }
 
         # Priority chain for fallback (tried in order)
@@ -476,6 +605,72 @@ class MultiAPIResearch:
             ["firecrawl"]                   # Web scraping (if URLs in query)
         ]
 
+    async def scrape_competitor_urls(self, urls: List[str], max_urls: int = 5) -> Dict:
+        """
+        Scrape competitor URLs using Firecrawl
+
+        Args:
+            urls: List of competitor URLs to scrape
+            max_urls: Maximum number of URLs to scrape (default 5)
+
+        Returns:
+            Combined scraping results with content and sources
+        """
+        if not urls or not self.providers["firecrawl"].is_available():
+            return {"content": "", "sources": [], "cost": Decimal("0")}
+
+        firecrawl = self.providers["firecrawl"]
+        results = []
+        total_cost = Decimal("0")
+
+        # Limit URLs to avoid excessive costs
+        urls_to_scrape = urls[:max_urls]
+
+        logger.info(
+            "firecrawl.scraping_competitors",
+            url_count=len(urls_to_scrape)
+        )
+
+        # Scrape each URL
+        for url in urls_to_scrape:
+            try:
+                result = await firecrawl.scrape(url)
+                if result and result.get("content"):
+                    results.append({
+                        "url": url,
+                        "content": result["content"][:3000]  # Limit to 3000 chars per URL
+                    })
+                    total_cost += result.get("cost", Decimal("0"))
+            except Exception as e:
+                logger.warning("firecrawl.scrape_failed", url=url, error=str(e))
+                continue
+
+        if not results:
+            return {"content": "", "sources": [], "cost": Decimal("0")}
+
+        # Format content
+        content_parts = []
+        sources = []
+
+        for i, result in enumerate(results, 1):
+            content_parts.append(
+                f"**Competitor #{i} Content ({result['url']}):**\n{result['content']}"
+            )
+            sources.append({"url": result["url"]})
+
+        logger.info(
+            "firecrawl.scraping_complete",
+            urls_scraped=len(results),
+            total_cost=float(total_cost)
+        )
+
+        return {
+            "provider": "firecrawl",
+            "content": "\n\n---\n\n".join(content_parts),
+            "sources": sources,
+            "cost": total_cost
+        }
+
     async def research(
         self,
         query: str,
@@ -484,6 +679,13 @@ class MultiAPIResearch:
     ) -> Dict:
         """
         Perform research using available APIs
+
+        Optimal Flow (when use_all=True):
+        1. Serper → Get top 10 competitor URLs
+        2. Firecrawl → Scrape competitor content
+        3. Perplexity → Gap analysis
+        4. Tavily → Additional research
+        5. LinkUp → Validation (if not rate limited)
 
         Args:
             query: Research query
@@ -496,15 +698,46 @@ class MultiAPIResearch:
         results = []
         total_cost = Decimal("0")
         providers_used = []
+        competitor_urls = []
 
         if use_all:
-            # Use all available providers
+            # STEP 1: Get competitor URLs from Serper first
+            if self.providers["serper"].is_available():
+                logger.info("research.running_serper_first")
+                serper_result = await self._search_with_provider("serper", self.providers["serper"], query)
+                if serper_result:
+                    results.append(serper_result)
+                    total_cost += serper_result.get("cost", Decimal("0"))
+                    providers_used.append("serper")
+
+                    # Extract competitor URLs from Serper results
+                    competitor_urls = [
+                        source["url"] for source in serper_result.get("sources", [])
+                        if source.get("url")
+                    ]
+                    logger.info("research.serper_urls_found", url_count=len(competitor_urls))
+
+            # STEP 2: Scrape competitor URLs with Firecrawl
+            if competitor_urls and self.providers["firecrawl"].is_available():
+                logger.info("research.scraping_competitors", url_count=len(competitor_urls))
+                firecrawl_result = await self.scrape_competitor_urls(competitor_urls, max_urls=5)
+                if firecrawl_result and firecrawl_result.get("content"):
+                    results.append(firecrawl_result)
+                    total_cost += firecrawl_result.get("cost", Decimal("0"))
+                    providers_used.append("firecrawl")
+                    logger.info("research.firecrawl_success")
+
+            # STEP 3: Run remaining providers in parallel
             tasks = []
             for name, provider in self.providers.items():
-                if provider.is_available() and name != "critique_labs":
+                # Skip already-run providers and critique_labs
+                if name in ["serper", "firecrawl", "critique_labs"]:
+                    continue
+                if provider.is_available():
                     tasks.append(self._search_with_provider(name, provider, query))
 
             if tasks:
+                logger.info("research.running_parallel_providers", count=len(tasks))
                 provider_results = await asyncio.gather(*tasks, return_exceptions=True)
                 for result in provider_results:
                     if isinstance(result, dict) and result:

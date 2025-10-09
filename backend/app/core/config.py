@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     ANTHROPIC_MODEL: str = Field(
         default="claude-3-5-sonnet-20241022", description="Claude model"
     )
+    CONTENT_MODEL: str = Field(
+        default="claude-3-5-sonnet-20241022",
+        description="Claude model for content generation (sonnet or haiku for cost savings)"
+    )
 
     OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key (optional - only for embeddings cache)")
     OPENAI_EMBEDDING_MODEL: str = Field(
@@ -87,6 +91,10 @@ class Settings(BaseSettings):
     SERPER_API_KEY: Optional[str] = Field(default=None, description="Serper.dev API key")
     CRITIQUE_LABS_API_KEY: Optional[str] = Field(default=None, description="Critique Labs API key")
     LINKUP_API_KEY: Optional[str] = Field(default=None, description="LinkUp API key")
+
+    # DataForSEO (keyword validation)
+    DATAFORSEO_LOGIN: Optional[str] = Field(default=None, description="DataForSEO login")
+    DATAFORSEO_PASSWORD: Optional[str] = Field(default=None, description="DataForSEO password")
 
     # ========================================================================
     # CLOUDINARY

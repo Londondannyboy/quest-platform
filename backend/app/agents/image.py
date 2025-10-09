@@ -26,6 +26,29 @@ class ImageAgent:
     Latency: 30-60 seconds
     """
 
+    # Negative prompt for quality control (what to avoid)
+    NEGATIVE_PROMPT = "low quality, blurry, distorted, watermark, text overlay, amateur, cartoon, illustration, drawing, 3d render, unrealistic"
+
+    # Image specifications by type
+    IMAGE_SPECS = {
+        "hero": {
+            "aspect_ratio": "16:9",
+            "description": "Wide hero image - vibrant, professional, business context"
+        },
+        "content_1": {
+            "aspect_ratio": "16:9",
+            "description": "Infographic or process diagram - clear visual hierarchy"
+        },
+        "content_2": {
+            "aspect_ratio": "16:9",
+            "description": "Business scene with people - modern office or location"
+        },
+        "content_3": {
+            "aspect_ratio": "16:9",
+            "description": "Visual metaphor - symbolic representation, clean composition"
+        }
+    }
+
     def __init__(self):
         # Configure Replicate with token
         import os
@@ -183,7 +206,13 @@ Mood: Inspirational and informative"""
 
     def _create_all_prompts(self, article: Dict, target_site: str) -> Dict[str, str]:
         """
-        Create prompts for all 4 images (hero + 3 content)
+        Create specialized prompts for all 4 images (hero + 3 content)
+
+        Each image type has a specific purpose:
+        - Hero: Wide, vibrant, attention-grabbing main image
+        - Content 1: Infographic or diagram style
+        - Content 2: People/scene oriented
+        - Content 3: Conceptual/metaphor
 
         Args:
             article: Article with title and content
@@ -196,38 +225,52 @@ Mood: Inspirational and informative"""
         content = article.get("content", "")
         style = self.style_guides.get(target_site, self.style_guides["relocation"])
 
-        # Extract sections from content for varied images
-        sections = content.split('\n\n')[:10] if content else []
+        # Extract topic from title
+        topic = title.replace("Complete Guide", "").replace("2025", "").strip()
 
-        # Hero prompt (main topic)
-        hero_prompt = self._create_prompt(article, target_site)
+        # Hero prompt (main topic) - Wide, vibrant, business context
+        hero_prompt = f"""Professional editorial photograph about {topic}.
+{self.IMAGE_SPECS['hero']['description']}
 
-        # Content image 1: Focus on first major section
-        content_1_context = sections[1] if len(sections) > 1 else title
-        content_1_prompt = f"""Professional editorial photograph illustrating: {content_1_context[:150]}
+Style: {style}, vibrant colors, wide composition
+Format: 16:9 aspect ratio, high quality, photorealistic, 4k resolution
+Lighting: Natural, professional, golden hour
+Mood: Inspirational and authoritative
 
-Style: {style}
+AVOID: {self.NEGATIVE_PROMPT}"""
+
+        # Content image 1: Infographic/diagram style - Clear visual hierarchy
+        content_1_prompt = f"""Detailed infographic or diagram showing the process of {topic}.
+{self.IMAGE_SPECS['content_1']['description']}
+
+Style: {style}, clean layout, informative
+Format: 16:9 aspect ratio, high quality, clear visual hierarchy
+Visual elements: Charts, icons, step-by-step flow
+Mood: Educational and professional
+
+AVOID: {self.NEGATIVE_PROMPT}"""
+
+        # Content image 2: Business scene with people - Modern office/location
+        content_2_prompt = f"""Professional business scene related to {topic}.
+{self.IMAGE_SPECS['content_2']['description']}
+
+Style: {style}, people working together, modern setting
 Format: 16:9 aspect ratio, high quality, photorealistic
-Lighting: Natural, professional
-Mood: Engaging and informative"""
+Scene: Professional office environment or relevant location
+Mood: Collaborative and productive
 
-        # Content image 2: Mid-article visual
-        content_2_context = sections[3] if len(sections) > 3 else f"{title} - practical aspects"
-        content_2_prompt = f"""Professional editorial photograph showing: {content_2_context[:150]}
+AVOID: {self.NEGATIVE_PROMPT}"""
 
-Style: {style}
-Format: 16:9 aspect ratio, high quality, photorealistic
-Lighting: Natural, professional
-Mood: Practical and helpful"""
+        # Content image 3: Visual metaphor - Symbolic, clean composition
+        content_3_prompt = f"""Visual metaphor or conceptual image representing {topic}.
+{self.IMAGE_SPECS['content_3']['description']}
 
-        # Content image 3: Supporting visual
-        content_3_context = sections[5] if len(sections) > 5 else f"{title} - key details"
-        content_3_prompt = f"""Professional editorial photograph depicting: {content_3_context[:150]}
+Style: {style}, symbolic, minimalist
+Format: 16:9 aspect ratio, high quality, artistic photorealistic
+Composition: Clean, focused, meaningful symbolism
+Mood: Thoughtful and sophisticated
 
-Style: {style}
-Format: 16:9 aspect ratio, high quality, photorealistic
-Lighting: Natural, professional
-Mood: Detailed and informative"""
+AVOID: {self.NEGATIVE_PROMPT}"""
 
         return {
             "hero": hero_prompt,
