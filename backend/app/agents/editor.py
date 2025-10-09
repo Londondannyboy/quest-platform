@@ -11,6 +11,7 @@ from anthropic import AsyncAnthropic
 import structlog
 
 from app.core.config import settings
+from app.core.research_apis import CritiqueLabsProvider
 
 logger = structlog.get_logger(__name__)
 
@@ -32,6 +33,7 @@ class EditorAgent:
     def __init__(self):
         self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         self.model = settings.ANTHROPIC_MODEL
+        self.critique_labs = CritiqueLabsProvider()
 
     async def score(self, article: Dict) -> Dict:
         """
@@ -85,14 +87,37 @@ class EditorAgent:
             # Add decision logic
             decision = self._make_decision(evaluation["overall_score"])
 
+            # Fact-check if score is high enough (≥70) and Critique Labs available
+            critique_result = None
+            if evaluation["overall_score"] >= 70 and self.critique_labs.is_available():
+                logger.info("editor_agent.running_fact_check", score=evaluation["overall_score"])
+                critique_result = await self._fact_check_article(article)
+
+                if critique_result:
+                    # Add fact-check cost
+                    cost += critique_result.get("cost", Decimal("0"))
+
+                    # Adjust score based on fact-check accuracy
+                    accuracy_score = critique_result.get("accuracy_score", 100)
+                    if accuracy_score < 80:
+                        logger.warning(
+                            "editor_agent.low_fact_check_score",
+                            accuracy=accuracy_score,
+                            issues=len(critique_result.get("issues", []))
+                        )
+                        # Downgrade decision if fact-check fails
+                        if decision == "publish":
+                            decision = "review"
+
             logger.info(
                 "editor_agent.complete",
                 score=evaluation["overall_score"],
                 decision=decision,
                 cost=float(cost),
+                fact_checked=critique_result is not None
             )
 
-            return {
+            result = {
                 "quality_score": evaluation["overall_score"],
                 "dimensions": evaluation.get("dimensions", {}),
                 "feedback": evaluation.get("feedback", ""),
@@ -103,6 +128,16 @@ class EditorAgent:
                     "output": output_tokens,
                 },
             }
+
+            # Add fact-check results if available
+            if critique_result:
+                result["fact_check"] = {
+                    "accuracy_score": critique_result.get("accuracy_score"),
+                    "issues_count": len(critique_result.get("issues", [])),
+                    "verified_facts": len(critique_result.get("verified_facts", [])),
+                }
+
+            return result
 
         except Exception as e:
             logger.error("editor_agent.scoring_failed", error=str(e), exc_info=e)
@@ -195,6 +230,35 @@ IMPORTANT: Return ONLY the JSON object, no additional text."""
         input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("3.00")
         output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("15.00")
         return input_cost + output_cost
+
+    async def _fact_check_article(self, article: Dict) -> Dict:
+        """
+        Fact-check article content using Critique Labs
+
+        Args:
+            article: Article data
+
+        Returns:
+            Fact-check results
+        """
+        content = article.get("content", "")
+        # Limit content for fact-checking (cost control)
+        content_sample = content[:3000] if len(content) > 3000 else content
+
+        try:
+            result = await self.critique_labs.fact_check(content_sample)
+            logger.info(
+                "editor_agent.fact_check_complete",
+                accuracy=result.get("accuracy_score"),
+                issues=len(result.get("issues", []))
+            )
+            return result
+        except Exception as e:
+            logger.warning(
+                "editor_agent.fact_check_failed",
+                error=str(e)
+            )
+            return None
 
     def _fallback_evaluation(self) -> Dict:
         """
