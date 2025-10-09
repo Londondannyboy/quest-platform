@@ -1,0 +1,21 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "cd backend && python -m app.worker"
+healthcheckPath = ""
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "quest-worker"
+type = "worker"
+
+[services.quest-worker]
+internal = false
+
+# Environment variables will be shared from the main service
+# But we need to ensure WORKER_TYPE is set
+[services.quest-worker.env]
+WORKER_TYPE = "queue_processor"
+PYTHON_VERSION = "3.11"

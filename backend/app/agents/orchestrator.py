@@ -17,6 +17,7 @@ from app.agents.research import ResearchAgent
 from app.agents.content import ContentAgent
 from app.agents.editor import EditorAgent
 from app.agents.image import ImageAgent
+from app.core.link_validator import LinkValidator
 
 logger = structlog.get_logger(__name__)
 
@@ -41,6 +42,7 @@ class ArticleOrchestrator:
         self.content_agent = ContentAgent()
         self.editor_agent = EditorAgent()
         self.image_agent = ImageAgent()
+        self.link_validator = LinkValidator()
 
     async def generate_article(
         self,
@@ -86,13 +88,22 @@ class ArticleOrchestrator:
             research_result = await self.research_agent.run(topic)
             costs["research"] = research_result["cost"]
 
+            # STEP 1.5: Link Validation (Option 3 - Pre-generation)
+            sources = research_result.get("sources", [])
+            link_context = await self.link_validator.prepare_link_context(
+                topic, sources
+            )
+
             await self._update_job_status(
                 job_id, "processing", 30, "content"
             )
 
-            # STEP 2: Content Generation (60-90s)
+            # STEP 2: Content Generation (60-90s) - Pass link context
             content_result = await self.content_agent.run(
-                research_result["research"], target_site, topic
+                research_result["research"],
+                target_site,
+                topic,
+                link_context=link_context  # Pass validated links
             )
             costs["content"] = content_result["cost"]
 

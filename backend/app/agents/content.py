@@ -5,7 +5,7 @@ Generates high-quality article content using Claude Sonnet 4.5
 
 import json
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, Optional
 
 from anthropic import AsyncAnthropic
 import structlog
@@ -53,7 +53,8 @@ class ContentAgent:
         research: Dict,
         target_site: str,
         topic: str,
-        content_type: str = "standard"
+        content_type: str = "standard",
+        link_context: Optional[Dict] = None
     ) -> Dict:
         """
         Generate article content from research
@@ -78,13 +79,13 @@ class ContentAgent:
 
         # Build prompt based on content type
         if content_type == "listicle":
-            prompt = self._build_listicle_prompt(research, style, topic)
+            prompt = self._build_listicle_prompt(research, style, topic, link_context)
         elif content_type == "alternative":
-            prompt = self._build_alternative_prompt(research, style, topic)
+            prompt = self._build_alternative_prompt(research, style, topic, link_context)
         elif content_type == "comparison":
-            prompt = self._build_comparison_prompt(research, style, topic)
+            prompt = self._build_comparison_prompt(research, style, topic, link_context)
         else:
-            prompt = self._build_prompt(research, style, topic)
+            prompt = self._build_prompt(research, style, topic, link_context)
 
         # Call Claude API
         try:
@@ -166,7 +167,7 @@ class ContentAgent:
             logger.error("content_agent.generation_failed", error=str(e), exc_info=e)
             raise
 
-    def _build_prompt(self, research: Dict, style: Dict, topic: str) -> str:
+    def _build_prompt(self, research: Dict, style: Dict, topic: str, link_context: Optional[Dict] = None) -> str:
         """
         Build Claude prompt with research and style guide
         """
@@ -174,10 +175,37 @@ class ContentAgent:
             research["content"] if isinstance(research, dict) else str(research)
         )
 
+        # Build link instructions if context provided
+        link_instructions = ""
+        if link_context:
+            # Format external links
+            external_links = "\n".join([
+                f"   - {link['url']}"
+                for link in link_context.get('external_links', [])[:12]
+            ])
+
+            # Format internal links
+            internal_links = "\n".join([
+                f"   - [{link['title']}]({link['link']})"
+                for link in link_context.get('internal_links', [])[:5]
+            ])
+
+            link_instructions = f"""
+
+VALIDATED LINKS TO USE:
+External Links (use 8-12 of these from research sources):
+{external_links}
+
+Internal Links (use 3-5 of these for related content):
+{internal_links}
+
+**IMPORTANT**: Only use the links provided above. Do NOT make up or hallucinate any links."""
+
         return f"""You are a professional content writer for {style['audience']}.
 
 RESEARCH DATA:
 {research_content}
+{link_instructions}
 
 TASK: Write a comprehensive, SEO-optimized article about: {topic}
 
@@ -198,7 +226,12 @@ REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
 9. Conversational, direct tone - avoid hedging language
 10. 1500-2500 words total
 11. Markdown formatting with proper link syntax: [Link Text](https://example.com)
-12. **Include image placeholders** in content - Add `![Alt text](IMAGE_PLACEHOLDER)` where relevant images should appear (2-3 per article)
+12. **Include image placeholders strategically throughout content**:
+   - Add `![Hero Image Alt](IMAGE_PLACEHOLDER_HERO)` after the TL;DR section
+   - Add `![Content Image 1 Alt](IMAGE_PLACEHOLDER_1)` after the first major section
+   - Add `![Content Image 2 Alt](IMAGE_PLACEHOLDER_2)` in the middle of the article
+   - Add `![Content Image 3 Alt](IMAGE_PLACEHOLDER_3)` before the FAQ section
+   - Use descriptive alt text that explains what the image should show
 
 OUTPUT FORMAT (JSON):
 {{

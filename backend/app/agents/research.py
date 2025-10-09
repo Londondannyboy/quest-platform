@@ -15,6 +15,8 @@ import structlog
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.research_queue import ResearchGovernance
+from app.core.research_apis import MultiAPIResearch
 
 logger = structlog.get_logger(__name__)
 
@@ -35,10 +37,12 @@ class ResearchAgent:
         self.cache_enabled = settings.RESEARCH_CACHE_ENABLED
         self.similarity_threshold = settings.RESEARCH_CACHE_SIMILARITY_THRESHOLD
         self.cache_ttl_days = settings.RESEARCH_CACHE_TTL_DAYS
+        self.governance = ResearchGovernance()
+        self.multi_api = MultiAPIResearch()
 
     async def run(self, topic: str) -> Dict:
         """
-        Main research workflow with caching
+        Main research workflow with governance and caching
 
         Args:
             topic: Research topic/query
@@ -47,6 +51,33 @@ class ResearchAgent:
             Dict with research data and cost
         """
         logger.info("research_agent.start", topic=topic)
+
+        # Step 0: Research Governance Check (TIER 0 Priority)
+        await self.governance.load_completed_topics()  # Refresh completed list
+        validation = self.governance.validate_research_request(topic)
+
+        if not validation["approved"]:
+            logger.warning(
+                "research_agent.topic_rejected",
+                topic=topic,
+                reason=validation["reason"],
+                suggested=validation["suggested_alternative"]
+            )
+            # Use suggested alternative if available
+            if validation["suggested_alternative"]:
+                topic = validation["suggested_alternative"]
+                logger.info(
+                    "research_agent.using_alternative",
+                    original_topic=topic,
+                    new_topic=validation["suggested_alternative"]
+                )
+        else:
+            logger.info(
+                "research_agent.topic_approved",
+                topic=topic,
+                priority=validation["priority_score"],
+                category=validation["category"]
+            )
 
         # Step 1: Generate embedding
         embedding = await self._generate_embedding(topic)
@@ -67,19 +98,63 @@ class ResearchAgent:
                     "cost": Decimal("0.00"),
                 }
 
-        # Step 3: Cache miss - query Perplexity
+        # Step 3: Cache miss - use multi-API research
         logger.info("research_agent.cache_miss", topic=topic)
-        research_data = await self._query_perplexity(topic)
 
-        # Step 4: Store in cache
-        if self.cache_enabled:
+        # Determine if this is a high-priority topic that warrants comprehensive research
+        priority_score, _ = self.governance.get_priority_score(topic)
+        use_all_apis = priority_score >= 90  # Use all APIs for golden visa/tax topics
+
+        # Query using multi-API system with fallbacks
+        research_result = await self.multi_api.research(
+            query=topic,
+            use_all=use_all_apis,
+            fact_check=(priority_score >= 85)  # Fact-check high-value content
+        )
+
+        research_data = {
+            "content": research_result.get("content", ""),
+            "sources": research_result.get("sources", []),
+            "providers_used": research_result.get("providers_used", [])
+        }
+
+        # Step 4: Score research quality
+        quality_score = self.multi_api.score_research_quality(
+            content=research_data.get("content", ""),
+            sources=research_data.get("sources", [])
+        )
+
+        logger.info(
+            "research_agent.quality_score",
+            topic=topic,
+            score=quality_score["total_score"],
+            is_sufficient=quality_score["is_sufficient"],
+            metrics=quality_score["metrics"]
+        )
+
+        # Add quality score to research data
+        research_data["quality_score"] = quality_score
+
+        # Step 5: Store in cache (only if quality is sufficient)
+        if self.cache_enabled and research_data.get("content") and quality_score["is_sufficient"]:
             await self._store_in_cache(topic, embedding, research_data)
+
+        # Extract sources for link validation
+        sources = []
+        if "sources" in research_data:
+            for source in research_data["sources"]:
+                if isinstance(source, str):
+                    sources.append(source)
+                elif isinstance(source, dict) and "url" in source:
+                    sources.append(source["url"])
 
         return {
             "topic": topic,
             "research": research_data,
+            "sources": sources,  # Pass sources explicitly for link validation
             "cache_hit": False,
-            "cost": Decimal("0.20"),  # Perplexity API cost
+            "cost": research_result.get("total_cost", Decimal("0.20")),
+            "quality_score": quality_score
         }
 
     async def _generate_embedding(self, text: str) -> List[float]:

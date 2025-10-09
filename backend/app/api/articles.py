@@ -14,6 +14,7 @@ import structlog
 from app.agents.orchestrator import ArticleOrchestrator
 from app.core.redis_client import get_redis
 from app.core.database import get_db
+from app.core.queue import queue
 
 logger = structlog.get_logger(__name__)
 
@@ -102,26 +103,45 @@ async def generate_article(
                 "{}",  # Empty JSONB object
             )
 
-        # Queue job in Redis (BullMQ simulation)
-        redis_client = get_redis()
-        job_data = {
-            "job_id": job_id,
-            "topic": request.topic,
-            "target_site": request.target_site,
-            "priority": request.priority,
-        }
+        # Add job to proper queue
+        priority_value = {"low": -1, "normal": 0, "high": 1}.get(request.priority, 0)
 
-        # Add to queue (in production, use BullMQ properly)
-        await redis_client.lpush("quest:jobs:queued", str(job_data))
-
-        # Trigger background processing
-        background_tasks.add_task(
-            process_article_job,
-            job_id,
-            request.topic,
-            request.target_site,
-            request.priority,
+        queue_job_id = await queue.enqueue(
+            job_type="generate_article",
+            data={
+                "topic": request.topic,
+                "target_site": request.target_site,
+                "priority": priority_value,
+            },
+            priority=priority_value
         )
+
+        # If queue is not available, fall back to background task
+        if not queue_job_id:
+            logger.warning(
+                "api.articles.queue_unavailable",
+                job_id=job_id,
+                topic=request.topic
+            )
+            # Fall back to background task processing
+            background_tasks.add_task(
+                process_article_job,
+                job_id,
+                request.topic,
+                request.target_site,
+                request.priority,
+            )
+        else:
+            # Update job_status with queue ID
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    UPDATE job_status
+                    SET status = 'queued', updated_at = NOW()
+                    WHERE job_id = $1
+                    """,
+                    job_id
+                )
 
         return ArticleResponse(
             job_id=job_id,

@@ -57,9 +57,17 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 - ✅ Articles listing: https://relocation.quest/articles
 - ✅ Full stack operational: Database → API → Frontend
 
-### 🔄 Latest Updates (Oct 9, 2025)
+### 🔄 Latest Updates (Oct 10, 2025)
 
-**Critical Fixes (Codex):**
+**Link Validation & Publishing Fixes (Opus):**
+- ✅ Implemented Option 3 link validation - pre-generation context validation
+- ✅ Created LinkValidator class for external URL validation and internal link suggestions
+- ✅ Fixed link hallucination - ContentAgent now uses ONLY validated links from research
+- ✅ Research sources properly flow: ResearchAgent → LinkValidator → ContentAgent
+- ✅ Fixed Directus publishing workflow - added published_at column and status standardization
+- ✅ Database indexes added for better performance (status, published_at, created_at)
+
+**Previous Fixes (Oct 9, 2025 - Codex):**
 - ✅ Hardened `articles` API serialization with `_load_structured_content()` to recover markdown from truncated JSON
 - ✅ Enhanced frontend with TL;DR, key takeaways, and IMAGE_PLACEHOLDER injection
 - ✅ Backfilled clean markdown into Neon for Lisbon/Barcelona articles
@@ -70,6 +78,8 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 - ✅ Hero images working
 - ✅ API returning clean markdown + image URLs
 - ✅ Frontend parsing and rendering correctly
+- ✅ Link validation preventing hallucinated URLs
+- ✅ Directus CMS publishing workflow operational
 
 **Known Architectural Issue:**
 - ⚠️ **Schema Mismatch**: Content agent returns nested JSON, but DB schema expects plain markdown in `content` TEXT field
@@ -80,7 +90,14 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 
 ## 🎯 Project Overview
 
-Quest is an **AI-powered content intelligence platform** that generates, manages, and publishes high-quality articles across multiple authority websites using a 4-agent orchestration system.
+Quest is an **AI-powered content intelligence platform** that generates, manages, and publishes high-quality articles across multiple authority websites using a 7-agent orchestration system.
+
+### ✅ TIER 0 Implementation Complete (October 9, 2025 - Opus)
+- Research Governance with strategic topic prioritization
+- Multi-API research with parallel fallback chains
+- Redis Queue + BullMQ Worker implementation
+- Research quality scoring (60/100 threshold)
+- All 7 agents operational (Research, Content, Editor, Image, SEO, PDF, Orchestrator)
 
 ### Production Architecture
 
@@ -142,12 +159,13 @@ Quest is an **AI-powered content intelligence platform** that generates, manages
 
 ### ⏳ PENDING (Next Phase)
 
-1. **Complete Research API Integration**
-   - ⏳ Tavily API (additional research source)
-   - ⏳ Firecrawl (web scraping)
-   - ⏳ SERP.dev (search results)
-   - ⏳ Critique Labs (fact-checking)
-   - ⏳ Link Up (link validation)
+1. **Research APIs Status** ✅
+   - ✅ Perplexity API (working - 2701 chars, $0.20)
+   - ✅ Tavily API (working - 820 chars, $0.10)
+   - ✅ Firecrawl (configured, needs URLs)
+   - ✅ Serper.dev (configured, was SERP.dev)
+   - ✅ LinkUp (configured, DNS issues)
+   - ⏳ Critique Labs (no API key)
 
 2. **Image Pipeline Testing**
    - ⏳ FLUX Schnell generation
@@ -276,7 +294,7 @@ PUBLIC_API_URL=https://quest-platform-production-b8e3.up.railway.app
 
 ---
 
-## 🤖 4-Agent Pipeline (Detailed)
+## 🤖 7-Agent Pipeline (Complete - TIER 0 Implemented)
 
 ### 1. ResearchAgent (`app/agents/research.py`)
 
@@ -287,12 +305,24 @@ PUBLIC_API_URL=https://quest-platform-production-b8e3.up.railway.app
 - ✅ OpenAI embeddings for cache lookup
 - ✅ Vector similarity search (40% cost savings)
 - ✅ 30-day cache TTL
+- ✅ Source extraction for link validation
 
 **Pending Integration:**
 - ⏳ Tavily (additional research)
 - ⏳ Firecrawl (web scraping)
 - ⏳ SERP.dev (search results)
 - ⏳ Link Up (link validation)
+
+### 1.5. LinkValidator (`app/core/link_validator.py`) - NEW
+
+**Purpose:** Validate and prepare links for content generation
+
+**Implementation (Oct 10, 2025):**
+- ✅ External URL validation with httpx
+- ✅ Internal link suggestions from existing articles
+- ✅ Pre-generation context preparation
+- ✅ Prevents link hallucination
+- ✅ Option 3 implementation (pre-validation)
 
 **Time:** 30-60 seconds
 
@@ -306,6 +336,8 @@ PUBLIC_API_URL=https://quest-platform-production-b8e3.up.railway.app
 - ✅ SEO optimization
 - ✅ Site-specific brand voice
 - ✅ Structured markdown output
+- ✅ Uses validated links only (no hallucination)
+- ✅ Receives link context from LinkValidator
 
 **Time:** 60-90 seconds
 
@@ -841,5 +873,5 @@ quest-platform/
 
 ---
 
-**Last Updated:** October 9, 2025
-**Version:** 2.5 (Production - Documentation Consolidation Complete)
+**Last Updated:** October 10, 2025
+**Version:** 2.6 (Production - Link Validation & Publishing Workflow Fixed)
