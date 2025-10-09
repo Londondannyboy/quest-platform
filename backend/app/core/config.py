@@ -71,8 +71,8 @@ class Settings(BaseSettings):
         default="claude-3-5-sonnet-20241022", description="Claude model"
     )
     CONTENT_MODEL: str = Field(
-        default="claude-3-5-sonnet-20241022",
-        description="Claude model for content generation (sonnet or haiku for cost savings)"
+        default="claude-3-5-haiku-20241022",
+        description="Claude model for content generation (haiku=fast/cheap, sonnet=quality)"
     )
 
     OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key (optional - only for embeddings cache)")

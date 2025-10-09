@@ -96,7 +96,7 @@ You write comprehensive, well-researched articles that provide real value to rea
 
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=8192,  # Claude Sonnet 3.5's actual max output tokens
+                max_tokens=8192,  # Required parameter - Claude will stop naturally when article is complete
                 temperature=0.7,
                 system=system_prompt,
                 messages=[{"role": "user", "content": prompt}],
