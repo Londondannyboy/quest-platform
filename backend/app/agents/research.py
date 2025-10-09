@@ -103,7 +103,7 @@ class ResearchAgent:
 
         # Determine if this is a high-priority topic that warrants comprehensive research
         priority_score, _ = self.governance.get_priority_score(topic)
-        use_all_apis = priority_score >= 90  # Use all APIs for golden visa/tax topics
+        use_all_apis = priority_score >= 75  # Use all APIs for visa/tax/business topics (lowered from 90)
 
         # Query using multi-API system with fallbacks
         research_result = await self.multi_api.research(
