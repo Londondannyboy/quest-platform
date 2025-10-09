@@ -22,9 +22,9 @@ class EditorAgent:
     Editor Agent: Score article quality and determine workflow
 
     Workflow:
-    - Score ≥ 85: Auto-publish → ImageAgent
-    - Score 70-84: Human review → HITL queue
-    - Score < 70: Reject → retry or discard
+    - Score ≥ 75: Auto-publish → ImageAgent
+    - Score 60-74: Human review → HITL queue
+    - Score < 60: Reject → retry or discard
 
     Cost: ~$0.005 per evaluation
     """
@@ -181,9 +181,9 @@ IMPORTANT: Return ONLY the JSON object, no additional text."""
         Returns:
             Decision: publish, review, or reject
         """
-        if score >= 85:
+        if score >= 75:
             return "publish"
-        elif score >= 70:
+        elif score >= 60:
             return "review"
         else:
             return "reject"
