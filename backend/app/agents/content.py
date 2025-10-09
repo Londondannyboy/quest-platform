@@ -304,8 +304,8 @@ IMPORTANT: Output ONLY the markdown article. No JSON, no code fences, just pure 
         Calculate Claude API cost
 
         Pricing (with 50% batch API discount):
-        - Input: $3/M tokens → $1.50/M with batch
-        - Output: $15/M tokens → $7.50/M with batch
+        - Input: $3/M tokens -> $1.50/M with batch
+        - Output: $15/M tokens -> $7.50/M with batch
         """
         if settings.ENABLE_BATCH_API:
             # 50% discount for batch API
