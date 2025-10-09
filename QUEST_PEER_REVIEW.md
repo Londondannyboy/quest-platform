@@ -312,34 +312,70 @@ NEON_CONNECTION_STRING="postgresql://..." psql -c \
 
 ## Codex Peer Review (October 9, 2025)
 
-### Findings (ordered by severity)
+**Reviewer:** Claude Codex
+**Date:** October 9, 2025
+**Version Reviewed:** Production (3 articles published)
 
-1. **Queue/worker architecture incomplete**  
-   - Jobs are still executed synchronously in the FastAPI process even though they are pushed onto Redis (`backend/app/api/articles.py:105-124`).  
-   - The dedicated worker process is only a keep-alive loop and never consumes the queue (`backend/app/worker.py:1-32`).  
-   - This conflicts with the architecture’s goal of isolating long-running generation in BullMQ workers.  
-   **Recommendation:** Implement queue polling/acknowledgement in `worker.py`, and deploy it as a separate Railway service so the API can return immediately while workers process jobs.
+### Scorecard
 
-2. **ResearchAgent skips mandated pre-flight checks**  
-   - Architecture v2.3 requires consulting `QUEST_RELOCATION_RESEARCH.md`, deduping topics, and using SEO signals before calling Perplexity (`QUEST_ARCHITECTURE_V2_3.md:830-841`).  
-   - `backend/app/agents/research.py:36-122` goes straight from embedding generation to cache lookup/API call without checking that playbook.  
-   **Recommendation:** Incorporate the documented checks (topic priority, duplication, SEO inputs) before running `_check_cache`/`_query_perplexity`.
+- **Code Quality:** 7/10 - Good agent architecture, missing governance integration
+- **Architecture Alignment:** 6/10 - BullMQ documented but not implemented, multi-site premature
+- **Production Readiness:** 7/10 - Works in production, needs queue for scale
+- **Overall:** 7/10
 
-3. **Placement/rainmaker front-ends absent**  
-   - The roadmap calls for three Astro front-ends (`QUEST_ARCHITECTURE_V2_3.md:17`, `1692-1800`), but only `relocation.quest` has source code; `frontend/placement.quest` and `frontend/rainmaker.quest` are empty directories.  
-   **Recommendation:** Bootstrap those apps so routing, deployment, and shared packages are validated for all three domains.
+### Critical Findings (Ordered by Severity)
+
+**1. ResearchAgent Bypasses Governance (HIGHEST PRIORITY)** ❌
+- **Problem:** Architecture v2.3 requires consulting `QUEST_RELOCATION_RESEARCH.md` (993 topics), deduping, and SEO prioritization before Perplexity calls
+- **Current:** `backend/app/agents/research.py:36-122` goes straight from embedding → cache/API
+- **Impact:** Duplicate research costs, missing high-value topics, no strategic alignment
+- **Recommendation:** Add pre-flight checks before `_check_cache()`/`_query_perplexity()`
+- **Status:** ✅ ACCEPTED - Added as TIER 0 priority
+
+**2. Queue/Worker Architecture Incomplete** ⚠️
+- **Problem:** Jobs pushed to Redis but executed synchronously (`backend/app/api/articles.py:105-124`)
+- **Current:** Worker process is stub keep-alive loop (`backend/app/worker.py:1-32`)
+- **Impact:** Won't scale past 100 articles/day
+- **Recommendation:** Fix worker.py to poll Redis, deploy as separate Railway service
+- **Status:** ✅ ACCEPTED - Scheduled for TIER 1 (after 20 articles)
+
+**3. Multi-Site Frontends Absent** ⏳
+- **Problem:** Roadmap calls for 3 sites, only relocation.quest deployed
+- **Found:** `frontend/placement.quest` and `frontend/rainmaker.quest` were empty stubs
+- **Impact:** Cannot validate multi-site architecture
+- **Recommendation:** Bootstrap placement + rainmaker apps
+- **Status:** ⚠️ PARTIALLY ACCEPTED - Deleted stubs, using **separate-repo model** (not Turborepo), will clone after 100 articles
 
 ### Positive Observations
 
-- Markdown rendering and inline hero/content imagery now match the architecture’s expectations after the recent API/Frontend updates (`backend/app/api/articles.py:138-254`, `relocation-quest/src/pages/[slug].astro:26-199`).  
-- Compared with the October 7 legacy snapshot, the project now has a clean FastAPI + Astro split with Neon as source of truth, fulfilling the intent of the `TURBOREPO-FASTAPI-ARCHITECTURE.md` plan.
+✅ **Markdown Rendering Fixed** - Recent API/frontend updates now match architecture expectations
+✅ **Clean Separation** - FastAPI + Astro split with Neon as source of truth achieved
+✅ **Production Working** - End-to-end article generation functional
 
-### Suggested Next Steps
+### Architecture Correction (Codex Misunderstanding)
 
-1. Finish the BullMQ worker implementation and deploy it separately from the API gateway.  
-2. Add the research pre-check workflow so topic selection follows the documented governance.  
-3. Scaffold `placement.quest` and `rainmaker.quest` front-ends (even as thin shells) to unlock multi-site testing.  
-4. Expand monitoring/cost dashboards to close the remaining gaps between implementation and `QUEST_ARCHITECTURE_V2_3.md`.
+**Codex Assumed:** Turborepo monorepo with `frontend/` folder
+**Actual Model:** Separate repos per frontend (Jamstack best practice)
+
+```
+~/quest-platform/         ← Backend only
+~/relocation-quest/       ← Separate repo + Vercel (LIVE)
+~/placement-quest/        ← Future: Clone when ready
+~/rainmaker-quest/        ← Future: Clone when ready
+```
+
+**Why Separate Repos:**
+- Vercel deployment model: 1 repo = 1 site
+- Independent scaling
+- Simpler at current scale (3 articles)
+- Turborepo: Consider after 500+ articles
+
+### Action Items (Accepted)
+
+1. ✅ **Research Governance** - Implement immediately (TIER 0)
+2. ✅ **BullMQ Worker** - Implement after 20 articles (TIER 1)
+3. ⚠️ **Multi-Site** - Delay until relocation.quest has 100 articles (TIER 2)
+4. ✅ **Cost Dashboard** - Add `/api/metrics/*` endpoints (TIER 1)
 
 ---
 

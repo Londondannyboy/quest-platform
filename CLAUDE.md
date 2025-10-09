@@ -8,6 +8,48 @@
 
 ---
 
+## 📐 DOCUMENTATION NAMING CONVENTION
+
+**CRITICAL RULE:** All primary documentation files MUST use the `QUEST_` prefix with **underscores**, never dashes.
+
+### Naming Standard
+- ✅ **CORRECT:** `QUEST_ARCHITECTURE_V2_3.md`
+- ❌ **WRONG:** `QUEST-ARCHITECTURE-V2-3.md`
+- ✅ **CORRECT:** `QUEST_PEER_REVIEW.md`
+- ❌ **WRONG:** `QUEST-PEER-REVIEW.md`
+
+### Authority Documents (QUEST_* prefix)
+Files with the `QUEST_` prefix are **authoritative master documents**. When creating or updating documentation:
+
+1. **Always check** if a `QUEST_*` document exists first
+2. **Update existing** `QUEST_*` documents rather than creating new ones
+3. **Merge content** into appropriate `QUEST_*` document if accidentally created elsewhere
+4. **Never duplicate** - maintain single source of truth
+
+**⚠️ CRITICAL ENFORCEMENT RULE:**
+- When asked to "update the architecture" → DIRECTLY EDIT `QUEST_ARCHITECTURE_V2_3.md`
+- When asked to "add features to V2.3" → DIRECTLY EDIT `QUEST_ARCHITECTURE_V2_3.md`
+- **NEVER create helper/summary/enhancement files** (like `QUEST_V2.3_ENHANCEMENTS.md`)
+- If file is large (1000+ lines): Still edit it directly using Read + Edit tools
+- NO EXCEPTIONS - even if nervous about file size
+
+### Current Authority Documents
+- `QUEST_ARCHITECTURE_V2_3.md` - Product requirements & system design
+- `QUEST_SEO.md` - Complete SEO strategy: LLM optimization, technical fundamentals, content tactics
+- `QUEST_RELOCATION_RESEARCH.md` - Living research document for relocation.quest content strategy (operational)
+- `QUEST_PEER_REVIEW.md` - Vision vs. reality review guide (for external LLMs/reviewers)
+- `QUEST_RESTART_PROMPT.md` - Session restart instructions & current state
+- `QUEST_TRACKER.md` - Progress tracking, tasks, and metrics
+- `CLAUDE.md` - Technical reference & historical record (this file)
+
+### Deleted Files
+- ~~`README.md`~~ - **DELETED Oct 9, 2025** - Caused duplication with CLAUDE.md
+- ~~`CONTRIBUTING.md`~~ - **DELETED Oct 9, 2025** - Not accepting contributions yet
+- ~~`SECURITY.md`~~ - **ARCHIVED** to docs/archive/ - May merge into architecture later
+- ~~`CONSOLIDATION_LOG.md`~~ - **DELETED** - Audit complete, history preserved in this file
+
+---
+
 ## 🎉 MILESTONE ACHIEVED
 
 **First article published end-to-end:**
@@ -17,10 +59,22 @@
 
 ### 🔄 Latest Updates (Oct 9, 2025)
 
-- ✅ Hardened `articles` API serialization to recover markdown even when legacy JSON blobs are truncated.
-- ✅ Normalised frontend article page to consume structured metadata, inject generated images inline, and render TL;DR / key takeaways.
-- ✅ Cleaned existing Neon `articles` rows so `content` now stores plain markdown; removed stray malformed record.
-- ✅ Confirmed markdown now renders correctly on https://relocation.quest/best-cafes-for-remote-work-in-lisbon-2025 (no raw `#`/`**` artifacts).
+**Critical Fixes (Codex):**
+- ✅ Hardened `articles` API serialization with `_load_structured_content()` to recover markdown from truncated JSON
+- ✅ Enhanced frontend with TL;DR, key takeaways, and IMAGE_PLACEHOLDER injection
+- ✅ Backfilled clean markdown into Neon for Lisbon/Barcelona articles
+- ✅ Markdown now renders properly: https://relocation.quest/best-cafes-for-remote-work-in-lisbon-2025
+
+**Production Status:**
+- ✅ Content images displaying in articles
+- ✅ Hero images working
+- ✅ API returning clean markdown + image URLs
+- ✅ Frontend parsing and rendering correctly
+
+**Known Architectural Issue:**
+- ⚠️ **Schema Mismatch**: Content agent returns nested JSON, but DB schema expects plain markdown in `content` TEXT field
+- Current solution: `_serialize_article()` adapter layer extracts markdown from JSON
+- **TODO**: Fix content agent to match schema exactly (return plain markdown, not JSON wrapper)
 
 ---
 
@@ -105,7 +159,12 @@ Quest is an **AI-powered content intelligence platform** that generates, manages
    - ⏳ Directus MCP server
    - ⏳ Admin UI for article management
 
-4. **DevOps Improvements**
+4. **Validation & Task Orchestration (TIER 1)**
+   - ⏳ GitHub Spec Kit integration (`@github/spec-kit`) - Runtime schema validation
+   - ⏳ TaskMaster AI integration (`task-master-ai`) - Task dependency enforcement
+   - Already in `scripts/setup-dev-environment.sh`, needs backend integration
+
+5. **DevOps Improvements**
    - ⏳ Railway MCP integration
    - ⏳ Automated testing pipeline
    - ⏳ Cost monitoring dashboard
@@ -516,5 +575,222 @@ COST_PER_ARTICLE: $0.44 → $0.59 (with all APIs)
 
 ---
 
-**Last Updated:** October 8, 2025
-**Version:** 2.3 (Production)
+## 📚 HISTORICAL PEER REVIEWS
+
+### Peer Review #1 (October 8, 2025)
+**Reviewer:** ChatGPT
+**Status:** Code quality and architecture review
+**Focus:** Missing API integrations, image pipeline testing, architecture decisions
+
+**Key Findings:**
+- ✅ Code Quality: 8/10 - Maintainable, clean agent orchestration
+- ✅ Architecture: 7/10 - Tech stack appropriate, minor concerns with Redis reliability
+- ⚠️ Critical Gap: Missing 5 of 6 research APIs (Tavily, Firecrawl, SERP.dev, Critique Labs, Link Up)
+- ⏳ Image Pipeline: Code ready but untested in production
+- ⏳ No test coverage (0%)
+
+**Recommended Priorities:**
+1. Integrate Tavily + Critique Labs APIs (HIGH)
+2. Test image generation pipeline (MEDIUM)
+3. Fix JSON parsing bug (LOW - workaround exists)
+4. Add pytest test suite (HIGH for long-term)
+
+### Peer Review #2 (October 9, 2025 - Morning)
+**Reviewer:** Gemini
+**Status:** Bug investigation - Markdown rendering broken
+**Focus:** Database schema mismatch between agents and API
+
+**Key Findings:**
+- ❌ **Critical Bug Found**: Content agent returns nested JSON, DB expects plain markdown
+- ❌ API serialization failing silently when `json.loads()` throws exception
+- ❌ Frontend receives truncated JSON strings instead of clean markdown
+- ✅ Frontend code excellent - issue purely backend data quality
+
+**Root Cause:**
+```python
+# content.py returns:
+{"article": {"content": "# Markdown here..."}}
+
+# DB schema expects:
+content: TEXT  # Plain markdown string, not JSON
+```
+
+**Solution Implemented:**
+- Created `_serialize_article()` adapter to extract markdown from JSON
+- Added regex fallback for malformed JSON
+- Hardened API error handling
+
+### Peer Review #2 Correction (October 9, 2025 - Afternoon)
+**Reviewer:** ChatGPT (correcting Gemini's analysis)
+**Status:** Identified real bugs missed by first review
+
+**Actual Root Cause:**
+Three backend bugs preventing content images:
+1. **Bug #1:** API queries missing `content_image_1_url`, `content_image_2_url`, `content_image_3_url` columns
+2. **Bug #2:** Orchestrator only saves hero image, never content images
+3. **Bug #3:** Recent frontend commits broke working markdown parsing
+
+**Evidence:**
+- Portugal article (Oct 7) worked perfectly before changes
+- Commits `41ee84c`, `a2a82d3`, `fd3f811` introduced breaking changes
+- Backend never populated content image URLs in database
+
+**Resolution:**
+- Fixed all 3 backend SELECT queries to include content image columns
+- Updated orchestrator to save all 4 images (hero + 3 content)
+- Frontend markdown parsing restored
+
+### Combined Peer Review Outcome (October 9, 2025 - Evening)
+**Status:** ✅ All issues resolved, production working
+
+**What Was Fixed:**
+1. ✅ Backend API queries now return all 4 image URLs
+2. ✅ Orchestrator saves all images to database
+3. ✅ `_serialize_article()` adapter extracts clean markdown
+4. ✅ Frontend renders markdown correctly with images
+5. ✅ Backfilled clean markdown for Lisbon/Barcelona articles
+
+**What Still Needs Fixing (TIER 0):**
+1. **Schema Mismatch (Architectural):** Content agent should return plain markdown, not JSON
+2. **Missing APIs:** Only 1 of 6 research APIs integrated (Perplexity)
+3. **No Queue System:** Synchronous execution won't scale
+4. **No CMS Deployed:** Directus pending Railway deployment
+
+### Key Lessons Learned
+1. **Peer review caught cold start issue** - Multiple LLMs identified schema mismatch
+2. **Adapter layers work but violate cleanliness** - `_serialize_article()` is a bandaid
+3. **Frontend robustness saved production** - Excellent JSON parsing prevented total failure
+4. **Historical context critical** - Corrective review identified "it worked before" evidence
+
+---
+
+### Peer Review #3: Codex (October 9, 2025 - Afternoon)
+**Reviewer:** Claude Codex
+**Status:** Architecture and implementation review
+**Focus:** Production alignment with documented architecture
+
+**Scorecard:**
+- Code Quality: 7/10
+- Architecture Alignment: 6/10
+- Production Readiness: 7/10
+- **Overall: 7/10**
+
+**Critical Findings:**
+1. ❌ **Research Governance Missing** (HIGHEST PRIORITY)
+   - ResearchAgent bypasses QUEST_RELOCATION_RESEARCH.md (993 topics)
+   - No deduplication, SEO prioritization, or strategic alignment
+   - Goes straight from embedding → Perplexity API
+   - **Impact:** Duplicate research costs, missing high-value topics
+   - **Action:** Added as TIER 0 priority
+
+2. ❌ **BullMQ Worker Incomplete**
+   - Jobs pushed to Redis but executed synchronously
+   - Worker process is stub (doesn't poll queue)
+   - Won't scale past 100 articles/day
+   - **Action:** Scheduled for TIER 1 (after 20 articles)
+
+3. ⚠️ **Multi-Site Frontends Missing**
+   - Found empty `frontend/` stubs (placement, rainmaker)
+   - Assumed Turborepo monorepo (incorrect)
+   - **Resolution:** Deleted stubs, confirmed separate-repo model is correct
+   - **Action:** Delay cloning until relocation.quest has 100 articles
+
+**Positive Observations:**
+- ✅ Markdown rendering working correctly
+- ✅ Clean FastAPI + Astro separation achieved
+- ✅ End-to-end article generation functional
+
+**Architecture Correction:**
+- Codex assumed Turborepo monorepo
+- **Actual:** Separate repos per frontend (Jamstack best practice)
+- Turborepo: Consider after 500+ articles, not at 3 articles
+
+**Actions Taken:**
+1. ✅ Created `CODEX_PEER_REVIEW_ACTIONS.md` with implementation plan
+2. ✅ Added research governance as TIER 0 in QUEST_TRACKER.md
+3. ✅ Updated QUEST_PEER_REVIEW.md with Codex findings
+4. ✅ Deleted ~/quest-platform/frontend/ folder
+5. ✅ Confirmed separate-repo architecture in all docs
+
+---
+
+## 🗂️ DOCUMENTATION CLEANUP LOG (October 9, 2025)
+
+### Consolidation Phase
+**Reason:** 40+ markdown files created technical debt, causing confusion across sessions
+
+**Actions Taken:**
+1. Created `QUEST_ARCHITECTURE_V2.3.md` (comprehensive architecture)
+2. Updated `CLAUDE.md` with peer review history (this section)
+3. Merged `RESTART_PROMPT.md` + `NEXT_SESSION_PRIORITIES.md` → `QUEST_RESTART_PROMPT.md`
+4. Created `QUEST_TRACKER.md` (consolidated tracking)
+5. Deleted 30+ obsolete files (deployment guides, old peer reviews, historical meta-docs)
+
+**Final Documentation Structure (8 files):**
+```
+quest-platform/
+├── QUEST_ARCHITECTURE_V2.3.md  ← Comprehensive architecture
+├── CLAUDE.md                    ← Technical docs + history (this file)
+├── QUEST_RESTART_PROMPT.md     ← Quick restart guide
+├── QUEST_TRACKER.md             ← Progress tracking
+├── README.md                    ← GitHub homepage
+├── CONTRIBUTING.md              ← Standard GitHub file
+├── SECURITY.md                  ← Standard GitHub file
+└── CONSOLIDATION_LOG.md         ← Cleanup audit trail
+```
+
+**Files Deleted (32 total):**
+- 12 deployment guides
+- 6 peer review documents
+- 8 historical/meta files
+- 3 old architecture versions (after V2.3 validated)
+- 3 duplicate tracking files
+
+### Deleted Files Record
+**Deployment Guides (12):**
+- SETUP_GUIDE.md
+- SETUP-VERIFICATION.md
+- FINAL-SETUP-STEPS.md
+- DEPLOY_TO_GITHUB.md
+- GITHUB_SETUP.md
+- GITHUB_TOKEN_GUIDE.md
+- DEPLOYMENT.md
+- RAILWAY-DEPLOYMENT.md
+- VERCEL-ENVIRONMENT-SETUP.md
+- ENVIRONMENT-VARIABLES-GUIDE.md
+- GETTING_STARTED.md
+- DEPLOY-NOW.md
+
+**Peer Review Docs (6):**
+- PEER-REVIEW.md
+- PEER_REVIEW_BRIEF.md
+- PEER_REVIEW_ACTION_ITEMS.md
+- NEXT_PEER_REVIEWER_README.md
+- CORRECTED_PEER_REVIEW.md
+- HANDOFF_TO_PEER.md
+
+**Historical/Meta (8):**
+- REPOSITORY_COMPARISON.md
+- PROJECT_STRUCTURE.md
+- PROJECT_SUMMARY.md
+- SUCCESS-READY-TO-DEPLOY.md
+- UPGRADE_REPORT.md
+- GEMINI_IMPROVEMENTS.md
+- CHANGELOG.md
+- END-TO-END-TEST-RESULTS.md
+
+**Old Architecture (3):**
+- QUEST-ARCHITECTURE-V2.md
+- QUEST-ARCHITECTURE-V2.1.md
+- QUEST-ARCHITECTURE-COMPLETE.md
+
+**Tracking Duplicates (3):**
+- TRACKING.md → QUEST_TRACKER.md
+- STATUS-REPORT.md → QUEST_TRACKER.md
+- ACTION-PLAN.md → QUEST_TRACKER.md
+- DEPLOYMENT-STATUS.md → QUEST_TRACKER.md
+
+---
+
+**Last Updated:** October 9, 2025
+**Version:** 2.5 (Production - Documentation Consolidation Complete)

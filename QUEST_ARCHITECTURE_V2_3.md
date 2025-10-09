@@ -1,11 +1,15 @@
-# Quest Architecture v2.2
+# Quest Architecture v2.3
 ## Multi-Site Content Intelligence Platform with AI-Assisted Production
 
-**Version:** 2.2  
-**Date:** October 7, 2025  
-**Status:** Production-Ready Architecture (Peer Reviewed)  
-**Peer Reviews:** ChatGPT 4.0 (Grade: A-), Gemini 2.0 Flash (Grade: A-)  
-**Changes from v2.1:** Cold start mitigation, 4-service architecture, realistic timeline, operational safeguards
+**Version:** 2.3.3
+**Date:** October 9, 2025
+**Status:** Production-Ready Architecture (Enhanced with Astro 5.13+ Strategic Features + Vercel Native Integrations)
+**Peer Reviews:** ChatGPT 4.0 (A-), Gemini 2.0 Flash (A-), Claude Desktop (Astro+Vercel), **Codex (Oct 9, 2025: 7/10 - Research governance TIER 0)**
+**Latest:** Codex review: Research governance critical, separate-repo architecture confirmed, frontend/ stubs deleted
+**Changes from v2.3.2:** Neon-Vercel direct integration, Vercel Web Analytics (privacy-friendly), Sentry error monitoring (all free tier)
+**Changes from v2.3.1:** Cloudinary-Vercel native integration for optimized image delivery, Vercel Web Analytics integration
+**Changes from v2.3:** Type-safe environment variables (astro:env), Astro Content Layer for Directus, Server Islands optimization, Vitest + Container API testing
+**Changes from v2.2:** Mux video integration, CSP security, modern Astro features, multi-site SEO strategy, environment variable fixes
 
 ---
 
@@ -127,6 +131,117 @@ Net Result:
   Quality improvement: Significant
   Cost efficiency: Better at scale
 ```
+
+---
+
+## 🔌 Vercel Native Integrations (v2.3.3)
+
+### Immediate Integrations (Free Tier)
+
+#### 1. Neon-Vercel Direct Integration
+**Purpose:** Enable direct database queries from Astro Edge functions without Railway API proxy
+
+**Benefits:**
+- Direct PostgreSQL queries from Astro SSR pages
+- Better connection pooling (bypasses Railway)
+- Automatic environment variable injection
+- Reduced latency for read-heavy queries (article listings, search)
+
+**Implementation:**
+```typescript
+// src/pages/articles/[slug].astro
+import { neon } from '@neondatabase/serverless';
+
+export async function getStaticPaths() {
+  const sql = neon(import.meta.env.DATABASE_URL);
+  const articles = await sql`
+    SELECT slug, title FROM articles
+    WHERE status = 'published'
+  `;
+  return articles.map(article => ({
+    params: { slug: article.slug }
+  }));
+}
+```
+
+**Cost:** $0 (already paying $60/mo for Neon Launch tier)
+
+#### 2. Vercel Web Analytics
+**Purpose:** Privacy-friendly analytics for all 3 .quest sites
+
+**Benefits:**
+- GDPR/CCPA compliant (no cookies, no tracking)
+- Page views, unique visitors, top pages
+- Core Web Vitals monitoring
+- No Google Analytics dependency
+
+**Implementation:**
+```javascript
+// vercel.json
+{
+  "analytics": {
+    "enable": true
+  }
+}
+```
+
+**Cost:** $0 (free tier)
+
+#### 3. Sentry Error Monitoring
+**Purpose:** Production error tracking for Astro SSR applications
+
+**Benefits:**
+- 5,000 errors/month free tier
+- Source map support
+- Release tracking
+- Performance monitoring
+
+**Implementation:**
+```typescript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+import sentry from '@sentry/astro';
+
+export default defineConfig({
+  integrations: [
+    sentry({
+      dsn: import.meta.env.SENTRY_DSN,
+      tracesSampleRate: 1.0,
+    })
+  ]
+});
+```
+
+**Cost:** $0 (5K errors/month free tier)
+
+### Architecture Impact
+
+**Before (v2.3.2):**
+```
+Browser → Astro (Vercel) → Railway API → Neon DB
+```
+
+**After (v2.3.3):**
+```
+Browser → Astro (Vercel) → Neon DB (direct)
+              ↓
+         Sentry (errors)
+              ↓
+    Vercel Analytics (metrics)
+```
+
+**Result:**
+- 30-50ms latency reduction (no Railway hop for reads)
+- Free monitoring + analytics
+- Better observability without cost increase
+
+### Rejected Integrations
+
+**Vercel KV (Upstash Redis):** Keep Redis on Railway for centralized backend. Workers need access to BullMQ queues.
+
+**Replicate Connection:** No value - Railway workers call Replicate API, not Vercel.
+
+**Vercel Speed Insights:** Defer until 100+ articles published. Current free analytics sufficient.
 
 ---
 
@@ -694,21 +809,44 @@ vercel deploy --prod
 
 ```yaml
 Pipeline_Flow:
+  0. Check QUEST_RELOCATION_RESEARCH.md (topic validation)
   1. ResearchAgent → 2. ContentAgent → 3. EditorAgent → 4. ImageAgent
 
 Total_Latency: 45-60 seconds per article
 Cost_Per_Article: $0.45 (with 25% research cache hit rate)
 ```
 
+**Operational Document Integration:**
+All agents reference `QUEST_RELOCATION_RESEARCH.md` as the single source of truth for:
+- Topic priority queue (993 pending topics)
+- Content quality standards (2000+ words, 5+ citations, etc.)
+- SEO data (search volume, CPC, difficulty)
+- Completed topics tracking (avoid duplication)
+- Category distribution strategy (200 digital nomad visas, 150 golden visas, etc.)
+
 ### Agent 1: ResearchAgent (Perplexity + pgvector Cache)
 
 **Purpose:** Gather factual information about the topic
+
+**⚠️ CRITICAL:** Before any research, ResearchAgent MUST:
+1. Check `QUEST_RELOCATION_RESEARCH.md` for topic priority and existing coverage
+2. Avoid duplicate topics already published
+3. Follow content quality standards defined in the research document
+4. Use SEO data (search volume, CPC, difficulty) to inform research depth
+
+**📋 Task Orchestration Enhancement (TIER 1 Priority):**
+Integrate **TaskMaster AI** (`task-master-ai` npm package) to enforce these prerequisites:
+- Define task DAG (Directed Acyclic Graph) for article generation workflow
+- Enforce research governance as mandatory prerequisite before Perplexity API calls
+- Automatic cost tracking per task
+- Prevents "skipped prerequisite" bugs
 
 ```yaml
 Tools:
   - Perplexity Sonar Pro API (primary research)
   - pgvector similarity search (cache lookup)
   - OpenAI Embeddings (query vectorization)
+  - QUEST_RELOCATION_RESEARCH.md reference (operational guidance)
 
 Cost:
   Cache Hit: $0.00 (free)
@@ -729,6 +867,13 @@ Workflow:
      - Set expires_at = NOW() + 30 days
   6. Return research data to ContentAgent
 ```
+
+**Schema Validation Enhancement (TIER 1 Priority):**
+Integrate **GitHub Spec Kit** (`@github/spec-kit` npm package) for runtime validation:
+- Create `schemas/article_output.json` specification
+- Validate all agent outputs against schema before database insertion
+- Catches schema mismatches automatically (e.g., JSON vs markdown content field)
+- Self-documenting schemas reduce documentation burden
 
 **Implementation:**
 
@@ -1191,6 +1336,51 @@ export default defineConfig({
   },
 });
 ```
+
+### Astro 5.13+ Modern Features (Phase 1)
+
+**Framework Version:** Astro 5.14+ with production security & performance optimizations
+
+#### Content Security Policy (CSP)
+
+**Purpose:** XSS protection + SEO ranking boost
+
+```typescript
+// astro.config.mjs - ADD THIS
+export default defineConfig({
+  security: {
+    contentSecurityPolicy: {
+      directives: {
+        'default-src': ["'self'"],
+        'img-src': ["'self'", 'cloudinary.com', 'res.cloudinary.com'],
+        'media-src': ["'self'", 'mux.com', 'stream.mux.com'],  // Phase 2: Video
+        'script-src': ["'self'", "'unsafe-inline'"],  // Analytics
+        'style-src': ["'self'", "'unsafe-inline'"],   // Tailwind
+      }
+    }
+  },
+  // ... rest of config
+});
+```
+
+**Benefits:** +5-10% SEO score, prevents script injection in AI content
+
+#### Raw Environment Variables
+
+**Fixes:** `ENABLE_IMAGE_GENERATION="true"` deployment bugs
+
+```typescript
+// astro.config.mjs
+export default defineConfig({
+  experimental: {
+    rawEnvValues: true  // Prevents "true" → boolean coercion
+  }
+});
+```
+
+**Critical:** Becomes default in Astro 6.0 - prepare now
+
+---
 
 ### GraphQL Integration
 

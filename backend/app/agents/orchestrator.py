@@ -4,6 +4,7 @@ Coordinates 4-agent pipeline with cost tracking and error handling
 """
 
 import asyncio
+import json
 from decimal import Decimal
 from typing import Dict, Literal
 from uuid import uuid4
@@ -275,8 +276,9 @@ class ArticleOrchestrator:
                     completed_at = EXCLUDED.completed_at
             """
 
+            # Convert Decimal cost_breakdown to JSON string for JSONB column
             cost_json = (
-                {k: str(v) for k, v in cost_breakdown.items()}
+                json.dumps({k: str(v) for k, v in cost_breakdown.items()})
                 if cost_breakdown
                 else None
             )
