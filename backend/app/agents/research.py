@@ -103,13 +103,16 @@ class ResearchAgent:
 
         # Determine if this is a high-priority topic that warrants comprehensive research
         priority_score, _ = self.governance.get_priority_score(topic)
-        use_all_apis = priority_score >= 75  # Use all APIs for visa/tax/business topics (lowered from 90)
 
-        # Query using multi-API system with fallbacks
+        # ALWAYS use all APIs for comprehensive research (Serper for competitors, Tavily for depth, Firecrawl for scraping)
+        # This is critical for SEO - we need to know what competitors are ranking for
+        use_all_apis = True  # Changed: Always use full API stack for competitive intelligence
+
+        # Query using multi-API system with ALL providers
         research_result = await self.multi_api.research(
             query=topic,
             use_all=use_all_apis,
-            fact_check=(priority_score >= 85)  # Fact-check high-value content
+            fact_check=(priority_score >= 70)  # Fact-check important content (lowered threshold)
         )
 
         research_data = {
