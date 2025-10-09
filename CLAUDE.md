@@ -4,7 +4,7 @@
 **Repository (Backend):** https://github.com/Londondannyboy/quest-platform
 **Repository (Frontend):** https://github.com/Londondannyboy/relocation-quest
 **Status:** ✅ **PRODUCTION - END-TO-END WORKING**
-**Last Updated:** October 8, 2025
+**Last Updated:** October 9, 2025
 
 ---
 
@@ -14,6 +14,13 @@
 - ✅ Live URL: https://relocation.quest/best-digital-nomad-cities-portugal
 - ✅ Articles listing: https://relocation.quest/articles
 - ✅ Full stack operational: Database → API → Frontend
+
+### 🔄 Latest Updates (Oct 9, 2025)
+
+- ✅ Hardened `articles` API serialization to recover markdown even when legacy JSON blobs are truncated.
+- ✅ Normalised frontend article page to consume structured metadata, inject generated images inline, and render TL;DR / key takeaways.
+- ✅ Cleaned existing Neon `articles` rows so `content` now stores plain markdown; removed stray malformed record.
+- ✅ Confirmed markdown now renders correctly on https://relocation.quest/best-cafes-for-remote-work-in-lisbon-2025 (no raw `#`/`**` artifacts).
 
 ---
 

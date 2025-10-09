@@ -1,4 +1,6 @@
-# Handoff to Peer LLM - Markdown Rendering Issue
+# Handoff to Peer LLM - Markdown Rendering Issue *(Status: Resolved Oct 9, 2025)*
+
+> **Update (Codex, Oct 9, 2025):** Backend serialization hardened, malformed rows cleaned in Neon, and frontend updated. Markdown now renders correctly on live site. Original handoff notes retained below for historical context.
 
 **Date:** 2025-10-09
 **Status:** Content images ✅ working | Markdown rendering ❌ broken
