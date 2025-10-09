@@ -297,7 +297,7 @@ Write the complete article in markdown format with:
 - FAQ section near the end
 - References section at the very end (## References with numbered citations)
 
-IMPORTANT: Output ONLY the markdown article. No JSON, no code fences, just pure markdown content starting with # and the title.
+IMPORTANT: Output ONLY the markdown article. No JSON, no code fences, just pure markdown content starting with # and the title."""
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
         """
