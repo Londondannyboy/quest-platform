@@ -1076,10 +1076,12 @@ Quality Scoring:
     - SEO optimization (keywords, structure)
     - Engagement potential (hooks, CTAs)
 
-Workflow Decision Tree:
-  Score ≥ 85: Auto-publish → ImageAgent
-  Score 70-84: Human review → HITL queue
-  Score < 70: Reject → retry or discard
+Workflow Decision Tree (UPDATED Oct 9, 2025 - Testing Mode):
+  Score ≥ 75: Auto-publish → ImageAgent (was ≥85)
+  Score 60-74: Human review → HITL queue (was 70-84)
+  Score < 60: Reject → retry or discard (was <70)
+
+  Note: Thresholds temporarily lowered for testing. Will revert to 85/70 once pipeline validated.
 
 Average Distribution:
   Auto-publish: 60% (saves human time)
