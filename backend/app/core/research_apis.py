@@ -382,7 +382,7 @@ class LinkUpProvider(ResearchProvider):
 
     def __init__(self):
         self.api_key = settings.LINKUP_API_KEY
-        self.api_url = "https://api.linkup.dev/v1/search"
+        self.api_url = "https://api.linkup.so/v1/search"  # Fixed: was .dev, should be .so
 
     async def search(self, query: str) -> Dict:
         """Search with Link Up API"""

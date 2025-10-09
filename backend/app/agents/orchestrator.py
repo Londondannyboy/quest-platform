@@ -355,13 +355,18 @@ class ArticleOrchestrator:
                 RETURNING id
             """
 
+            # Generate URL-safe slug (remove all punctuation except hyphens)
+            import re
+            title = article_data.get("title", "untitled")
+            slug = re.sub(r'[^a-z0-9\s-]', '', title.lower())  # Remove punctuation
+            slug = re.sub(r'\s+', '-', slug)  # Replace spaces with hyphens
+            slug = re.sub(r'-+', '-', slug).strip('-')[:100]  # Clean up multiple hyphens
+
             async with pool.acquire() as conn:
                 article_id = await conn.fetchval(
                     query,
                     article_data.get("title"),
-                    article_data.get("title", "")
-                    .lower()
-                    .replace(" ", "-")[:100],
+                    slug,
                     article_data.get("content"),
                     article_data.get("excerpt"),
                     target_site,
