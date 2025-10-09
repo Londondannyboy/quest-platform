@@ -1,164 +1,67 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `feb92c8` - "Enhanced multi-API research flow with quality improvements"
-**Status:** ✅ Production - Enhanced pipeline deployed to Railway
+**Last Commit:** `9146343` - "Change default to Haiku for cost efficiency"
+**Status:** ✅ Production - Haiku model, pure markdown output, multi-API research
 **Date:** October 10, 2025
 
 ---
 
-## 🎉 MAJOR UPDATE: Enhanced Multi-API Research Flow
+## 🎯 Current State
 
-**What Changed:**
-- ✅ **6 Research APIs** now fully integrated (was 1)
-- ✅ **DataForSEO** keyword validation ($0.02/article)
-- ✅ **KeywordResearcher Agent** (Perplexity + DataForSEO)
-- ✅ **Enhanced ContentAgent** (2000+ words, citations [1],[2], 11-point structure)
-- ✅ **Enhanced ImageAgent** (specialized prompts by type + negative prompts)
-- ✅ **Citation Validation** (minimum 5 citations + References section required)
-- ✅ **Cost**: ~$0.77/article (10x better quality vs $0.20 before)
+**WORKING:**
+- ✅ Multi-API research (6 APIs: Perplexity, DataForSEO, Tavily, Serper, LinkUp, Firecrawl)
+- ✅ Haiku model (25x cheaper than Sonnet: $0.03/article vs $0.75)
+- ✅ Pure markdown output (NO JSON wrapper)
+- ✅ Citation validation (5+ citations required)
+- ✅ Railway deployed and healthy
+- ✅ max_tokens=8192 (API requirement, Claude stops naturally)
 
-**Research Flow:**
-```
-Keyword Research → DataForSEO validates SEO metrics
-      ↓
-Serper → Top 10 competitor URLs
-      ↓
-Firecrawl → Scrape competitor content
-      ↓
-Perplexity + Tavily + LinkUp → Deep research
-      ↓
-ContentAgent → Write article that BEATS competitors
-      ↓
-EditorAgent → Validate citations & quality (75+ score = publish)
-      ↓
-ImageAgent → Generate 4 specialized images
-```
+**Cost:** ~$0.60/article (was $0.77 with Sonnet)
 
 ---
 
-## 🎯 Next Steps
+## 🚀 Quick Start
 
-### 1. Test Enhanced Pipeline (15 mins)
-```bash
-cd ~/quest-platform/backend
-python3 generate_article.py --topic "Best tax havens for digital nomads 2025" --site relocation
-```
-
-**Expected:**
-- Keywords validated with DataForSEO
-- All 6 APIs run (Serper, Firecrawl, Perplexity, Tavily, LinkUp, DataForSEO)
-- Article 2000+ words with 5+ citations
-- 4 images generated (hero + 3 content)
-- Cost: ~$0.77
-
-### 2. Verify Railway Deployment
-```bash
-curl https://quest-platform-production-9ee0.up.railway.app/api/health
-```
-
-Should show all services healthy with enhanced agents.
-
-### 3. Check Article Quality
-Look for in generated articles:
-- ✅ Minimum 2000 words
-- ✅ Citations format: [1], [2], [3]
-- ✅ References section at end
-- ✅ 11-point article structure
-- ✅ SEO metrics in metadata
-
----
-
-## 📊 Cost Breakdown (Updated)
-
-**Per Article:**
-- Keyword Research: $0.22 (Perplexity + DataForSEO)
-- Content Research: $0.48 (Serper + Firecrawl + Tavily + LinkUp)
-- Content Generation: $0.04 (Claude Sonnet 4.5)
-- Images: $0.03 (FLUX × 4)
-**Total: $0.77** (was $0.24 before)
-
-**Value:** 3.2x cost but 10x better quality = Great ROI
-
----
-
-## 🔧 Configuration
-
-### New Environment Variables
-Add to Railway if not present:
-```bash
-# DataForSEO (required for keyword validation)
-DATAFORSEO_LOGIN=your_login
-DATAFORSEO_PASSWORD=your_password
-
-# Model configuration (optional - defaults to Sonnet)
-CONTENT_MODEL=claude-3-5-sonnet-20241022  # or claude-3-haiku-20240307 for cost savings
-```
-
----
-
-## ✅ What's Working
-
-1. **All 6 Research APIs integrated**
-   - Perplexity ✅
-   - DataForSEO ✅ (NEW)
-   - Tavily ✅
-   - Serper ✅
-   - LinkUp ✅
-   - Firecrawl ✅
-
-2. **Enhanced ContentAgent**
-   - 2000+ word minimum enforced
-   - Citation format [1],[2] required
-   - 11-point article structure
-   - System prompts for specialization
-   - SEO optimization with keywords
-
-3. **Enhanced ImageAgent**
-   - Specialized prompts: Hero (wide), Content1 (infographic), Content2 (people), Content3 (metaphor)
-   - Negative prompts for quality control
-
-4. **Enhanced EditorAgent**
-   - Citation validation (5+ required)
-   - References section validation
-   - Word count validation (2000+)
-
----
-
-## 🚀 Quick Commands
-
-### Generate Article (Full Pipeline)
+### Generate Article
 ```bash
 cd ~/quest-platform/backend
 python3 generate_article.py --topic "Your topic" --site relocation
 ```
 
-### Check Latest Articles
+### Check Health
 ```bash
-curl -s "https://quest-platform-production-9ee0.up.railway.app/api/articles/?status=published&limit=5" | python3 -c "import sys, json; articles = json.load(sys.stdin)['articles']; print('\n'.join([f\"{a['title']} - {a['quality_score']}/100\" for a in articles]))"
+curl https://quest-platform-production-9ee0.up.railway.app/api/health
 ```
 
-### View Live Article
-```bash
-# Get slug from database, then visit:
-https://relocation.quest/[slug]
+---
+
+## ⚙️ Configuration
+
+**Model:** Haiku (default) - Set `CONTENT_MODEL=claude-3-5-sonnet-20241022` in Railway for Sonnet
+
+**DataForSEO Credentials** (in Railway):
 ```
+DATAFORSEO_LOGIN=dan@predeploy.ai
+DATAFORSEO_PASSWORD=9090d2e4183d704a
+```
+
+---
+
+## 📚 Key Files
+
+- `CLAUDE.md` - Full technical reference
+- `QUEST_ARCHITECTURE_V2_3.md` - System architecture
+- `backend/generate_article.py` - Main generation script
+- `backend/app/agents/content.py` - Article generation (Haiku, pure markdown)
 
 ---
 
 ## ⚠️ Known Issues
 
-1. **DataForSEO** - May return empty if API key not configured (graceful fallback)
-2. **Critique Labs** - Not integrated yet (optional enhancement)
-3. **Railway Deploy Time** - 12+ minutes (optimization needed)
+1. **Unicode characters** - Use pre-commit hook to prevent (`.pre-commit-config.yaml`)
+2. **LinkUp API** - Rate limited (429 errors expected)
+3. **max_tokens** - Must be 8192 (not 16384) for Haiku/Sonnet
 
 ---
 
-## 📚 References
-
-- **Latest Changes:** CLAUDE.md (Version 3.0)
-- **Architecture:** QUEST_ARCHITECTURE_V2_3.md
-- **Progress:** QUEST_TRACKER.md
-
----
-
-**Ready to generate high-quality articles with full multi-API research!** 🚀
+**Ready to generate articles with Haiku!** 🚀

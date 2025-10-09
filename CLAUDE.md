@@ -72,7 +72,15 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 
 ### 🔄 Latest Updates (Oct 10, 2025)
 
-**🎉 MAJOR ENHANCEMENT: Complete Multi-API Research Flow (Sonnet 4.5)** - Commit: `feb92c8`
+**🎉 CRITICAL FIX: Haiku Model + Syntax Errors Fixed** - Commit: `9146343`
+- ✅ **Switched to Haiku** - 25x cheaper ($0.03/article vs $0.75 with Sonnet)
+- ✅ **Fixed syntax errors** - Unclosed f-string, Unicode characters (arrow →, smart quotes)
+- ✅ **Pure markdown output** - Removed JSON wrapper (user requested multiple times)
+- ✅ **max_tokens=8192** - Correct limit for Haiku/Sonnet (not 16384)
+- ✅ **Pre-commit hook** - Prevents Unicode characters in Python files
+- **Cost**: ~$0.60 per article (down from $0.77)
+
+**Previous: MAJOR ENHANCEMENT: Complete Multi-API Research Flow** - Commit: `feb92c8`
 - ✅ **DataForSEO Integration** - Keyword validation with search volume, competition, CPC metrics
 - ✅ **KeywordResearcher Agent** - Two-phase keyword research (Perplexity + DataForSEO)
 - ✅ **Enhanced ContentAgent** - 11-point article structure, citation format [1],[2], system prompts, 2000+ words enforced
@@ -985,5 +993,5 @@ quest-platform/
 
 ---
 
-**Last Updated:** October 10, 2025 (Evening)
-**Version:** 3.0 (Production - Enhanced Multi-API Research Flow with Quality Improvements)
+**Last Updated:** October 10, 2025 (Late Evening)
+**Version:** 3.1 (Production - Haiku Model, Pure Markdown Output, Syntax Fixes)
