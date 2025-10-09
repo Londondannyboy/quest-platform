@@ -1,34 +1,57 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `cbc42cb` - "Fix: Always publish articles with decision='publish'"
-**Railway:** ✅ Deployed
-**Vercel:** ⏳ Pending redeploy (manual trigger needed)
+**Last Commit:** `98175ef` - "Document restart prompt policy in CLAUDE.md"
+**Railway:** ✅ Deployed | **Vercel:** ⏳ Needs manual redeploy
 **Date:** October 9, 2025
 
 ---
 
 ## 🎯 Current Priorities
 
-### 1. **Manual: Trigger Vercel Redeploy** (5 mins)
+### 1. **Deploy BullMQ Worker to Railway** (30 mins - NOW POSSIBLE!)
+**Railway incident RESOLVED - can now create services**
+
+**Steps:**
+1. Go to Railway project: `quest-platform-production`
+2. Click "+ New" → "Service" → "GitHub Repo" → `Londondannyboy/quest-platform`
+3. Configure:
+   - **Name:** `quest-worker`
+   - **Root Directory:** `backend`
+   - **Start Command:** `python -m app.worker`
+   - **Environment Variables:** Copy ALL from main service
+4. Deploy → Watch logs for `"worker.ready"`
+
+### 2. **Trigger Vercel Redeploy** (2 mins)
+**Frontend has schema fix but hasn't deployed**
+
 - Go to: https://vercel.com/londondannyboys-projects/relocation-quest
-- Click "Redeploy" to pick up `published_at` schema fix
-- **Why:** Frontend using old `published_date` field, needs `published_at`
+- Click "Redeploy" on latest deployment
+- **Why:** Pick up `published_at` schema fix (was `published_date`)
+- **Result:** 3 test articles will appear on relocation.quest
 
-### 2. **Deploy BullMQ Worker** (30 mins - BLOCKED)
-- **Status:** Railway GitHub incident blocking new services
-- **Code:** Ready in `backend/app/worker.py`
-- **Action:** Wait for Railway incident to clear, then create separate service
+### 3. **Verify Articles Live** (5 mins)
+After Vercel redeploys, check:
+- https://relocation.quest/portugal-golden-visa-2025-requirements-costs-application-guide
+- https://relocation.quest/spain-digital-nomad-visa-requirements-and-application-process-2025
+- https://relocation.quest/croatia-digital-nomad-visa-2025-complete-guide
 
-### 3. **Deploy Directus CMS** (BLOCKED)
-- **Status:** Configured locally in `directus/`, not on Railway
-- **Action:** Deploy when Railway incident clears
-- **Why:** Need UI for publishing workflow (currently manual DB updates)
+---
 
-### 4. **Generate Test Articles** (DONE - 3 articles)
-- ✅ Portugal Golden Visa (score: 82)
-- ✅ Spain Digital Nomad Visa (score: 82)
-- ✅ Croatia Digital Nomad Visa (score: 82)
-- ⚠️ Not visible on frontend until Vercel redeploys
+## ✅ This Session's Achievements
+
+### Fixed (Backend)
+1. LinkUp API parameters (`"q"` + `"depth": "deep"`)
+2. Auto-publish logic (always set `published_at` when decision="publish")
+3. Manually published 3 test articles in database
+
+### Fixed (Frontend)
+4. Schema fix: `published_date` → `published_at`
+5. Pushed empty commit to force Vercel redeploy
+
+### Documentation
+6. Created slim restart prompt policy (<100 lines)
+7. Documented policy in CLAUDE.md
+8. Reduced restart prompt: 325 → 85 lines
 
 ---
 
@@ -40,14 +63,13 @@ cd ~/quest-platform/backend
 python3 generate_article.py --topic "Your topic" --site relocation
 ```
 
-### Check Published Articles (API)
+### Check Published Articles
 ```bash
-curl -s "https://quest-platform-production-9ee0.up.railway.app/api/articles/?status=published"
+curl -s "https://quest-platform-production-9ee0.up.railway.app/api/articles/?status=published" | python3 -c "import sys, json; print('\n'.join([a['title'] for a in json.load(sys.stdin)['articles']]))"
 ```
 
-### Manually Publish Article (SQL)
+### Manually Publish Article (when Directus not available)
 ```python
-# When Directus not available
 python3 << EOF
 import asyncio, asyncpg
 async def publish():
@@ -60,26 +82,20 @@ EOF
 
 ---
 
-## 📋 Issues This Session
+## ⚠️ Known Issues
 
-### ✅ Fixed
-1. LinkUp API parameters (`"q"` + `"depth": "deep"`)
-2. Frontend schema (`published_date` → `published_at`)
-3. Backend auto-publish (always set `published_at` when decision="publish")
-
-### ⚠️ Open
-1. Critique Labs not triggering (despite ≥70 scores)
-2. JSON parsing errors in ContentAgent (fallback works)
-3. Vercel not auto-deploying from GitHub push
+1. **Critique Labs** - Not triggering despite ≥70 scores (API key set but integration not calling)
+2. **JSON Parsing** - ContentAgent returning malformed JSON (fallback works)
+3. **Directus** - Configured locally but not deployed (needs Railway service)
 
 ---
 
 ## 📚 References
 
-- **Full History:** See CLAUDE.md (Peer Reviews #1-5)
-- **Progress Tracking:** See QUEST_TRACKER.md
-- **Architecture:** See QUEST_ARCHITECTURE_V2_3.md
+- **Full History:** CLAUDE.md (Peer Reviews #1-5)
+- **Progress:** QUEST_TRACKER.md
+- **Architecture:** QUEST_ARCHITECTURE_V2_3.md
 
 ---
 
-**Next Session:** Trigger Vercel redeploy manually, then verify articles live on relocation.quest
+**Next Session:** Deploy BullMQ worker + verify frontend articles live
