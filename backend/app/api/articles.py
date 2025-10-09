@@ -4,7 +4,8 @@ Endpoints for article generation and management
 """
 
 from uuid import uuid4
-from typing import Literal
+from typing import Literal, Dict, Any
+import json
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 import structlog
@@ -133,6 +134,51 @@ async def generate_article(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _serialize_article(row) -> Dict[str, Any]:
+    """
+    Convert an asyncpg row to a standard dict and normalise content/images.
+    """
+    article = dict(row)
+
+    raw_content = article.get("content")
+    structured = None
+
+    if isinstance(raw_content, str):
+        try:
+            structured = json.loads(raw_content)
+        except json.JSONDecodeError:
+            structured = None
+
+    if isinstance(structured, dict):
+        article["content_structured"] = structured
+
+        markdown = structured.get("content")
+        if isinstance(markdown, str):
+            article["content"] = markdown
+
+        article.setdefault("excerpt", structured.get("excerpt"))
+        article.setdefault("meta_title", structured.get("meta_title"))
+        article.setdefault("meta_description", structured.get("meta_description"))
+
+        keywords = structured.get("keywords")
+        if keywords and not article.get("keywords"):
+            article["keywords"] = keywords
+
+        # Populate image URLs if the structured payload contains them.
+        content_images = structured.get("content_images") or []
+        for idx, field in enumerate(
+            ("content_image_1_url", "content_image_2_url", "content_image_3_url")
+        ):
+            if not article.get(field) and idx < len(content_images):
+                article[field] = content_images[idx]
+
+        hero_image = structured.get("hero_image_url")
+        if hero_image and not article.get("hero_image_url"):
+            article["hero_image_url"] = hero_image
+
+    return article
+
+
 @router.get("/by-slug/{slug}")
 async def get_article_by_slug(slug: str):
     """
@@ -165,7 +211,7 @@ async def get_article_by_slug(slug: str):
             if not article:
                 raise HTTPException(status_code=404, detail="Article not found")
 
-            return dict(article)
+            return _serialize_article(article)
 
     except HTTPException:
         raise
@@ -208,7 +254,7 @@ async def get_article(article_id: str):
             if not article:
                 raise HTTPException(status_code=404, detail="Article not found")
 
-            return dict(article)
+            return _serialize_article(article)
 
     except HTTPException:
         raise
@@ -282,7 +328,8 @@ async def list_articles(
 
         async with pool.acquire() as conn:
             articles = await conn.fetch(query, *params)
-            return {"articles": [dict(article) for article in articles]}
+            serialized = [_serialize_article(article) for article in articles]
+            return {"articles": serialized}
 
     except Exception as e:
         logger.error("api.articles.list_failed", error=str(e), exc_info=e)
