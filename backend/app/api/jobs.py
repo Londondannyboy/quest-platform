@@ -79,13 +79,22 @@ async def get_job_status(job_id: str):
             if not job:
                 raise HTTPException(status_code=404, detail="Job not found")
 
+            # Parse cost_breakdown if it's a JSON string
+            import json
+            cost_breakdown = job["cost_breakdown"]
+            if isinstance(cost_breakdown, str):
+                try:
+                    cost_breakdown = json.loads(cost_breakdown)
+                except json.JSONDecodeError:
+                    cost_breakdown = None
+
             return JobStatusResponse(
                 job_id=job["job_id"],
                 status=job["status"],
                 progress=job["progress"],
                 current_step=job["current_step"],
                 article_id=str(job["article_id"]) if job["article_id"] else None,
-                cost_breakdown=job["cost_breakdown"],
+                cost_breakdown=cost_breakdown,
                 total_cost=float(job["total_cost"]) if job["total_cost"] else None,
                 error_message=job["error_message"],
                 created_at=job["created_at"].isoformat(),
