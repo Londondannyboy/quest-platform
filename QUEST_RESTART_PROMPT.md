@@ -171,13 +171,19 @@ job_status (
 
 ## ✅ RECENT UPDATES (Oct 9, 2025)
 
+**V2.9 Session - Codex Final Review + TaskMaster/Spec Kit:**
+- ✅ Codex final review (7/10) - All 3 gaps already documented in TIER 0
+- ✅ Added TaskMaster AI + GitHub Spec Kit to TIER 1 priorities
+- ✅ Added multi-site frontends gap (TIER 0 #6, LOW priority)
+- ✅ Pushed 2 commits to GitHub (documentation consolidation + final review)
+- ✅ Ready for Opus implementation
+
 **V2.8 Session - Documentation Cleanup + Codex Peer Review:**
-- ✅ Deleted 19 redundant files (docs/archive, runbooks, scripts, migrations)
+- ✅ Deleted 30+ redundant files (78 files changed, +2,219/-19,021 lines)
 - ✅ Deleted ~/quest-platform/frontend/ stub folder
 - ✅ Unified 9 SEO docs → QUEST_SEO.md
 - ✅ Added QUEST_RELOCATION_RESEARCH.md cross-references
-- ✅ Codex peer review integrated (7/10 overall score)
-- ✅ Research governance identified as TIER 0 priority
+- ✅ Codex peer review #3 integrated (research governance TIER 0)
 - ✅ Confirmed separate-repo architecture (not Turborepo) is correct
 - ✅ Context reduction: ~12,500 tokens saved (55% reduction in doc overhead)
 
