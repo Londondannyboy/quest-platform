@@ -296,7 +296,7 @@ async def get_article_by_slug(slug: str):
                 target_site, status,
                 quality_score, reading_time_minutes,
                 keywords, meta_title, meta_description,
-                published_date, created_at, updated_at
+                published_at, created_at, updated_at
             FROM articles
             WHERE slug = $1
         """
@@ -339,7 +339,7 @@ async def get_article(article_id: str):
                 target_site, status,
                 quality_score, reading_time_minutes,
                 keywords, meta_title, meta_description,
-                published_date, created_at, updated_at
+                published_at, created_at, updated_at
             FROM articles
             WHERE id = $1
         """
@@ -413,7 +413,7 @@ async def list_articles(
                 id, title, slug, excerpt, hero_image_url,
                 content_image_1_url, content_image_2_url, content_image_3_url,
                 target_site, status, quality_score,
-                reading_time_minutes, published_date,
+                reading_time_minutes, published_at,
                 created_at
             FROM articles
             WHERE {where_clause}

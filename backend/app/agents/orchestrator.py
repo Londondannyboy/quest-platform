@@ -433,7 +433,7 @@ class ArticleOrchestrator:
 
     async def _publish_article(self, article_id: str):
         """
-        Publish article (set status to published and published_date)
+        Publish article (set status to published and published_at)
         """
         pool = get_db()
 
@@ -443,7 +443,7 @@ class ArticleOrchestrator:
                     """
                     UPDATE articles
                     SET status = 'published',
-                        published_date = NOW()
+                        published_at = NOW()
                     WHERE id = $1
                     """,
                     article_id,
