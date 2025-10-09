@@ -52,15 +52,18 @@ pkill -f "directus"
 cd ~/quest-platform/backend
 python3 -m app.main
 
-# 3. Generate Articles (PRIMARY SCRIPT)
+# 3. Generate Articles (PRIMARY SCRIPT - now at root)
+cd ~/quest-platform
 # Single article:
-python3 generate_full_article.py --topic "Your topic here"
+python3 generate_article.py --topic "Your topic here"
 
 # Batch of 100 articles:
-python3 generate_full_article.py --auto --count 100
+python3 generate_article.py --auto --count 100
+
+# See QUEST_GENERATION.md for full documentation
 
 # From topics file:
-python3 generate_full_article.py --batch topics.txt
+python3 generate_article.py --batch topics.txt
 
 # 4. Start Directus CMS (optional)
 cd ~/quest-platform/directus

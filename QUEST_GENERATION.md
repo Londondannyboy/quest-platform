@@ -1,7 +1,7 @@
 # Quest Platform - Article Generation Guide
 
 **Purpose:** Authoritative documentation for the primary article generation script
-**Script:** `backend/generate_full_article.py`
+**Script:** `generate_article.py` (at root level)
 **Created:** October 10, 2025
 **Status:** Production Ready
 
@@ -9,7 +9,7 @@
 
 ## 🎯 PRIMARY GENERATION SCRIPT
 
-**`generate_full_article.py` is the SINGLE SOURCE OF TRUTH for article generation in Quest Platform.**
+**`generate_article.py` (at root) is the SINGLE SOURCE OF TRUTH for article generation in Quest Platform.**
 
 This script:
 - Uses the full 7-agent orchestrator pipeline
@@ -26,29 +26,29 @@ This script:
 
 ```bash
 # With specific topic
-python3 generate_full_article.py --topic "Best cafes for remote work in Lisbon 2025"
+python3 generate_article.py --topic "Best cafes for remote work in Lisbon 2025"
 
 # Interactive mode (will prompt for topic)
-python3 generate_full_article.py
+python3 generate_article.py
 
 # Target different site
-python3 generate_full_article.py --topic "Career growth strategies" --site placement
+python3 generate_article.py --topic "Career growth strategies" --site placement
 ```
 
 ### Batch Generation
 
 ```bash
 # Generate 10 articles with default topics
-python3 generate_full_article.py --auto --count 10
+python3 generate_article.py --auto --count 10
 
 # Generate 100 articles for production
-python3 generate_full_article.py --auto --count 100
+python3 generate_article.py --auto --count 100
 
 # Generate from topics file (one topic per line)
-python3 generate_full_article.py --batch topics.txt
+python3 generate_article.py --batch topics.txt
 
 # Limit batch size
-python3 generate_full_article.py --batch topics.txt --count 50
+python3 generate_article.py --batch topics.txt --count 50
 ```
 
 ---
