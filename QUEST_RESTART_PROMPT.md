@@ -1,66 +1,93 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `98175ef` - "Document restart prompt policy in CLAUDE.md"
-**Railway:** ✅ Deployed | **Vercel:** ⏳ Needs manual redeploy
+**Last Commit:** `015ab49` - "Update restart prompt: Railway incident resolved"
+**Railway:** ✅ Backend + BullMQ Worker deployed
+**Vercel:** ⏳ Needs manual redeploy
 **Date:** October 9, 2025
 
 ---
 
 ## 🎯 Current Priorities
 
-### 1. **Deploy BullMQ Worker to Railway** (30 mins - NOW POSSIBLE!)
-**Railway incident RESOLVED - can now create services**
+### 1. **Verify BullMQ Worker Running** (5 mins)
+**Worker deployed to Railway project `bull_mq`**
 
-**Steps:**
-1. Go to Railway project: `quest-platform-production`
-2. Click "+ New" → "Service" → "GitHub Repo" → `Londondannyboy/quest-platform`
-3. Configure:
-   - **Name:** `quest-worker`
-   - **Root Directory:** `backend`
-   - **Start Command:** `python -m app.worker`
-   - **Environment Variables:** Copy ALL from main service
-4. Deploy → Watch logs for `"worker.ready"`
+Check logs for:
+- ✅ `"worker.starting"`
+- ✅ `"worker.ready"`
+- ✅ Redis connection successful
+- ✅ Database connection successful
+
+**Health check should show queue healthy:**
+```bash
+curl https://quest-platform-production-9ee0.up.railway.app/api/health
+# Should show "queue": "healthy" (not "unhealthy")
+```
 
 ### 2. **Trigger Vercel Redeploy** (2 mins)
-**Frontend has schema fix but hasn't deployed**
+**Frontend has schema fix but hasn't auto-deployed**
 
 - Go to: https://vercel.com/londondannyboys-projects/relocation-quest
 - Click "Redeploy" on latest deployment
-- **Why:** Pick up `published_at` schema fix (was `published_date`)
 - **Result:** 3 test articles will appear on relocation.quest
 
 ### 3. **Verify Articles Live** (5 mins)
-After Vercel redeploys, check:
+After Vercel redeploys:
 - https://relocation.quest/portugal-golden-visa-2025-requirements-costs-application-guide
 - https://relocation.quest/spain-digital-nomad-visa-requirements-and-application-process-2025
 - https://relocation.quest/croatia-digital-nomad-visa-2025-complete-guide
 
 ---
 
+## 🚀 Railway Projects
+
+**Project: `bull_mq`** (NEW - BullMQ Worker)
+- **ID:** 3cff0bbc-19a7-43a9-8804-056c906e7f53
+- **Service:** Worker process polling Redis queue
+- **Start Command:** `python -m app.worker`
+- **Root Directory:** `backend`
+
+**Project: `zoological-adaptation`** (Main Backend)
+- **Service:** FastAPI REST API
+- **URL:** https://quest-platform-production-9ee0.up.railway.app
+- **TODO:** Rename to `quest-platform-api` for clarity
+
+---
+
 ## ✅ This Session's Achievements
 
-### Fixed (Backend)
+### Backend Fixes
 1. LinkUp API parameters (`"q"` + `"depth": "deep"`)
 2. Auto-publish logic (always set `published_at` when decision="publish")
 3. Manually published 3 test articles in database
 
-### Fixed (Frontend)
+### Frontend Fixes
 4. Schema fix: `published_date` → `published_at`
 5. Pushed empty commit to force Vercel redeploy
 
+### Infrastructure
+6. ✅ **BullMQ Worker deployed** to Railway (`bull_mq` project)
+7. Worker configured with all environment variables
+8. Ready for true async article generation
+
 ### Documentation
-6. Created slim restart prompt policy (<100 lines)
-7. Documented policy in CLAUDE.md
-8. Reduced restart prompt: 325 → 85 lines
+9. Slim restart prompt policy (<100 lines)
+10. Documented policy in CLAUDE.md
+11. Restart prompt: 325 → ~100 lines
 
 ---
 
 ## 🔧 Quick Commands
 
-### Generate Article
+### Generate Article (will use worker if queue healthy)
 ```bash
 cd ~/quest-platform/backend
 python3 generate_article.py --topic "Your topic" --site relocation
+```
+
+### Check Queue Health
+```bash
+curl https://quest-platform-production-9ee0.up.railway.app/api/health | jq
 ```
 
 ### Check Published Articles
@@ -68,34 +95,22 @@ python3 generate_article.py --topic "Your topic" --site relocation
 curl -s "https://quest-platform-production-9ee0.up.railway.app/api/articles/?status=published" | python3 -c "import sys, json; print('\n'.join([a['title'] for a in json.load(sys.stdin)['articles']]))"
 ```
 
-### Manually Publish Article (when Directus not available)
-```python
-python3 << EOF
-import asyncio, asyncpg
-async def publish():
-    conn = await asyncpg.connect("postgresql://neondb_owner:npg_Q9VMTIX2eHws@ep-steep-wildflower-abrkgyqu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require")
-    await conn.execute("UPDATE articles SET status='published', published_at=NOW() WHERE title='ARTICLE_TITLE'")
-    await conn.close()
-asyncio.run(publish())
-EOF
-```
-
 ---
 
 ## ⚠️ Known Issues
 
-1. **Critique Labs** - Not triggering despite ≥70 scores (API key set but integration not calling)
+1. **Critique Labs** - Not triggering (API key set, integration not calling)
 2. **JSON Parsing** - ContentAgent returning malformed JSON (fallback works)
-3. **Directus** - Configured locally but not deployed (needs Railway service)
+3. **Directus** - Configured locally, not deployed
 
 ---
 
 ## 📚 References
 
-- **Full History:** CLAUDE.md (Peer Reviews #1-5)
+- **Full History:** CLAUDE.md
 - **Progress:** QUEST_TRACKER.md
 - **Architecture:** QUEST_ARCHITECTURE_V2_3.md
 
 ---
 
-**Next Session:** Deploy BullMQ worker + verify frontend articles live
+**Next Session:** Verify worker running + trigger Vercel redeploy + see articles live
