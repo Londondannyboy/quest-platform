@@ -43,6 +43,18 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 - **`QUEST_GENERATION.md`** - PRIMARY script documentation for article generation (generate_full_article.py)
 - `CLAUDE.md` - Technical reference & historical record (this file)
 
+### Restart Prompt Policy (October 9, 2025)
+
+**CRITICAL RULE:** QUEST_RESTART_PROMPT.md MUST stay slim (<100 lines)
+
+**Policy:**
+1. **Old session details → QUEST_TRACKER.md** (NOT restart prompt)
+2. **Restart prompt contains:** Last commit, current priorities (top 3-4), quick commands only
+3. **Historical context:** Reference CLAUDE.md for peer reviews, QUEST_TRACKER.md for progress
+4. **Rationale:** Minimize context bloat, reduce token usage, faster comprehension
+
+**Implementation:** Restart prompt reduced from 325 lines → 85 lines (Oct 9, 2025)
+
 ### Deleted Files
 - ~~`README.md`~~ - **DELETED Oct 9, 2025** - Caused duplication with CLAUDE.md
 - ~~`CONTRIBUTING.md`~~ - **DELETED Oct 9, 2025** - Not accepting contributions yet
