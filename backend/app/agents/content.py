@@ -96,7 +96,7 @@ You write comprehensive, well-researched articles that provide real value to rea
 
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=4096,  # Increased to ensure complete JSON
+                max_tokens=8000,  # Increased to 8000 for 2000+ word articles (JSON format needs extra tokens)
                 temperature=0.7,
                 system=system_prompt,  # Add system prompt for better context
                 messages=[{"role": "user", "content": prompt}],

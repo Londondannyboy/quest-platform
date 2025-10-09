@@ -298,9 +298,9 @@ IMPORTANT: Return ONLY the JSON object, no additional text."""
         Returns:
             Decision: publish, review, or reject
         """
-        if score >= 75:
+        if score >= 60:
             return "publish"
-        elif score >= 60:
+        elif score >= 40:
             return "review"
         else:
             return "reject"
