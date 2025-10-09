@@ -1,8 +1,8 @@
 # Quest Platform - Peer Review Guide
 
 **Purpose:** Compare current implementation against original vision in QUEST_ARCHITECTURE.md
-**Updated:** October 9, 2025
-**Status:** Production Live - Ready for Review
+**Updated:** October 10, 2025
+**Status:** Production Live with Link Validation - Ready for Review
 
 ---
 
@@ -77,8 +77,50 @@ grep -A 20 "def generate" ~/quest-platform/backend/app/agents/content.py
 grep -n "_serialize" ~/quest-platform/backend/app/api/articles.py
 ```
 
-#### 2. 4-Agent Pipeline Completeness
-**Architecture States:** 4 agents (Research, Content, Editor, Image)
+#### 2. Link Validation System (NEW - October 10, 2025)
+**Architecture Requirement:** No hallucinated links in articles
+
+**Reality Check:**
+- ✅ LinkValidator class implemented (Option 3 from architecture)
+- ✅ External URL validation with httpx
+- ✅ Internal link suggestions from database
+- ✅ Pre-generation context validation
+- ✅ Validated links passed to ContentAgent
+
+**Review Action:**
+```bash
+# Check link validator implementation
+ls ~/quest-platform/backend/app/core/link_validator.py
+
+# Verify link flow in orchestrator
+grep -n "LinkValidator\|validate_links" ~/quest-platform/backend/app/agents/orchestrator.py
+
+# Check if ContentAgent uses validated links
+grep -n "validated_links\|link_context" ~/quest-platform/backend/app/agents/content.py
+```
+
+#### 3. Directus Publishing Workflow (FIXED - October 10, 2025)
+**Architecture Requirement:** CMS integration for article management
+
+**Reality Check:**
+- ✅ published_at column added to database
+- ✅ Status values standardized: "draft" and "published"
+- ✅ Performance indexes created for queries
+- ✅ Directus can now properly publish articles
+- ✅ Articles API correctly filters by status
+
+**Review Action:**
+```bash
+# Check database schema for published_at column
+NEON_CONNECTION_STRING="postgresql://neondb_owner:npg_Q9VMTIX2eHws@ep-steep-wildflower-abrkgyqu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require" psql -c "\d articles" | grep published_at
+
+# Verify Directus integration
+cd ~/quest-platform/directus && npx directus@latest start
+# Access at http://localhost:8055
+```
+
+#### 4. 7-Agent Pipeline Completeness
+**Architecture States:** 7 agents (Research, Content, Editor, Image, SEO, PDF, Orchestrator)
 
 **Reality Check:**
 - ✅ ResearchAgent: Which APIs are integrated? (Should be 6: Perplexity, Tavily, Firecrawl, SERP.dev, Critique Labs, Link Up)
