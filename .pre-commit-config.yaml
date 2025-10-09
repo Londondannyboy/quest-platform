@@ -1,0 +1,49 @@
+# Pre-commit hooks to prevent code quality issues
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Check for non-ASCII characters in Python files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-ast          # Check Python syntax
+      - id: check-yaml         # Check YAML syntax
+      - id: check-json         # Check JSON syntax
+      - id: end-of-file-fixer  # Ensure files end with newline
+      - id: trailing-whitespace # Remove trailing whitespace
+      - id: mixed-line-ending  # Detect mixed line endings
+      - id: check-added-large-files  # Prevent committing large files
+        args: ['--maxkb=1000']
+
+  # Prevent non-ASCII characters in Python files (prevents Unicode arrows, etc)
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-no-eval     # Prevent eval() usage
+      - id: python-check-blanket-noqa  # Prevent blanket noqa
+      - id: text-unicode-replacement-char  # Check for Unicode replacement chars
+
+  # Format Python code with black
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        args: [--line-length=100]
+        language_version: python3.12
+
+  # Sort imports with isort
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=100]
+
+  # Custom hook to catch non-ASCII in docstrings
+  - repo: local
+    hooks:
+      - id: check-non-ascii-python
+        name: Check for non-ASCII characters in Python files
+        entry: python -c "import sys; content = open(sys.argv[1]).read(); sys.exit(1 if any(ord(c) > 127 for c in content) else 0)"
+        language: system
+        files: \.py$
+        stages: [commit]
