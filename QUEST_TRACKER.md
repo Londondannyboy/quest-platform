@@ -184,6 +184,16 @@
 - TaskMaster: Enforces TIER 0 priorities (e.g., research governance before Perplexity)
 **Tools:** Already in `scripts/setup-dev-environment.sh`, needs integration
 
+#### 6. Multi-Site Frontends Missing ❌ **[NEW - Codex Final Review]**
+**Problem:** Only relocation.quest deployed, placement.quest and rainmaker.quest are empty directories
+**Impact:** Multi-site strategy unvalidated, can't test shared packages or brand differentiation
+**Solution:** Scaffold and deploy placement.quest and rainmaker.quest Astro apps
+**Priority:** LOW (After 100 relocation.quest articles)
+**Est. Time:** 2-3 hours per site (4-6 hours total)
+**Files:** Create separate repos (per architecture), clone relocation-quest template
+**Codex Finding:** "Three Astro deployments required, but only relocation.quest has source code"
+**Note:** Architecture confirmed separate repos (not monorepo) - delay until relocation.quest proven at scale
+
 ### Quality Improvements
 
 #### Testing ❌ (0% coverage)

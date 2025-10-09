@@ -712,6 +712,55 @@ Three backend bugs preventing content images:
 4. ✅ Deleted ~/quest-platform/frontend/ folder
 5. ✅ Confirmed separate-repo architecture in all docs
 
+### Peer Review #4: Codex Final Review (October 9, 2025 - Evening)
+**Reviewer:** Claude Codex
+**Status:** Final architecture validation before handoff to Opus
+**Focus:** Implementation gaps vs. documented architecture
+
+**Scorecard:**
+- Code Quality: 7/10
+- Architecture Alignment: 6/10
+- Production Readiness: 7/10
+- **Overall: 7/10**
+
+**Critical Gaps Identified:**
+
+1. **❌ Queue/Worker Separation Still Missing**
+   - **Finding:** `backend/app/api/articles.py:105-124` pushes jobs to Redis but immediately executes orchestrator via FastAPI background task
+   - **Impact:** Worker.py remains a keep-alive stub (lines 1-32), never consumes queue
+   - **Contradiction:** Violates v2.3 architecture requirement for independent BullMQ workers
+   - **Result:** Prevents isolated scaling and retry behavior
+   - **Status:** Already documented in QUEST_TRACKER.md TIER 0 #3
+
+2. **❌ Research Governance Not Enforced**
+   - **Finding:** QUEST_ARCHITECTURE_V2_3.md:830-841 requires consulting QUEST_RELOCATION_RESEARCH.md before API calls
+   - **Reality:** `backend/app/agents/research.py:36-122` goes straight from embedding to Perplexity
+   - **Missing:** Topic deduplication, SEO data injection, multi-provider fallback chain
+   - **Providers Not Wired:** Tavily, Firecrawl, SERP.dev, Critique Labs, Link Up
+   - **Status:** Already documented in QUEST_TRACKER.md TIER 0 #0 and #2
+
+3. **❌ Placement/Rainmaker Frontends Absent**
+   - **Finding:** Architecture specifies 3 Astro deployments (QUEST_ARCHITECTURE_V2_3.md:17, 1692-1800)
+   - **Reality:** Only relocation.quest has source code; placement.quest and rainmaker.quest are empty dirs
+   - **Impact:** Multi-site strategy unvalidated, can't test shared packages
+   - **Status:** Added to QUEST_TRACKER.md TIER 0 #6 (LOW priority - after 100 articles)
+
+**Positives:**
+
+- ✅ Markdown rendering, images, and metadata align with v2.3 spec
+- ✅ FastAPI + Astro split correctly implemented
+- ✅ Neon as single source of truth working
+- ✅ Compared to Oct 7 legacy setup, architecture is significantly cleaner
+
+**Next Steps for Opus:**
+
+1. **Implement Real BullMQ Worker** - Poll/ack jobs, run orchestrator independently, deploy to Railway
+2. **Add Research Pre-Flight Checks** - Consult QUEST_RELOCATION_RESEARCH.md, block dupes, integrate 5 missing APIs
+3. **Scaffold Multi-Site Frontends** - Deploy placement.quest and rainmaker.quest Astro apps (after validation)
+4. **Monitoring/Cost Dashboards** - Close remaining operational gaps
+
+**Conclusion:** All 3 critical gaps already documented in QUEST_TRACKER.md. Codex review confirms existing action items are correct priorities. Ready for Opus implementation.
+
 ---
 
 ## 🗂️ DOCUMENTATION CLEANUP LOG (October 9, 2025)
