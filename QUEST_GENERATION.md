@@ -25,7 +25,7 @@ This script:
 ### Single Article Generation
 
 ```bash
-# With specific topic
+# With specific topic (standard skyscraper)
 python3 generate_article.py --topic "Best cafes for remote work in Lisbon 2025"
 
 # Interactive mode (will prompt for topic)
@@ -33,6 +33,15 @@ python3 generate_article.py
 
 # Target different site
 python3 generate_article.py --topic "Career growth strategies" --site placement
+
+# NEW (v2.5): Conversational archetype with persona
+python3 generate_article.py \
+  --archetype conversational \
+  --persona-nationality "US citizen" \
+  --persona-profession "software engineer" \
+  --persona-situation "working remotely" \
+  --persona-question "Can I get a Portugal digital nomad visa?" \
+  --site relocation
 ```
 
 ### Batch Generation
@@ -49,6 +58,9 @@ python3 generate_article.py --batch topics.txt
 
 # Limit batch size
 python3 generate_article.py --batch topics.txt --count 50
+
+# NEW (v2.5): Generate conversational articles from pattern file
+python3 generate_article.py --batch conversational_patterns.csv --archetype conversational --count 100
 ```
 
 ---
@@ -243,5 +255,190 @@ cat batch_generation_summary.json | jq '.total_cost'
 
 ---
 
-**Last Updated:** October 10, 2025
-**Version:** 1.0 (Production Ready)
+## 🗣️ CONVERSATIONAL ARTICLE GENERATION (v2.5)
+
+**New Feature:** Generate persona-specific conversational articles for long-tail queries.
+
+### What's New in v2.5
+
+**Conversational Archetype Support:**
+- Generates 1,500-3,000 word persona-specific answers
+- Targets 9-35 word conversational queries
+- Cross-site support (relocation, placement, rainmaker)
+- AI citation optimized (ChatGPT, Perplexity, Claude, Google AI)
+
+### Conversational Article Examples
+
+**relocation.quest:**
+```bash
+python3 generate_article.py \
+  --archetype conversational \
+  --persona-nationality "US citizen" \
+  --persona-profession "software engineer" \
+  --persona-situation "working remotely making $120k" \
+  --persona-question "Can I get a Portugal digital nomad visa?" \
+  --site relocation
+
+# Generates:
+# - Title: "I'm a US Citizen Software Engineer - Can I Get a Portugal Digital Nomad Visa?"
+# - Word count: ~2,000 words
+# - Persona-specific (US tax info, income requirements for US citizens)
+# - Direct answer in first 100 words
+# - Case study: US software engineer who got the visa
+```
+
+**placement.quest:**
+```bash
+python3 generate_article.py \
+  --archetype conversational \
+  --persona-profession "marketing manager" \
+  --persona-situation "7 years experience in London" \
+  --persona-question "How do I negotiate remote work with my employer?" \
+  --site placement
+
+# Generates:
+# - Title: "I'm a Marketing Manager with 7 Years Experience - How Do I Negotiate Remote Work?"
+# - Word count: ~1,800 words
+# - Manager-specific tactics (not entry-level advice)
+# - London market context
+# - Case study: Marketing manager who successfully negotiated
+```
+
+**rainmaker.quest:**
+```bash
+python3 generate_article.py \
+  --archetype conversational \
+  --persona-profession "freelance web designer" \
+  --persona-situation "making $8k/month with 5 clients" \
+  --persona-question "Should I form an LLC or stay as a sole proprietor?" \
+  --site rainmaker
+
+# Generates:
+# - Title: "I'm a Freelance Web Designer Making $8k/Month - Should I Form an LLC?"
+# - Word count: ~2,500 words
+# - $8k/month tax bracket analysis
+# - 5-client business structure considerations
+# - Case study: Freelancer at this revenue level
+```
+
+### Pattern Generation Workflow
+
+**Step 1: Generate Patterns (One-Time Setup)**
+
+```bash
+# Generate 100 conversational patterns per site (300 total)
+cd ~/quest-platform/backend
+python3 scripts/generate_conversational_patterns.py \
+  --site relocation \
+  --count 100
+
+python3 scripts/generate_conversational_patterns.py \
+  --site placement \
+  --count 100
+
+python3 scripts/generate_conversational_patterns.py \
+  --site rainmaker \
+  --count 100
+
+# Stores patterns in conversational_patterns table
+# Each pattern includes: persona dimensions + question + priority score
+```
+
+**Step 2: Generate Articles from Patterns**
+
+```bash
+# Generate first 10 conversational articles (validation)
+python3 generate_article.py \
+  --archetype conversational \
+  --from-patterns \
+  --count 10 \
+  --site relocation
+
+# If validation successful (40%+ AI citation rate), scale to 100
+python3 generate_article.py \
+  --archetype conversational \
+  --from-patterns \
+  --count 100 \
+  --site relocation
+```
+
+**Step 3: AI Citation Testing**
+
+```bash
+# Test AI citation rate for conversational articles
+python3 scripts/test_ai_citations.py \
+  --archetype conversational \
+  --count 10
+
+# Output: {chatgpt: 4/10, perplexity: 5/10, claude: 3/10, google_ai: 2/10}
+# Citation rate: 50% (5/10 articles cited by at least 1 AI)
+```
+
+### Command-Line Arguments (Extended for v2.5)
+
+**New Arguments:**
+
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `--archetype` | Content archetype (skyscraper, conversational, etc.) | `--archetype conversational` |
+| `--persona-nationality` | Persona nationality (for conversational) | `--persona-nationality "US citizen"` |
+| `--persona-profession` | Persona profession/role | `--persona-profession "software engineer"` |
+| `--persona-situation` | Persona situation/context | `--persona-situation "working remotely"` |
+| `--persona-question` | The exact conversational question | `--persona-question "Can I get a visa?"` |
+| `--from-patterns` | Generate from conversational_patterns table | `--from-patterns` |
+
+**Existing Arguments (Still Supported):**
+
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `--topic` | Single article topic (standard) | `--topic "Portugal visa guide"` |
+| `--batch` | File with topics (one per line) | `--batch topics.txt` |
+| `--auto` | Use default high-value topics | `--auto` |
+| `--count` | Number of articles to generate | `--count 100` |
+| `--site` | Target site (relocation/placement/rainmaker) | `--site relocation` |
+
+### Cost Analysis (v2.5)
+
+**Conversational Article Cost:**
+- Research (6 APIs): $0.44
+- Template Intelligence: $0.08
+- Content Generation (Haiku): $0.03 (same as skyscraper)
+- Images: $0.12
+- **Total: $0.67/article (same as standard articles)**
+
+**AI Citation Testing (Optional):**
+- 4 platforms × $0.01/query = $0.04/article
+- **Total with testing: $0.71/article**
+
+**Batch Generation (100 conversational articles):**
+- Generation: 100 × $0.67 = $67
+- AI testing: 100 × $0.04 = $4
+- **Total: $71 for 100 articles**
+
+### Implementation Status
+
+**Current (v2.5 Design):**
+- ✅ Conversational archetype documented
+- ✅ Pattern generation strategy designed
+- ✅ Database schema defined (backwards compatible)
+- ✅ Command-line arguments specified
+- ⏳ Implementation: TIER 0.9 (Week 9-12)
+
+**Pending Implementation:**
+- ⏳ Add `--archetype` argument to generate_article.py
+- ⏳ Add persona arguments (--persona-nationality, etc.)
+- ⏳ Create scripts/generate_conversational_patterns.py
+- ⏳ Create scripts/test_ai_citations.py
+- ⏳ Update ContentAgent with CONVERSATIONAL_PROMPT
+- ⏳ Deploy conversational_patterns table to Neon
+
+**Timeline:**
+- Week 1-4: Get 20 standard articles live (current priority)
+- Week 5-8: Implement Template Intelligence (TIER 0.5)
+- Week 9-12: Implement Conversational SEO (TIER 0.9)
+- Week 13+: Scale to 300 conversational articles (100 per site)
+
+---
+
+**Last Updated:** October 10, 2025 (Late Evening)
+**Version:** 1.1 (v2.5 - Conversational Archetype Support)

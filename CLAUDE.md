@@ -121,7 +121,7 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 
 ## 🎯 Project Overview
 
-Quest is an **AI-powered content intelligence platform** that generates, manages, and publishes high-quality articles across multiple authority websites using a 7-agent orchestration system.
+Quest is an **AI-powered content intelligence platform** that generates, manages, and publishes high-quality articles across multiple authority websites using a 7-agent orchestration system with **Template Intelligence** - a revolutionary SERP-driven content architecture that analyzes competitors to detect content archetypes (strategic depth) and generate SERP-competitive articles.
 
 ### ✅ TIER 0 Implementation Complete (October 10, 2025 - Opus)
 - Research Governance with strategic topic prioritization
@@ -458,6 +458,116 @@ CREATE TABLE article_research (
    - Issue: ImageAgent code ready but not tested in production
    - Status: Pending first full test
    - Impact: Medium (articles work without images)
+
+---
+
+## 🎨 Template Intelligence System (October 10, 2025)
+
+**Status:** Design Complete, Implementation Pending
+**Documentation:** QUEST_TEMPLATES.md (980 lines - authority document)
+
+### What is Template Intelligence?
+
+Revolutionary content architecture that analyzes SERP winners using Serper.dev + Firecrawl to detect:
+- **Content Archetypes** (strategic depth - what ranks): Skyscraper, Cluster Hub, Deep Dive Specialist, Comparison Matrix, News Hub
+- **Visual Templates** (user-facing structure - what users expect): Ultimate Guide, Listicle, Comparison, Location Guide, etc.
+
+**Core Problem Solved:** Distinguishes between surface appearance (template) and strategic depth (archetype).
+
+**Example:**
+- Surface: "Top 10 Digital Nomad Visas" looks like simple listicle
+- Reality: 12,000-word skyscraper with 14 modules, ranking for 750+ keywords
+- Naive approach generates 2000-word listicle → Ranks #15
+- Template Intelligence generates skyscraper disguised as listicle → Ranks #1-3
+
+### Architecture Components
+
+**1. TemplateDetector Agent** (`backend/app/agents/template_detector.py` - pending)
+- Analyzes SERP results (Serper.dev)
+- Scrapes top 3-5 competitors (Firecrawl)
+- Multi-dimensional archetype detection (word count, modules, E-E-A-T signals)
+- Caches recommendations (30-day TTL)
+
+**2. Database Schema (5 New Tables)**
+- `content_archetypes` - Archetype definitions
+- `content_templates` - Template definitions
+- `serp_intelligence` - SERP analysis cache
+- `scraped_competitors` - Competitor analysis
+- `template_performance` - Learning from results
+
+**3. Modular Component Library (35 Components)**
+- Content modules (15): TldrSection, KeyTakeaways, FaqAccordion, etc.
+- Interactive modules (10): Calculator, Quiz, InteractiveMap, etc.
+- Schema modules (10): ArticleSchema, HowToSchema, FaqSchema, etc.
+
+**4. Astro Templates (12 Templates)**
+- UltimateGuide.astro, Listicle.astro, Comparison.astro, LocationGuide.astro, etc.
+
+### Enhanced Agent Pipeline (v2.4.0)
+
+```yaml
+0. Check QUEST_RELOCATION_RESEARCH.md (topic validation)
+1. ResearchAgent (gather intelligence)
+
+NEW → 1.5. TemplateDetector (SERP intelligence)
+         - Query serp_intelligence cache
+         - If no cache: Run Serper + Firecrawl analysis
+         - Detect: archetype, template, modules, word count
+         - Store recommendations
+
+2. ContentAgent (generate with archetype + template guidance)
+   - Receives: research data + archetype requirements + template structure
+   - Generates: markdown following archetype depth + template style
+
+3. EditorAgent (quality scoring + E-E-A-T validation)
+4. ImageAgent (FLUX + Cloudinary)
+
+NEW → 4.5. SchemaGenerator (multi-schema JSON-LD)
+         - Load schema templates for archetype
+         - Stack multiple schemas (Article + FAQPage + HowTo + ItemList)
+         - Inject into <head>
+
+Total_Latency: 60-90 seconds (added 15-30s for template detection)
+Cost_Per_Article: $0.68 (added Serper + Firecrawl: $0.08)
+```
+
+### E-E-A-T Optimization for YMYL
+
+**Quest's entire niche is YMYL-heavy:**
+- Visa/immigration = YMYL (life-changing decisions)
+- Tax advice = YMYL (financial impact)
+- Legal processes = YMYL (legal consequences)
+
+**Archetype E-E-A-T Requirements:**
+- **Skyscraper**: 2-3 case studies, lawyer quotes, .gov sources, update dates
+- **Deep Dive**: 1 case study, expert quotes, official docs, accuracy disclaimer
+- **Comparison Matrix**: Transparent criteria, fair assessment, affiliate disclosure
+
+**Implementation:** EditorAgent validates E-E-A-T requirements before approval. E-E-A-T score < 80 → requires human review.
+
+### Implementation Status
+
+**Design Phase (Complete - Oct 10, 2025):**
+- ✅ 5 content archetypes defined
+- ✅ 12 visual templates specified
+- ✅ 35 modular components cataloged
+- ✅ Database schema designed (5 new tables)
+- ✅ TemplateDetector agent designed
+- ✅ E-E-A-T framework established
+- ✅ Complete documentation (QUEST_TEMPLATES.md)
+
+**Implementation Phase (TIER 0.5-0.7 - Upcoming):**
+- ⏳ Create 5 database tables (SQL migration)
+- ⏳ Implement TemplateDetector agent
+- ⏳ Integrate Serper + Firecrawl APIs
+- ⏳ Build Astro template components (12 templates)
+- ⏳ Build modular component library (35 components)
+- ⏳ Update ContentAgent to receive archetype + template
+- ⏳ Implement multi-schema JSON-LD generator
+- ⏳ Generate first 10 template-driven articles
+- ⏳ Validate archetype detection accuracy (target: >85%)
+
+**See:** `QUEST_TRACKER.md` Phase 2.5 for complete implementation checklist.
 
 ---
 

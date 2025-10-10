@@ -495,6 +495,244 @@ Target: Score > 7 = High priority
 
 ---
 
+## 🎨 PART 4.5: ARCHETYPE-FIRST SEO STRATEGY (October 10, 2025)
+
+### **The Template Intelligence Integration**
+
+Quest's **Template Intelligence System** revolutionizes SEO by analyzing SERP winners to detect content archetypes (strategic depth) vs visual templates (user-facing structure), ensuring every article is SERP-competitive from day one.
+
+**Core Innovation:** Don't guess what to write - analyze what ranks, detect the archetype, then generate content that matches or exceeds competitor depth.
+
+### **Archetype-First Workflow**
+
+**Traditional SEO Workflow (Naive):**
+1. Pick keyword: "Best Digital Nomad Visas"
+2. See #1 result looks like listicle
+3. Generate: 2000-word listicle
+4. Result: Ranks #15 (not competitive)
+
+**Archetype-First Workflow (Template Intelligence):**
+1. Pick keyword: "Best Digital Nomad Visas"
+2. **NEW:** Run TemplateDetector (Serper + Firecrawl)
+   - Scrapes top 3-5 competitors
+   - Detects: Surface = listicle, Depth = skyscraper
+   - Analysis: 12k words, 14 modules, 4 schemas, 45 internal links
+3. Generate: Skyscraper disguised as listicle
+4. Result: Ranks #1-3 (SERP-competitive)
+
+### **How Archetypes Map to SEO Goals**
+
+| Archetype | SEO Goal | Keywords Targeted | LLM Citations | E-E-A-T Level |
+|-----------|----------|-------------------|---------------|---------------|
+| **Skyscraper** | Domain authority hub | 500-2000 variations | Maximum | Maximum (YMYL) |
+| **Cluster Hub** | Topic navigation | 200-500 variations | High | High |
+| **Deep Dive Specialist** | Exact-match dominance | 50-200 variations | High | Maximum (YMYL) |
+| **Comparison Matrix** | Decision queries | 100-300 variations | Medium | Medium |
+| **News Hub** | Timely queries | 50-150 variations | Medium | High |
+
+### **Archetype Selection Guide**
+
+**Query Intent → Archetype:**
+
+| Query Pattern | Best Archetype | Example |
+|---------------|----------------|---------|
+| "What is [topic]" | Skyscraper | "What is Portugal Golden Visa" |
+| "Best [options]" | Skyscraper or Comparison Matrix | "Best Digital Nomad Visas" |
+| "[A] vs [B]" | Comparison Matrix | "Cyprus vs Malta Tax" |
+| "How to [task]" | Deep Dive Specialist | "How to Get NHR Status" |
+| "[Country] guide" | Skyscraper or Cluster Hub | "Portugal Guide for Nomads" |
+| "[Topic] 2025 changes" | News Hub | "Portugal Visa Changes 2025" |
+
+**YMYL Topics (Visa/Tax/Legal) → Always Skyscraper or Deep Dive**
+- E-E-A-T requirements demand maximum depth
+- Google penalizes thin YMYL content
+- LLMs prefer authoritative YMYL sources
+
+### **E-E-A-T Alignment by Archetype**
+
+**Skyscraper (Maximum E-E-A-T):**
+- **Experience:** 2-3 expat case studies, real names/photos
+- **Expertise:** Immigration lawyer quotes, tax accountant contributions, data tables
+- **Authoritativeness:** .gov sources, press mentions, expert bios
+- **Trustworthiness:** Update dates, fact-checking, transparent methodology
+
+**Deep Dive Specialist (High E-E-A-T):**
+- **Experience:** 1 detailed case study, step-by-step with real examples
+- **Expertise:** Expert review/quote, official documentation
+- **Authoritativeness:** .gov sources for legal/tax info
+- **Trustworthiness:** Accuracy disclaimer, update date, clear sourcing
+
+**Comparison Matrix (Medium E-E-A-T):**
+- **Experience:** Optional user reviews/data
+- **Expertise:** Transparent comparison criteria
+- **Authoritativeness:** Fair, balanced assessment
+- **Trustworthiness:** Affiliate disclosure, regular updates
+
+### **Schema Optimization by Archetype**
+
+**Skyscraper Schema Stack (4-6 schemas):**
+```json
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "Best Digital Nomad Visas 2025",
+      "wordCount": 12000,
+      "keywords": "digital nomad, visa, remote work",
+      "mentions": [...30+ entities...],
+      "citation": [...20+ sources...]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [...25+ Q&A pairs...]
+    },
+    {
+      "@type": "HowTo",
+      "name": "How to Apply for Digital Nomad Visa",
+      "step": [...10+ steps...]
+    },
+    {
+      "@type": "ItemList",
+      "itemListElement": [...10 visa rankings...]
+    }
+  ]
+}
+```
+
+**Deep Dive Schema Stack (2-4 schemas):**
+```json
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "How to Get Portugal NHR Tax Status",
+      "wordCount": 4500
+    },
+    {
+      "@type": "HowTo",
+      "name": "Portugal NHR Application Process",
+      "step": [...10 detailed steps...]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [...12 Q&A pairs...]
+    }
+  ]
+}
+```
+
+**Why Schema Stacking Works:**
+- LLMs read schema FIRST before article body
+- Multiple schemas = more context for LLMs
+- Rich snippets in Google search (FAQ, HowTo)
+- Structured data improves AI Overview inclusion
+
+### **Modular SEO Components**
+
+**Every Archetype Should Include:**
+
+_Content Modules (Essential for SEO):_
+- **TldrSection** - Quick answer for featured snippets
+- **KeyTakeaways** - Bullet points LLMs love
+- **FaqAccordion** - Rich snippet goldmine (FAQPage schema)
+- **ComparisonTable** - Structured data + scannable content
+
+_Schema Modules (Essential for LLM Discovery):_
+- **ArticleSchema** - Base structured data
+- **HowToSchema** - Step-by-step processes (if applicable)
+- **FaqSchema** - Q&A rich snippets (always include)
+- **BreadcrumbSchema** - Navigation hierarchy
+
+_E-E-A-T Modules (Essential for YMYL):_
+- **ExpertQuote** - Expertise signal
+- **CaseStudyCard** - Experience signal
+- **ResourceGrid** - Authoritativeness signal
+- **References** - Trustworthiness signal
+
+### **Content Production Strategy**
+
+**Archetype Distribution (Quest Platform):**
+```yaml
+40% Skyscraper (foundation content):
+  - "Complete Guide to [Country] Visa"
+  - "Best [Category] for [Audience]"
+  - "[Topic]: Everything You Need to Know"
+
+20% Deep Dive Specialist (specific processes):
+  - "How to Get [Specific Visa/Tax Status]"
+  - "Step-by-Step: [Process]"
+  - "[Problem]? Here's How to Fix It"
+
+20% Comparison Matrix (decision content):
+  - "[Option A] vs [Option B] vs [Option C]"
+  - "Which [Category] is Right for You?"
+  - "Best [Options]: Complete Comparison"
+
+15% Cluster Hub (category overviews):
+  - "[Category]: Complete Overview"
+  - "Everything About [Topic]"
+  - "[Topic] Resources & Guides"
+
+5% News Hub (timely updates):
+  - "[Topic] 2025 Changes"
+  - "[Country] Visa Update: What You Need to Know"
+  - "New [Policy/Law]: Impact Analysis"
+```
+
+**Why This Distribution:**
+- 40% Skyscraper = Foundation authority (ranks for broad terms)
+- 20% Deep Dive = Long-tail dominance (ranks for specific queries)
+- 20% Comparison = Decision intent (high conversion)
+- 15% Cluster Hub = Internal linking (SEO structure)
+- 5% News Hub = Freshness signals (topical authority)
+
+### **Implementation Workflow**
+
+**For Every New Article:**
+
+1. **TemplateDetector Analysis** (automated)
+   - Runs Serper.dev (SERP analysis)
+   - Scrapes top 3-5 competitors (Firecrawl)
+   - Detects dominant archetype
+   - Recommends template + modules + word count
+
+2. **ContentAgent Generation** (automated)
+   - Receives archetype requirements
+   - Generates content matching archetype depth
+   - Includes required E-E-A-T modules for YMYL
+   - Outputs markdown with module markers
+
+3. **SchemaGenerator** (automated)
+   - Loads schema templates for archetype
+   - Stacks multiple schemas (Article + FAQPage + HowTo + etc.)
+   - Injects into <head>
+
+4. **EditorAgent Validation** (automated)
+   - Validates E-E-A-T requirements met
+   - Checks word count matches archetype target
+   - Verifies module completeness
+   - Quality gate: E-E-A-T score < 80 → human review
+
+**Result:** Every article is SERP-competitive, LLM-optimized, and E-E-A-T compliant from day one.
+
+### **Success Metrics**
+
+**Template Intelligence SEO Metrics:**
+- Archetype detection accuracy: >85%
+- SERP competitive match: 100% (match or exceed top 3 competitors)
+- E-E-A-T compliance: 100% for YMYL content
+- Multi-schema adoption: 100% (all articles have 2+ schemas)
+
+**Traditional SEO Metrics (Enhanced by Archetypes):**
+- Citation rate: 60% by month 12 (archetype-optimized content)
+- Rankings: Positions 1-10 for target keywords (SERP-competitive depth)
+- LLM discovery: Citations in ChatGPT, Perplexity, Claude, Google AI
+- Organic traffic: 3x increase vs. naive approach
+
+---
+
 ## 📋 PART 5: IMPLEMENTATION CHECKLIST
 
 ### **For Every Article Published**

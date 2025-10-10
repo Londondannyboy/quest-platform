@@ -460,6 +460,175 @@ NEON_CONNECTION_STRING="postgresql://..." psql -c \
 
 ---
 
+## 🎨 TEMPLATE INTELLIGENCE SYSTEM REVIEW (October 10, 2025)
+
+**Status:** Design Complete, Implementation Pending
+**Documentation:** QUEST_TEMPLATES.md (980 lines)
+**Architecture:** v2.4.0
+
+### What to Review
+
+**1. Core Concept Validation**
+
+Does the archetype vs template distinction make sense?
+
+- **ARCHETYPE** = Strategic depth (what ranks): Skyscraper, Cluster Hub, Deep Dive, Comparison Matrix, News Hub
+- **TEMPLATE** = Visual structure (what users expect): Ultimate Guide, Listicle, Comparison, Location Guide, etc.
+
+**Example to Test:**
+- "Top 10 Digital Nomad Visas" LOOKS like listicle
+- Actually IS: 12,000-word skyscraper with 14 modules, ranking for 750+ keywords
+- **Question:** Is detecting this distinction valuable? Will it improve content quality?
+
+**2. Archetype Detection Algorithm**
+
+Review the multi-dimensional detection in QUEST_TEMPLATES.md:
+
+```python
+ArchetypeDetector.analyze(scraped_html):
+  # DEPTH ANALYSIS
+  word_count = count_words()
+  section_count = count_sections()
+
+  # MODULE DETECTION
+  modules_found = detect_modules()  # FAQ, calculator, table, etc.
+
+  # LINKING ANALYSIS
+  internal_links = count_internal_links()
+
+  # SCHEMA DETECTION
+  schemas_found = extract_json_ld()
+
+  # E-E-A-T SIGNALS
+  has_expert_quotes = detect_quotes()
+  has_case_studies = detect_testimonials()
+  has_citations = count_citations()
+
+  # ARCHETYPE SCORING
+  scores = {
+    'skyscraper': calculate_skyscraper_score(),
+    'cluster_hub': calculate_cluster_score(),
+    # ... etc
+  }
+```
+
+**Questions:**
+- [ ] Is this detection algorithm sound?
+- [ ] Are the 5 archetypes sufficient or too many?
+- [ ] Are E-E-A-T requirements realistic for YMYL content?
+- [ ] Will Serper + Firecrawl provide enough data?
+
+**3. Database Schema (5 New Tables)**
+
+Review schema in QUEST_ARCHITECTURE_V2_4.md:
+
+- `content_archetypes` - Archetype definitions
+- `content_templates` - Template definitions
+- `serp_intelligence` - SERP analysis cache
+- `scraped_competitors` - Competitor analysis
+- `template_performance` - Learning from results
+
+**Questions:**
+- [ ] Are these tables sufficient?
+- [ ] Are relationships properly defined?
+- [ ] Is the caching strategy (30-day TTL) appropriate?
+- [ ] Will `template_performance` enable sufficient learning?
+
+**4. E-E-A-T Framework for YMYL**
+
+Quest's niche is YMYL-heavy (visa/tax/legal topics).
+
+**Archetype E-E-A-T Requirements:**
+- **Skyscraper**: 2-3 case studies, lawyer quotes, .gov sources, update dates
+- **Deep Dive**: 1 case study, expert quotes, official docs, accuracy disclaimer
+- **Comparison Matrix**: Transparent criteria, fair assessment, affiliate disclosure
+
+**Questions:**
+- [ ] Are E-E-A-T requirements achievable with AI?
+- [ ] Can ContentAgent generate "expert quotes" without real experts?
+- [ ] Are case studies feasible to generate at scale?
+- [ ] Will Google/LLMs recognize these signals?
+
+**5. Modular Component Library (35 Components)**
+
+Review component breakdown in QUEST_TEMPLATES.md:
+
+- Content modules (15): TldrSection, KeyTakeaways, FaqAccordion, etc.
+- Interactive modules (10): Calculator, Quiz, InteractiveMap, etc.
+- Schema modules (10): ArticleSchema, HowToSchema, FaqSchema, etc.
+
+**Questions:**
+- [ ] Is 35 components too ambitious?
+- [ ] Should this be phased (start with 10-15 core components)?
+- [ ] Are Astro templates the right choice for this?
+- [ ] Can ContentAgent generate component-compatible markdown?
+
+**6. Cost-Benefit Analysis**
+
+**Added Costs:**
+- Serper.dev: $0.05/article
+- Firecrawl: $0.03/article
+- **Template Intelligence Premium:** $0.08/article
+
+**Total Cost:** $0.68/article (up from $0.60)
+
+**Claimed Benefit:** Ranks 10+ positions higher (SERP-competitive content)
+
+**Questions:**
+- [ ] Is $0.08 premium justified?
+- [ ] Will archetype-driven content actually rank higher?
+- [ ] Should we A/B test this (template vs non-template)?
+- [ ] Is there a simpler/cheaper approach?
+
+### Review Checklist
+
+**Design Quality:**
+- [ ] Concept is sound (archetype vs template distinction)
+- [ ] Detection algorithm is practical
+- [ ] Database schema is sufficient
+- [ ] E-E-A-T framework is achievable
+- [ ] Cost-benefit analysis is realistic
+
+**Implementation Feasibility:**
+- [ ] TemplateDetector agent can be built as designed
+- [ ] ContentAgent can receive archetype guidance
+- [ ] Frontend can render template-driven content
+- [ ] System can learn from `template_performance` data
+
+**Risk Assessment:**
+- [ ] Over-engineering: Is this too complex for MVP?
+- [ ] Dependency risk: Serper/Firecrawl availability
+- [ ] Cost risk: Will SERP analysis costs spiral?
+- [ ] Quality risk: Will AI-generated E-E-A-T signals work?
+
+### Recommended Questions for Reviewer
+
+1. **Is the archetype vs template paradigm novel or over-engineered?**
+   - Does it solve a real problem or add unnecessary complexity?
+
+2. **Should implementation be phased?**
+   - Phase 1: Basic template system (no SERP analysis)
+   - Phase 2: Add TemplateDetector (Serper + Firecrawl)
+   - Phase 3: Add E-E-A-T enforcement
+
+3. **Are there simpler alternatives?**
+   - Could we just analyze SERP winners manually (not automated)?
+   - Could we use pre-defined templates without detection?
+
+4. **Is the ROI measurable?**
+   - How do we validate that archetype-driven content ranks higher?
+   - What's the success criteria? (A/B test? Rankings tracking?)
+
+### Scorecard (Template Intelligence Specific)
+
+- **Conceptual Innovation:** __/10 (Is archetype vs template distinction valuable?)
+- **Technical Feasibility:** __/10 (Can this be built as designed?)
+- **Cost-Effectiveness:** __/10 (Is $0.08 premium worth it?)
+- **Risk Level:** __/10 (How risky is this approach?)
+- **Overall Template System Score:** __/10
+
+---
+
 ## 🎯 REVIEWER DELIVERABLES
 
 ### Required Outputs

@@ -1,0 +1,4 @@
+# Railway Procfile for BullMQ Worker Service
+# This should be used by the bull_mq Railway service
+
+worker: python -m app.worker
