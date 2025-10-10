@@ -445,7 +445,7 @@ class LinkUpProvider(ResearchProvider):
 
 
 class DataForSEOProvider(ResearchProvider):
-    """DataForSEO - Keyword validation and SEO metrics"""
+    """DataForSEO - Keyword validation, SEO metrics, AND SERP analysis"""
 
     def __init__(self):
         self.login = settings.DATAFORSEO_LOGIN
@@ -458,7 +458,8 @@ class DataForSEOProvider(ResearchProvider):
         else:
             self.auth = None
 
-        self.api_url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
+        self.keywords_api_url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
+        self.serp_api_url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
 
     async def validate_keywords(self, keywords: List[str], location_code: int = 2826) -> Dict:
         """
@@ -498,7 +499,7 @@ class DataForSEOProvider(ResearchProvider):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    self.api_url,
+                    self.keywords_api_url,
                     headers=headers,
                     json=payload,
                     timeout=30.0,
@@ -535,31 +536,136 @@ class DataForSEOProvider(ResearchProvider):
             logger.error("dataforseo_validation_failed", error=str(e))
             return {}
 
+    async def get_serp_results(self, query: str, location_code: int = 2840) -> Dict:
+        """
+        Get SERP results from Google (REPLACES Serper.dev)
+
+        Args:
+            query: Search query
+            location_code: Location code (2840 = USA, 2826 = UK, 2620 = Portugal)
+
+        Returns:
+            {
+                "provider": "dataforseo_serp",
+                "content": "Formatted SERP content",
+                "sources": [{"url": "...", "title": "...", "rank": 1}],
+                "serp_data": {...},  # Full SERP metadata
+                "cost": Decimal("0.003")
+            }
+        """
+        if not self.is_available():
+            logger.warning("dataforseo_not_configured")
+            return {}
+
+        headers = {
+            "Authorization": f"Basic {self.auth}",
+            "Content-Type": "application/json"
+        }
+
+        payload = [{
+            "keyword": query,
+            "location_code": location_code,
+            "language_code": "en",
+            "device": "desktop",
+            "os": "windows",
+            "depth": 10  # Get top 10 results
+        }]
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.serp_api_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract SERP results
+                content_parts = []
+                sources = []
+                featured_snippet = None
+                people_also_ask = []
+
+                if data.get("tasks") and data["tasks"][0].get("result"):
+                    results = data["tasks"][0]["result"]
+
+                    for result in results:
+                        items = result.get("items", [])
+
+                        for item in items:
+                            item_type = item.get("type", "")
+
+                            # Featured snippet
+                            if item_type == "featured_snippet":
+                                featured_snippet = item.get("description", "")
+                                content_parts.append(f"**Featured Snippet:**\n{featured_snippet}")
+
+                            # Organic results
+                            elif item_type == "organic":
+                                title = item.get("title", "")
+                                description = item.get("description", "")
+                                url = item.get("url", "")
+                                rank = item.get("rank_absolute", 0)
+
+                                if url:
+                                    content_parts.append(
+                                        f"**[{rank}] {title}**\n{description}"
+                                    )
+                                    sources.append({
+                                        "url": url,
+                                        "title": title,
+                                        "rank": rank,
+                                        "type": "organic"
+                                    })
+
+                            # People Also Ask
+                            elif item_type == "people_also_ask":
+                                question = item.get("title", "")
+                                if question:
+                                    people_also_ask.append(question)
+
+                # Add PAA to content
+                if people_also_ask:
+                    content_parts.append(
+                        f"\n**People Also Ask:**\n" +
+                        "\n".join([f"- {q}" for q in people_also_ask[:5]])
+                    )
+
+                logger.info(
+                    "dataforseo_serp.complete",
+                    urls_found=len(sources),
+                    featured_snippet=bool(featured_snippet),
+                    paa_count=len(people_also_ask)
+                )
+
+                return {
+                    "provider": "dataforseo_serp",
+                    "content": "\n\n".join(content_parts),
+                    "sources": sources,
+                    "serp_data": {
+                        "featured_snippet": featured_snippet,
+                        "people_also_ask": people_also_ask,
+                        "total_results": len(sources)
+                    },
+                    "cost": Decimal("0.003")  # $0.003 per query (94% cheaper than Serper!)
+                }
+        except Exception as e:
+            logger.error("dataforseo_serp_failed", error=str(e))
+            return {}
+
     async def search(self, query: str) -> Dict:
         """
         Search method for ResearchProvider interface
-        Validates the query as a keyword
+        NOW uses SERP API instead of keyword validation (REPLACES Serper.dev)
         """
-        result = await self.validate_keywords([query])
-        if result and result.get("keywords"):
-            keyword_data = result["keywords"][0]
-            content = f"""**SEO Metrics for "{query}":**
-- Search Volume: {keyword_data.get('search_volume', 'N/A')}/month
-- Competition: {keyword_data.get('competition', 'unknown')}
-- CPC: ${keyword_data.get('cpc', 0):.2f}
-- Competition Level: {keyword_data.get('competition_level', 'unknown')}"""
-
-            return {
-                "provider": "dataforseo",
-                "content": content,
-                "sources": [],
-                "seo_data": keyword_data,
-                "cost": self.get_cost()
-            }
-        return {}
+        # Use SERP API by default (cheaper + more useful than keyword validation)
+        return await self.get_serp_results(query)
 
     def get_cost(self) -> Decimal:
-        return Decimal("0.02")
+        """Cost per SERP query (keywords API is separate)"""
+        return Decimal("0.003")  # SERP API cost
 
     def is_available(self) -> bool:
         return bool(self.login and self.password)
@@ -583,26 +689,27 @@ class MultiAPIResearch:
             "perplexity": PerplexityProvider(),
             "tavily": TavilyProvider(),
             "firecrawl": FirecrawlProvider(),
-            "serper": SerperProvider(),
+            "serper": SerperProvider(),  # DEPRECATED - keeping for backward compatibility
             "critique_labs": CritiqueLabsProvider(),
             "linkup": LinkUpProvider(),
-            "dataforseo": DataForSEOProvider()
+            "dataforseo": DataForSEOProvider()  # NOW handles SERP + keywords (replaces Serper!)
         }
 
         # Priority chain for fallback (tried in order)
+        # UPDATED: DataForSEO replaces Serper (94% cost savings!)
         self.priority_chain = [
             "perplexity",
             "tavily",
             "linkup",
-            "serper",
+            "dataforseo",  # NEW: Replaces "serper"
             "firecrawl"
         ]
 
         # Parallel groups for redundancy (each group runs simultaneously)
         self.research_groups = [
             ["perplexity", "tavily"],      # Primary AI research
-            ["serper", "linkup"],           # Search engines
-            ["firecrawl"]                   # Web scraping (if URLs in query)
+            ["dataforseo", "linkup"],      # UPDATED: DataForSEO SERP + LinkUp
+            ["firecrawl"]                  # Web scraping (if URLs in query)
         ]
 
     async def scrape_competitor_urls(self, urls: List[str], max_urls: int = 5) -> Dict:
@@ -701,21 +808,21 @@ class MultiAPIResearch:
         competitor_urls = []
 
         if use_all:
-            # STEP 1: Get competitor URLs from Serper first
-            if self.providers["serper"].is_available():
-                logger.info("research.running_serper_first")
-                serper_result = await self._search_with_provider("serper", self.providers["serper"], query)
-                if serper_result:
-                    results.append(serper_result)
-                    total_cost += serper_result.get("cost", Decimal("0"))
-                    providers_used.append("serper")
+            # STEP 1: Get competitor URLs from DataForSEO SERP (replaces Serper, 94% cheaper!)
+            if self.providers["dataforseo"].is_available():
+                logger.info("research.running_dataforseo_serp_first")
+                serp_result = await self._search_with_provider("dataforseo", self.providers["dataforseo"], query)
+                if serp_result:
+                    results.append(serp_result)
+                    total_cost += serp_result.get("cost", Decimal("0"))
+                    providers_used.append("dataforseo_serp")
 
-                    # Extract competitor URLs from Serper results
+                    # Extract competitor URLs from SERP results
                     competitor_urls = [
-                        source["url"] for source in serper_result.get("sources", [])
+                        source["url"] for source in serp_result.get("sources", [])
                         if source.get("url")
                     ]
-                    logger.info("research.serper_urls_found", url_count=len(competitor_urls))
+                    logger.info("research.dataforseo_urls_found", url_count=len(competitor_urls))
 
             # STEP 2: Scrape competitor URLs with Firecrawl
             if competitor_urls and self.providers["firecrawl"].is_available():
@@ -731,7 +838,7 @@ class MultiAPIResearch:
             tasks = []
             for name, provider in self.providers.items():
                 # Skip already-run providers and critique_labs
-                if name in ["serper", "firecrawl", "critique_labs"]:
+                if name in ["dataforseo", "firecrawl", "critique_labs", "serper"]:
                     continue
                 if provider.is_available():
                     tasks.append(self._search_with_provider(name, provider, query))
