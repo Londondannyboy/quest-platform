@@ -181,9 +181,10 @@ class TemplateDetector:
     async def _check_cache(self, keyword: str) -> Optional[Dict]:
         """Check if SERP analysis exists in cache and is still valid"""
         keyword_hash = hashlib.md5(keyword.encode()).hexdigest()
+        pool = get_db()
 
-        async with get_db() as db:
-            result = await db.fetchrow(
+        async with pool.acquire() as conn:
+            result = await conn.fetchrow(
                 """
                 SELECT
                     detected_archetype,
@@ -203,7 +204,7 @@ class TemplateDetector:
 
             if result:
                 # Increment cache hit counter
-                await db.execute(
+                await conn.execute(
                     """
                     UPDATE serp_intelligence
                     SET cache_hits = cache_hits + 1,
@@ -520,10 +521,11 @@ class TemplateDetector:
     ):
         """Store analysis results in cache"""
         keyword_hash = hashlib.md5(keyword.encode()).hexdigest()
+        pool = get_db()
 
-        async with get_db() as db:
+        async with pool.acquire() as conn:
             # Insert into serp_intelligence
-            serp_id = await db.fetchval(
+            serp_id = await conn.fetchval(
                 """
                 INSERT INTO serp_intelligence (
                     keyword,
@@ -567,7 +569,7 @@ class TemplateDetector:
 
             # Insert scraped competitors
             for comp in scraped_competitors:
-                await db.execute(
+                await conn.execute(
                     """
                     INSERT INTO scraped_competitors (
                         serp_intelligence_id,

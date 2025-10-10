@@ -25,7 +25,7 @@ This script:
 ### Single Article Generation
 
 ```bash
-# With specific topic (standard skyscraper)
+# With specific topic
 python3 generate_article.py --topic "Best cafes for remote work in Lisbon 2025"
 
 # Interactive mode (will prompt for topic)
@@ -33,16 +33,9 @@ python3 generate_article.py
 
 # Target different site
 python3 generate_article.py --topic "Career growth strategies" --site placement
-
-# NEW (v2.5): Conversational archetype with persona
-python3 generate_article.py \
-  --archetype conversational \
-  --persona-nationality "US citizen" \
-  --persona-profession "software engineer" \
-  --persona-situation "working remotely" \
-  --persona-question "Can I get a Portugal digital nomad visa?" \
-  --site relocation
 ```
+
+**NOTE:** Conversational archetype flags (`--archetype`, `--persona-*`) are documented but NOT YET IMPLEMENTED. See "Implementation Status" section below.
 
 ### Batch Generation
 
@@ -58,10 +51,9 @@ python3 generate_article.py --batch topics.txt
 
 # Limit batch size
 python3 generate_article.py --batch topics.txt --count 50
-
-# NEW (v2.5): Generate conversational articles from pattern file
-python3 generate_article.py --batch conversational_patterns.csv --archetype conversational --count 100
 ```
+
+**NOTE:** Conversational pattern generation is documented but NOT YET IMPLEMENTED.
 
 ---
 
@@ -129,17 +121,18 @@ The script generates summary files for tracking:
 
 ---
 
-## ⚙️ COMMAND LINE ARGUMENTS
+## ⚙️ COMMAND LINE ARGUMENTS (Currently Implemented)
 
-| Argument | Description | Example |
-|----------|-------------|---------|
-| `--topic` | Single article topic | `--topic "Portugal visa guide"` |
-| `--batch` | File with topics (one per line) | `--batch topics.txt` |
-| `--auto` | Use default high-value topics | `--auto` |
-| `--count` | Number of articles to generate | `--count 100` |
-| `--site` | Target site (relocation/placement/rainmaker) | `--site relocation` |
+| Argument | Description | Example | Status |
+|----------|-------------|---------|--------|
+| `--topic` | Single article topic | `--topic "Portugal visa guide"` | ✅ Working |
+| `--batch` | File with topics (one per line) | `--batch topics.txt` | ✅ Working |
+| `--auto` | Use default high-value topics | `--auto` | ✅ Working |
+| `--count` | Number of articles to generate | `--count 100` | ✅ Working |
+| `--site` | Target site (relocation/placement/rainmaker) | `--site relocation` | ✅ Working |
+| `--concurrent` | Max concurrent generations (default=1) | `--concurrent 3` | ⚠️ Accepted but not used yet |
 
-**Note:** `--concurrent` flag exists in code but is not currently implemented (planned for TIER 1).
+**Important:** The script filename is `generate_article.py` (not `generate_full_article.py` as shown in some examples).
 
 ---
 
