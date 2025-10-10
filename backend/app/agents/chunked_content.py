@@ -142,6 +142,18 @@ class ChunkedContentAgent:
                 f.write(chunk)
             logger.info(f"chunked_content.chunk_saved", chunk=i+1, file=chunk_file)
 
+        # STAGE 1.5: Weave chunks together (NEW - Desktop recommendation)
+        # Use Gemini 2.5 Flash for fast, cheap transition weaving
+        woven_content = await self._weave_chunks_with_gemini(chunks, topic)
+        costs["gemini_chunks"] += woven_content["cost"]
+
+        logger.info(
+            "chunked_content.weaving_complete",
+            original_words=sum(len(c.split()) for c in chunks),
+            woven_words=len(woven_content["content"].split()),
+            weaving_cost=float(woven_content["cost"])
+        )
+
         # STAGE 2: Merge + refine + add citations with Sonnet
         refinement_result = await self._refine_with_sonnet(
             chunks, research, style, topic, link_context, template_guidance
