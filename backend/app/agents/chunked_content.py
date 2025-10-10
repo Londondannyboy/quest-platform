@@ -525,15 +525,19 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - Key Takeaways (5 bullet points)
    - All chunk content with H2/H3 headers
    - FAQ section (8-10 Q&A pairs, near end)
-   - References section (## References, at very end)
+   - **CRITICAL:** References section (## References, at very end)
 
 3. **Add Citations** (MINIMUM 8-12 required):
    - Add inline citations [1], [2], [3] for ALL factual claims
    - Use research sources from above
-   - Format References section:
-     [1] Source Name - URL
-     [2] Source Name - URL
-   - Distribute citations throughout article
+   - **MANDATORY FORMAT for References section:**
+     ## References
+
+     [1] Source Name - https://example.com/source1
+     [2] Source Name - https://example.com/source2
+     [3] Source Name - https://example.com/source3
+   - MUST create complete References section at end of article
+   - Distribute citations throughout article body
 
 4. **Enhance Quality**:
    - Add specific data points and statistics
@@ -564,7 +568,10 @@ CRITICAL WARNINGS:
 - DO NOT condense, summarize, or shorten the chunks
 - EXPAND and elaborate on every section
 - Articles under 3000 words will be AUTOMATICALLY REJECTED
-- Minimum 8+ citations required throughout"""
+- Minimum 8+ citations required throughout
+- **MANDATORY:** ## References section with ALL citations at the very end
+- Format EXACTLY: [1] Source Name - URL (one per line)
+- Articles without proper References section will FAIL quality check"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""

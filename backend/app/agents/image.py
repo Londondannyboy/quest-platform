@@ -62,12 +62,15 @@ class ImageAgent:
             api_secret=settings.CLOUDINARY_API_SECRET,
         )
 
-        # Site-specific image styles
+        # Site-specific image styles with neon outline aesthetic
         self.style_guides = {
-            "relocation": "modern, professional, international cityscape, photorealistic",
-            "placement": "professional office, data visualization, business setting, clean aesthetic",
-            "rainmaker": "entrepreneurial, dynamic, aspirational, premium aesthetic",
+            "relocation": "modern professional international cityscape with subtle neon outline glow accents, photorealistic with futuristic edge lighting",
+            "placement": "professional office data visualization with neon outline highlighting key elements, clean aesthetic with glowing borders",
+            "rainmaker": "entrepreneurial dynamic aspirational scene with premium neon outline accents, glowing edge highlights",
         }
+
+        # Neon aesthetic guidance (applied to all images)
+        self.neon_aesthetic = "subtle neon outline glow on key subjects, glowing edges, cyberpunk-inspired lighting accents, modern futuristic aesthetic, vibrant rim lighting"
 
     async def generate(
         self, article: Dict, target_site: str, slug: str
@@ -228,47 +231,47 @@ Mood: Inspirational and informative"""
         # Extract topic from title
         topic = title.replace("Complete Guide", "").replace("2025", "").strip()
 
-        # Hero prompt (main topic) - Wide, vibrant, business context
+        # Hero prompt (main topic) - Wide, vibrant, business context with neon accents
         hero_prompt = f"""Professional editorial photograph about {topic}.
 {self.IMAGE_SPECS['hero']['description']}
 
-Style: {style}, vibrant colors, wide composition
+Style: {style}, {self.neon_aesthetic}
 Format: 16:9 aspect ratio, high quality, photorealistic, 4k resolution
-Lighting: Natural, professional, golden hour
-Mood: Inspirational and authoritative
+Lighting: Natural professional lighting with neon outline glow accents on subjects
+Mood: Inspirational authoritative with modern futuristic edge
 
 AVOID: {self.NEGATIVE_PROMPT}"""
 
-        # Content image 1: Infographic/diagram style - Clear visual hierarchy
+        # Content image 1: Infographic/diagram style with neon highlights
         content_1_prompt = f"""Detailed infographic or diagram showing the process of {topic}.
 {self.IMAGE_SPECS['content_1']['description']}
 
-Style: {style}, clean layout, informative
+Style: {style}, {self.neon_aesthetic}, clean layout with glowing highlights
 Format: 16:9 aspect ratio, high quality, clear visual hierarchy
-Visual elements: Charts, icons, step-by-step flow
-Mood: Educational and professional
+Visual elements: Charts icons step-by-step flow with neon outline accents
+Mood: Educational professional with modern tech aesthetic
 
 AVOID: {self.NEGATIVE_PROMPT}"""
 
-        # Content image 2: Business scene with people - Modern office/location
+        # Content image 2: Business scene with neon rim lighting
         content_2_prompt = f"""Professional business scene related to {topic}.
 {self.IMAGE_SPECS['content_2']['description']}
 
-Style: {style}, people working together, modern setting
+Style: {style}, {self.neon_aesthetic}, people working together
 Format: 16:9 aspect ratio, high quality, photorealistic
-Scene: Professional office environment or relevant location
-Mood: Collaborative and productive
+Scene: Professional office environment with subtle neon edge lighting on people
+Mood: Collaborative productive with futuristic modern vibe
 
 AVOID: {self.NEGATIVE_PROMPT}"""
 
-        # Content image 3: Visual metaphor - Symbolic, clean composition
+        # Content image 3: Visual metaphor with glowing edges
         content_3_prompt = f"""Visual metaphor or conceptual image representing {topic}.
 {self.IMAGE_SPECS['content_3']['description']}
 
-Style: {style}, symbolic, minimalist
+Style: {style}, {self.neon_aesthetic}, symbolic minimalist with glowing accents
 Format: 16:9 aspect ratio, high quality, artistic photorealistic
-Composition: Clean, focused, meaningful symbolism
-Mood: Thoughtful and sophisticated
+Composition: Clean focused meaningful symbolism with neon outline highlights
+Mood: Thoughtful sophisticated with modern futuristic edge
 
 AVOID: {self.NEGATIVE_PROMPT}"""
 
