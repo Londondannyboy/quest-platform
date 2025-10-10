@@ -988,8 +988,8 @@ Return the woven content with smooth transitions between all 3 sections.
 Pure markdown, no JSON, no code fences."""
 
         try:
-            # Use Gemini 2.5 Flash for fast, cheap weaving
-            flash_model = genai.GenerativeModel("gemini-2.5-flash")
+            # Use Gemini 2.0 Flash (experimental) for fast, cheap weaving
+            flash_model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
             response = flash_model.generate_content(
                 weaving_prompt,
