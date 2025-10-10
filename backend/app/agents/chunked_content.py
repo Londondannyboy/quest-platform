@@ -774,3 +774,108 @@ Generation Method: Hybrid Gemini + Sonnet Chunking
         input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("3.00")
         output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("15.00")
         return input_cost + output_cost
+
+    async def _weave_chunks_with_gemini(self, chunks: list, topic: str) -> Dict:
+        """
+        Weave chunks together with smooth transitions using Gemini 2.5 Flash
+
+        This is the "Desktop recommendation" - adds narrative flow between chunks
+        without expensive Sonnet calls. Uses Gemini 2.5 Flash for speed + cost.
+
+        Args:
+            chunks: List of 3 content chunks from parallel generation
+            topic: Article topic for context
+
+        Returns:
+            Dict with woven content and cost
+        """
+        logger.info("chunked_content.weaving_chunks", chunk_count=len(chunks))
+
+        weaving_prompt = f"""You are a content editor specializing in creating seamless narrative flow.
+
+TASK: Weave these 3 article sections together with smooth transitions.
+
+TOPIC: {topic}
+
+SECTION 1 (Introduction):
+{chunks[0]}
+
+---
+
+SECTION 2 (Main Content):
+{chunks[1]}
+
+---
+
+SECTION 3 (Practical Guide):
+{chunks[2]}
+
+---
+
+YOUR JOB:
+1. **Add transitional sentences** between sections to create flow
+2. **Ensure consistent terminology** (don't switch between "digital nomad visa" and "remote work permit" randomly)
+3. **Remove redundancy** if sections repeat the same information
+4. **Maintain ALL depth and detail** from original sections
+5. **Enhance connections** between related ideas across sections
+
+CRITICAL:
+- DO NOT condense or shorten the content
+- DO NOT remove important details
+- DO NOT change the structure or headers
+- ONLY add transitions and fix terminology consistency
+- Keep the same tone and style throughout
+
+OUTPUT:
+Return the woven content with smooth transitions between all 3 sections.
+Pure markdown, no JSON, no code fences."""
+
+        try:
+            # Use Gemini 2.5 Flash for fast, cheap weaving
+            flash_model = genai.GenerativeModel("gemini-2.5-flash-002")
+
+            response = flash_model.generate_content(
+                weaving_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.5,  # Lower temp for consistency
+                    max_output_tokens=4000,  # ~2000 words woven output
+                )
+            )
+
+            woven_content = response.text
+
+            # Calculate cost (Gemini 2.5 Flash pricing)
+            # Flash is much cheaper: $0.075/M input, $0.30/M output
+            input_tokens = response.usage_metadata.prompt_token_count
+            output_tokens = response.usage_metadata.candidates_token_count
+
+            input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("0.075")
+            output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("0.30")
+            cost = input_cost + output_cost
+
+            logger.info(
+                "chunked_content.weaving_complete",
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost=float(cost),
+                woven_words=len(woven_content.split())
+            )
+
+            return {
+                "content": woven_content,
+                "cost": cost,
+                "tokens": {"input": input_tokens, "output": output_tokens}
+            }
+
+        except Exception as e:
+            logger.error("chunked_content.weaving_failed", error=str(e))
+            # Fallback: Just concatenate chunks with basic transitions
+            logger.warning("chunked_content.weaving_fallback", message="Using simple concatenation")
+
+            fallback_content = f"{chunks[0]}\n\n---\n\n{chunks[1]}\n\n---\n\n{chunks[2]}"
+
+            return {
+                "content": fallback_content,
+                "cost": Decimal("0.00"),
+                "tokens": {"input": 0, "output": 0}
+            }
