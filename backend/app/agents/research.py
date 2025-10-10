@@ -14,21 +14,23 @@ from openai import AsyncOpenAI
 import structlog
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, DatabaseManager
 from app.core.research_queue import ResearchGovernance
 from app.core.research_apis import MultiAPIResearch
+from app.core.research_cache import ClusterResearchCache
 
 logger = structlog.get_logger(__name__)
 
 
 class ResearchAgent:
     """
-    Research Agent: Gather intelligence with vector similarity caching
+    Research Agent: Gather intelligence with multi-level caching
 
-    Cost optimization:
-    - Cache hit: $0.00
-    - Cache miss: ~$0.20 (Perplexity API call)
-    - Target: 25-40% cache hit rate
+    Cost optimization (Claude Desktop recommendations):
+    - Cluster cache hit: $0.00 (90% hit rate target)
+    - Topic cache hit: $0.00 (40% hit rate)
+    - Cache miss: ~$0.45 (multi-API research)
+    - Monthly savings: $225 at 1000 articles/month
     """
 
     def __init__(self):
@@ -39,6 +41,7 @@ class ResearchAgent:
         self.cache_ttl_days = settings.RESEARCH_CACHE_TTL_DAYS
         self.governance = ResearchGovernance()
         self.multi_api = MultiAPIResearch()
+        self.cluster_cache = ClusterResearchCache(DatabaseManager())
 
     async def run(self, topic: str) -> Dict:
         """
@@ -79,15 +82,34 @@ class ResearchAgent:
                 category=validation["category"]
             )
 
-        # Step 1: Generate embedding
+        # Step 1: Check cluster cache FIRST (highest priority - 90% savings)
+        if self.cache_enabled:
+            cluster_result = await self.cluster_cache.get_research(topic)
+            if cluster_result and cluster_result.get("cached"):
+                logger.info(
+                    "research_agent.cluster_cache_hit",
+                    topic=topic,
+                    cluster_id=cluster_result["cluster_id"],
+                    age_days=cluster_result["cache_age_days"],
+                    cost_saved=0.45
+                )
+                return {
+                    "topic": topic,
+                    "research": cluster_result["research_data"],
+                    "cache_hit": True,
+                    "cluster_cache": True,
+                    "cost": Decimal("0.00"),
+                }
+
+        # Step 2: Generate embedding for topic cache
         embedding = await self._generate_embedding(topic)
 
-        # Step 2: Check cache
+        # Step 3: Check topic cache (secondary - 40% hit rate)
         if self.cache_enabled:
             cache_result = await self._check_cache(embedding)
             if cache_result:
                 logger.info(
-                    "research_agent.cache_hit",
+                    "research_agent.topic_cache_hit",
                     topic=topic,
                     cache_id=cache_result["id"],
                 )
@@ -95,10 +117,11 @@ class ResearchAgent:
                     "topic": topic,
                     "research": cache_result["research_json"],
                     "cache_hit": True,
+                    "cluster_cache": False,
                     "cost": Decimal("0.00"),
                 }
 
-        # Step 3: Cache miss - use multi-API research
+        # Step 4: Cache miss - use multi-API research
         logger.info("research_agent.cache_miss", topic=topic)
 
         # Determine if this is a high-priority topic that warrants comprehensive research
@@ -138,9 +161,20 @@ class ResearchAgent:
         # Add quality score to research data
         research_data["quality_score"] = quality_score
 
-        # Step 5: Store in cache (only if quality is sufficient)
+        # Step 5: Store in BOTH caches (only if quality is sufficient)
         if self.cache_enabled and research_data.get("content") and quality_score["is_sufficient"]:
+            # Store in topic cache (legacy)
             await self._store_in_cache(topic, embedding, research_data)
+
+            # Store in cluster cache (NEW - Claude Desktop optimization)
+            await self.cluster_cache.save_research(
+                topic=topic,
+                research_data=research_data,
+                seo_data=research_result.get("seo_data"),
+                serp_analysis=research_result.get("serp_analysis"),
+                ai_insights=research_result.get("ai_insights")
+            )
+            logger.info("research_agent.saved_to_cluster_cache", topic=topic)
 
         # Extract sources for link validation
         sources = []

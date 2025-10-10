@@ -22,24 +22,32 @@ from anthropic import AsyncAnthropic
 import structlog
 
 from app.core.config import settings
+from app.core.adaptive_chunking import AdaptiveChunkingStrategy
 
 logger = structlog.get_logger(__name__)
 
 
 class ChunkedContentAgent:
     """
-    Chunked Content Agent: Generate articles using hybrid Gemini + Sonnet approach
+    Chunked Content Agent: Generate articles using adaptive hybrid Gemini + Sonnet approach
+
+    NEW: Adaptive chunking based on topic complexity (Claude Desktop optimization)
+    - Simple topics (2 chunks): $0.05 savings
+    - Medium topics (3 chunks): Baseline cost
+    - Complex topics (4-5 chunks): +$0.10-0.20 for better quality
 
     Why this architecture?
-    - Gemini 2.0 Flash: Ultra-fast, ultra-cheap draft generation ($0.0005/chunk)
-    - Parallel chunking: 3 chunks simultaneously = 20-30 seconds total
+    - Gemini 2.5 Pro: High-quality draft generation
+    - Adaptive chunks: 2-5 chunks based on complexity analysis
+    - Parallel chunking: 20-30 seconds total
     - Sonnet refinement: Merge + enhance + citations = production quality
-    - Guaranteed output: 3000+ words, 5+ citations
+    - Guaranteed output: 3000+ words, 15+ citations
 
-    Cost breakdown:
-    - Gemini chunks: 3 × $0.0005 = $0.0015
-    - Sonnet refinement: $0.015
-    - Total: $0.017/article (92% cheaper than Sonnet-only)
+    Cost breakdown (3-chunk baseline):
+    - Gemini chunks: 3 × $0.05 = $0.15
+    - Gemini weaving: $0.01
+    - Sonnet refinement: $0.59
+    - Total: $0.75/article
     """
 
     def __init__(self):
@@ -55,6 +63,9 @@ class ChunkedContentAgent:
         # Initialize Claude Sonnet 4.5 (latest model, Sept 2025)
         self.claude_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         self.sonnet_model = "claude-sonnet-4-5-20250929"
+
+        # Initialize adaptive chunking analyzer (NEW - Claude Desktop optimization)
+        self.chunking_analyzer = AdaptiveChunkingStrategy(settings.GEMINI_API_KEY)
 
         # Site-specific writing styles
         self.style_guides = {
@@ -106,6 +117,7 @@ class ChunkedContentAgent:
         )
 
         costs = {
+            "complexity_analysis": Decimal("0.00"),
             "gemini_chunks": Decimal("0.00"),
             "sonnet_refinement": Decimal("0.00"),
         }
@@ -113,9 +125,25 @@ class ChunkedContentAgent:
         # Get site-specific style guide
         style = self.style_guides.get(target_site, self.style_guides["relocation"])
 
-        # STAGE 1: Generate 3 parallel chunks with Gemini
+        # STAGE 0: Analyze topic complexity (NEW - Claude Desktop optimization)
+        complexity_analysis = await self.chunking_analyzer.analyze_complexity(topic, research)
+        costs["complexity_analysis"] = complexity_analysis["cost"]
+
+        logger.info(
+            "chunked_content.complexity_analyzed",
+            topic=topic,
+            complexity_score=complexity_analysis["complexity_score"],
+            tier=complexity_analysis["complexity_tier"],
+            recommended_chunks=complexity_analysis["recommended_chunks"],
+            target_words=complexity_analysis["target_words"]
+        )
+
+        # Get chunk count from complexity analysis
+        chunk_count = complexity_analysis["recommended_chunks"]
+
+        # STAGE 1: Generate N parallel chunks with Gemini (adaptive 2-5)
         chunk_results = await self._generate_chunks_parallel(
-            research, style, topic, link_context, template_guidance
+            research, style, topic, link_context, template_guidance, chunk_count
         )
         costs["gemini_chunks"] = sum(c["cost"] for c in chunk_results)
 
@@ -191,29 +219,39 @@ class ChunkedContentAgent:
         style: Dict,
         topic: str,
         link_context: Optional[Dict],
-        template_guidance: Optional[Dict]
+        template_guidance: Optional[Dict],
+        chunk_count: int = 3
     ) -> list:
         """
-        Generate 3 content chunks using Gemini 2.5 Pro
+        Generate N content chunks using Gemini 2.5 Pro (adaptive 2-5 chunks)
 
         Note: Falls back to sequential generation if parallel fails due to rate limits.
         Gemini free tier: 2 requests/minute - if we exceed this, we generate sequentially.
 
-        Chunks:
-        1. Introduction + Overview (1000 words)
-        2. Main Content + Requirements (1000 words)
-        3. Practical Guide + Conclusion (1000 words)
+        Chunks (adaptive):
+        - 2 chunks: Introduction + Practical
+        - 3 chunks: Introduction + Main Content + Practical
+        - 4 chunks: Introduction + Main1 + Main2 + Practical
+        - 5 chunks: Introduction + Main1 + Main2 + Main3 + Practical
 
         Returns:
             List of chunk results with content and cost
         """
-        logger.info("chunked_content.generating_chunks_parallel")
+        logger.info("chunked_content.generating_chunks_parallel", chunk_count=chunk_count)
 
-        # Build chunk prompts
+        # Build chunk prompts based on count
+        chunk_types_map = {
+            2: ["introduction", "practical_guide"],
+            3: ["introduction", "main_content", "practical_guide"],
+            4: ["introduction", "main_content_1", "main_content_2", "practical_guide"],
+            5: ["introduction", "main_content_1", "main_content_2", "main_content_3", "practical_guide"]
+        }
+
+        chunk_types = chunk_types_map.get(chunk_count, chunk_types_map[3])
+
         chunk_prompts = [
-            self._build_chunk_prompt(1, "introduction", research, style, topic, link_context, template_guidance),
-            self._build_chunk_prompt(2, "main_content", research, style, topic, link_context, template_guidance),
-            self._build_chunk_prompt(3, "practical_guide", research, style, topic, link_context, template_guidance),
+            self._build_chunk_prompt(i+1, chunk_type, research, style, topic, link_context, template_guidance)
+            for i, chunk_type in enumerate(chunk_types)
         ]
 
         # Try parallel generation first
@@ -322,10 +360,10 @@ class ChunkedContentAgent:
         """Build prompt for a specific chunk"""
         research_content = research["content"] if isinstance(research, dict) else str(research)
 
-        # Chunk-specific instructions
+        # Chunk-specific instructions (adaptive 2-5 chunks)
         chunk_instructions = {
             "introduction": f"""
-**CHUNK 1: INTRODUCTION + OVERVIEW (~1000 words)**
+**CHUNK {chunk_number}: INTRODUCTION + OVERVIEW (~1000 words)**
 
 Write the opening section of the article that hooks the reader and sets the stage.
 
@@ -361,6 +399,105 @@ IMPORTANT:
 - NO citations yet (will be added during refinement)
 - Focus on engaging the reader
 - Target 1000 words
+""",
+            "main_content_1": f"""
+**CHUNK {chunk_number}: CORE REQUIREMENTS + FOUNDATION (~1500 words)**
+
+Write the foundational requirements section with detailed criteria.
+
+Structure:
+1. **Eligibility Requirements** (500-600 words)
+   - Detailed criteria with specific numbers
+   - Document checklist
+   - Financial thresholds
+   - Time requirements
+   - Special conditions
+
+2. **Application Foundation** (500-600 words)
+   - Initial steps (numbered)
+   - Where to start
+   - Fees and costs (specific amounts)
+   - Timeline expectations
+   - Required preparations
+
+3. **Common Mistakes** (300-400 words)
+   - Mistakes people make at this stage
+   - How to avoid them
+   - Red flags to watch for
+
+TONE: {style["tone"]}
+AUDIENCE: {style["audience"]}
+
+IMPORTANT:
+- Be specific with numbers and timelines
+- Use bullet points and numbered lists
+- NO citations yet (will be added during refinement)
+- Focus on actionable foundational information
+- Target 1500 words
+""",
+            "main_content_2": f"""
+**CHUNK {chunk_number}: ADVANCED PROCESS + OPTIMIZATION (~1500 words)**
+
+Write the advanced implementation section with optimization strategies.
+
+Structure:
+1. **Advanced Implementation** (500-600 words)
+   - Complex scenarios
+   - Multi-step processes
+   - Integration with other systems
+   - Dependencies and prerequisites
+
+2. **Optimization Strategies** (500-600 words)
+   - Time-saving tactics
+   - Cost reduction methods
+   - Quality improvements
+   - Risk mitigation
+
+3. **Edge Cases** (300-400 words)
+   - Unusual situations
+   - Exception handling
+   - Workarounds for common issues
+
+TONE: {style["tone"]}
+AUDIENCE: {style["audience"]}
+
+IMPORTANT:
+- Focus on advanced users
+- Provide deeper strategic insights
+- NO citations yet (will be added during refinement)
+- Target 1500 words
+""",
+            "main_content_3": f"""
+**CHUNK {chunk_number}: EXPERT INSIGHTS + FUTURE OUTLOOK (~1500 words)**
+
+Write the expert-level analysis section with forward-looking insights.
+
+Structure:
+1. **Expert Analysis** (500-600 words)
+   - Industry expert perspectives
+   - Professional recommendations
+   - Strategic considerations
+   - Long-term implications
+
+2. **Future Trends** (500-600 words)
+   - Upcoming changes (2025-2026)
+   - Policy developments
+   - Market evolution
+   - Strategic positioning
+
+3. **Comparative Analysis** (300-400 words)
+   - How this compares to alternatives
+   - Pros and cons analysis
+   - When to choose this option
+
+TONE: {style["tone"]}
+AUDIENCE: {style["audience"]}
+
+IMPORTANT:
+- Provide expert-level insights
+- Forward-looking analysis
+- NO citations yet (will be added during refinement)
+- Target 1500 words
 """,
             "main_content": f"""
 **CHUNK 2: MAIN CONTENT + REQUIREMENTS (~1000 words)**
