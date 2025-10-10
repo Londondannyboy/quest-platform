@@ -197,9 +197,9 @@ class EditorAgent:
         )
 
         try:
-            # Use Claude Sonnet for refinement (higher quality)
+            # Use Claude Sonnet 4.5 for refinement (highest quality)
             response = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",  # Always use Sonnet for refinement
+                model="claude-sonnet-4-5-20250929",  # Always use latest Sonnet for refinement
                 max_tokens=8192,
                 temperature=0.7,
                 timeout=180.0,  # 3 minute timeout (Bug Fix #2)

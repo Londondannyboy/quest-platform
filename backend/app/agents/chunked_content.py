@@ -129,6 +129,19 @@ class ChunkedContentAgent:
             cost=float(costs["gemini_chunks"])
         )
 
+        # DEBUG: Save chunks to files for inspection
+        import os
+        debug_dir = "/tmp/gemini_chunks"
+        os.makedirs(debug_dir, exist_ok=True)
+        for i, chunk in enumerate(chunks):
+            chunk_file = f"{debug_dir}/chunk_{i+1}_{topic[:30].replace(' ', '_')}.md"
+            with open(chunk_file, 'w') as f:
+                f.write(f"# GEMINI CHUNK {i+1}\n\n")
+                f.write(f"**Words:** {len(chunk.split())}\n\n")
+                f.write("---\n\n")
+                f.write(chunk)
+            logger.info(f"chunked_content.chunk_saved", chunk=i+1, file=chunk_file)
+
         # STAGE 2: Merge + refine + add citations with Sonnet
         refinement_result = await self._refine_with_sonnet(
             chunks, research, style, topic, link_context, template_guidance
