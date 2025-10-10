@@ -53,8 +53,8 @@ class AdaptiveChunkingStrategy:
             gemini_api_key: Gemini API key for complexity analysis
         """
         genai.configure(api_key=gemini_api_key)
-        # Use Flash for ultra-fast, ultra-cheap analysis ($0.001/analysis)
-        self.flash_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        # Use same model as chunk generation for consistency
+        self.analysis_model = genai.GenerativeModel("gemini-2.5-pro")
 
     async def analyze_complexity(self, topic: str, research: Optional[Dict] = None) -> Dict:
         """
@@ -74,7 +74,7 @@ class AdaptiveChunkingStrategy:
 
         try:
             # Generate complexity analysis
-            response = self.flash_model.generate_content(
+            response = self.analysis_model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.3,  # Low temp for consistent scoring
@@ -253,14 +253,14 @@ Respond with ONLY the JSON object, no other text."""
 
     def _calculate_flash_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
         """
-        Calculate Gemini 2.5 Flash cost
+        Calculate Gemini 2.5 Pro cost (same as chunk generation)
 
         Pricing:
-        - Input: $0.075/M tokens
-        - Output: $0.30/M tokens
+        - Input: $0.15/M tokens ($0.075 cached)
+        - Output: $0.60/M tokens
         """
-        input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("0.075")
-        output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("0.30")
+        input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("0.15")
+        output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("0.60")
         return input_cost + output_cost
 
     def build_chunk_briefs(self, chunk_count: int, subtopics: list, focus_areas: list) -> list:

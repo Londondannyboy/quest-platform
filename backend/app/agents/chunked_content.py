@@ -988,10 +988,10 @@ Return the woven content with smooth transitions between all 3 sections.
 Pure markdown, no JSON, no code fences."""
 
         try:
-            # Use Gemini 2.0 Flash (experimental) for fast, cheap weaving
-            flash_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+            # Use Gemini 2.5 Pro (same as chunk generation) for consistency
+            weaving_model = genai.GenerativeModel("gemini-2.5-pro")
 
-            response = flash_model.generate_content(
+            response = weaving_model.generate_content(
                 weaving_prompt,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.5,  # Lower temp for consistency
@@ -1001,13 +1001,12 @@ Pure markdown, no JSON, no code fences."""
 
             woven_content = response.text
 
-            # Calculate cost (Gemini 2.5 Flash pricing)
-            # Flash is much cheaper: $0.075/M input, $0.30/M output
+            # Calculate cost (Gemini 2.5 Pro pricing - same as chunks)
             input_tokens = response.usage_metadata.prompt_token_count
             output_tokens = response.usage_metadata.candidates_token_count
 
-            input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("0.075")
-            output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("0.30")
+            input_cost = Decimal(input_tokens) / Decimal(1_000_000) * Decimal("0.15")
+            output_cost = Decimal(output_tokens) / Decimal(1_000_000) * Decimal("0.60")
             cost = input_cost + output_cost
 
             logger.info(
