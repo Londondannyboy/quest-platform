@@ -721,10 +721,16 @@ SEO VALIDATION:
 - Header Hierarchy: {'✅ Valid' if seo_validation['header_hierarchy_valid'] else '❌ Invalid'} (H1:{seo_validation['h1_count']}, H2:{seo_validation['h2_count']}, H3:{seo_validation['h3_count']})
 - Links: Internal:{seo_validation['internal_links']}, External:{seo_validation['external_links']}
 - Readability Score: {seo_validation['readability_score']:.0f}/100 (Flesch Reading Ease)
-- Issues Found: {len(seo_validation['issues'])}
-{('  - ' + '\\n  - '.join(seo_validation['issues'][:5])) if seo_validation['issues'] else '  (none)'}
+- Issues Found: {len(seo_validation['issues'])}"""
 
-**IMPORTANT**: Consider SEO validation in your scoring. Penalize if SEO score < 70."""
+        # Add issues list outside f-string to avoid backslash problem
+        if seo_validation and seo_validation.get('issues'):
+            issues_text = '\n  - '.join(seo_validation['issues'][:5])
+            seo_context += f"\n  - {issues_text}"
+        else:
+            seo_context += "\n  (none)"
+
+        seo_context += "\n\n**IMPORTANT**: Consider SEO validation in your scoring. Penalize if SEO score < 70."
 
         return f"""You are a content quality analyst. Evaluate this article on a 0-100 scale.
 
