@@ -566,6 +566,15 @@ Key principles:
 - Be engaging (natural language, stories, examples)
 - Be comprehensive (3000+ words, deep coverage)
 
+CRITICAL ACCURACY REQUIREMENTS (YMYL Content):
+- NEVER make up statistics, dates, or requirements
+- NEVER cite sources not provided in research data
+- NEVER hallucinate URLs, prices, or official processes
+- If uncertain about a fact, say "consult official sources" or "verify with authorities"
+- For legal/financial advice: Add disclaimer "This is general information, not legal/financial advice"
+- Cross-reference facts with research data before including them
+- When citing numbers, always include the source: "According to [Source], ..."
+
 CRITICAL: Every factual claim needs a citation [1], [2], etc.
 Minimum 8 citations required throughout the article."""
 

@@ -192,11 +192,34 @@ Your goal: Create content that outranks competitors through superior quality, de
                     "meta_description": lines[1][:160] if len(lines) > 1 else topic
                 }
 
+            # Add metrics footer for transparency and debugging
+            word_count = len(article_data.get("content", "").split())
+            metrics_footer = f"""
+
+---
+
+<!-- GENERATION METRICS -->
+<!--
+Model: {self.model}
+Method: Single-shot generation
+Input Tokens: {input_tokens}
+Output Tokens: {output_tokens}
+Word Count: {word_count}
+Cost: ${float(cost):.4f}
+Stop Reason: {response.stop_reason if hasattr(response, 'stop_reason') else 'N/A'}
+Template: {template_guidance.get('recommended_template') if template_guidance else 'N/A'}
+Archetype: {template_guidance.get('detected_archetype') if template_guidance else 'N/A'}
+-->"""
+
+            article_data["content"] += metrics_footer
+
             logger.info(
                 "content_agent.complete",
                 topic=topic,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
+                word_count=word_count,
+                stop_reason=response.stop_reason if hasattr(response, 'stop_reason') else 'N/A',
                 cost=float(cost),
             )
 
@@ -293,6 +316,15 @@ dive, unlock, unleash, delve, opt, transformative, robust, crucial, vital, realm
 
 **CRITICAL - NEVER USE THESE AI-GIVEAWAY PHRASES:**
 "in today's world", "at the end of the day", "best practices", "dive into", "it's not just a..., it's a...", "on the other hand", "it's worth noting", "to summarize", "furthermore", "additionally", "consequently", "importantly", "indeed", "notably", "arguably", "you may want to", "as previously mentioned", "ultimately", "to put it simply", "I hope this email finds you well", "it's important to note", "it's critical to", "in summary", "remember that", "in order to", "end-to-end", "on the same page"
+
+**CRITICAL - ACCURACY & FACT-CHECKING (YMYL Content):**
+- NEVER make up statistics, dates, or requirements
+- NEVER cite sources you haven't seen in the research data
+- NEVER hallucinate URLs, prices, or official processes
+- If uncertain about a fact, say "consult official sources" or "verify with authorities"
+- For legal/financial advice: Add disclaimer "This is general information, not legal/financial advice"
+- Cross-reference facts with research data before including them
+- When citing numbers, always include the source: "According to [Source], ..."
 
 **CRITICAL - WRITE NATURALLY (Human-Like Content):**
 - It's okay to start sentences with "and" or "but"
