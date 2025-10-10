@@ -109,9 +109,16 @@ class ContentAgent:
         # Call Claude API
         try:
             # System prompt for role specialization
-            system_prompt = f"""You are an expert content writer specializing in {style['focus']} for {style['audience']}.
+            system_prompt = f"""You are an elite-level SEO expert and content writer specializing in {style['focus']} for {style['audience']}.
 
-You write comprehensive, well-researched articles that provide real value to readers. Every claim you make is backed by citations using [1], [2] format, with a complete References section at the end."""
+You write comprehensive, well-researched articles that RANK ON GOOGLE'S FIRST PAGE. Your writing is:
+- Natural and conversational (never robotic or formulaic)
+- Data-driven with citations [1], [2] format
+- Action-oriented with specific, practical advice
+- Engaging and easy to scan (headings, lists, tables)
+- Authoritative with expert quotes and official sources
+
+Your goal: Create content that outranks competitors through superior quality, depth, and structure."""
 
             response = await self.client.messages.create(
                 model=self.model,
@@ -241,31 +248,33 @@ Internal Links (use 3-5 of these for related content):
 - Secondary Keywords: {', '.join(seo_data.get('secondary_keywords', [])[:3])}
 """
 
-        return f"""You are an expert content writer specializing in {style['focus']} for {style['audience']}.
+        return f"""You are an elite-level SEO expert and copywriter with deep expertise in {style['focus']} for {style['audience']}.
 
-You write comprehensive, well-researched articles that provide real value to readers. Every claim is backed by citations using [1], [2] format.
+Your mission: Create a highly optimized, comprehensive article that will OUTRANK existing competitors on Google's first page. The content alone will determine ranking—focus on maximum quality, depth, structure, and keyword optimization to ensure top search performance.
 
-RESEARCH DATA (Multi-Source Intelligence):
+RESEARCH DATA (Competitive Intelligence):
 {research_content}
 {link_instructions}
 {seo_instructions}
 
-**CRITICAL INSTRUCTIONS FOR USING RESEARCH:**
-The research data above comes from multiple sources:
-- **Serper.dev**: Top-ranking Google competitor analysis - these are the articles currently winning on page 1
-- **Firecrawl**: Actual scraped content from competitors - see what they wrote and write BETTER
-- **Perplexity**: Deep factual research and gap analysis - use this to find what competitors are missing
-- **Tavily**: Comprehensive search results - additional context and sources
-- **DataForSEO**: SEO metrics showing search volume and competition level
+**COMPETITIVE ANALYSIS - YOUR ADVANTAGE:**
+The research data reveals what's currently ranking on Google page 1:
+- **Serper.dev**: Top-ranking competitors - these articles are your direct competition
+- **Firecrawl**: Actual scraped competitor content - see exactly what they wrote
+- **Perplexity**: Deep research + gap analysis - find what competitors MISSED
+- **Tavily**: Comprehensive search results - additional angles and sources
+- **DataForSEO**: Keyword metrics (search volume, competition, CPC) - optimize strategically
 
-YOUR JOB: Analyze the competitor content and write an article that BEATS them by:
-1. **Covering all their key points** (so you rank alongside them)
-2. **Adding insights they missed** (from Perplexity gap analysis)
-3. **Better structure and readability** (TL;DR, key takeaways, FAQs)
-4. **More authoritative sources** (use links from research)
-5. **Deeper, more actionable advice** (specific numbers, steps, examples)
+**YOUR COMPETITIVE STRATEGY - OUTRANK THEM:**
+1. **Match their coverage** - Include ALL key points from top-ranking articles (so you compete directly)
+2. **Add unique insights** - Cover gaps and angles competitors missed (from Perplexity research)
+3. **Superior structure** - Better headings, formatting, scannability (TL;DR, tables, FAQs)
+4. **More authoritative** - More citations, better sources, expert quotes, official data
+5. **More actionable** - Specific numbers, detailed steps, real examples, case studies
+6. **Better UX** - Conversational tone, direct language, avoid fluff and hedging
+7. **Comprehensive depth** - Longer, more detailed, answer every question readers might have
 
-TASK: Write a comprehensive, SEO-optimized article about: {topic}
+TASK: Write a comprehensive, Google-first-page-ranking article about: {topic}
 
 STYLE GUIDE:
 - Tone: {style['tone']}
@@ -296,8 +305,10 @@ REQUIREMENTS (AI-Optimized for ChatGPT/Perplexity):
 8. **CRITICAL: Add References section at the end** - List all sources in [1], [2], [3] format with URLs
 9. Expert quotes or credentials - builds trust
 10. Data-driven insights from research (specific statistics with citations)
-11. Conversational, direct tone - avoid hedging language
-12. **Minimum 2000 words** (aim for 2500 words for comprehensive coverage)
+11. Conversational, direct tone - avoid hedging language, avoid robotic phrasing
+12. **CRITICAL: Minimum 3000 words required** - Aim for 3500-4000 words for comprehensive, first-page-ranking content
+    - This is NON-NEGOTIABLE - articles under 3000 words will be rejected
+    - Longer = better for ranking (competitors often have 3000-5000+ words)
 13. Markdown formatting with proper link syntax: [Link Text](https://example.com)
 14. **Include image placeholders strategically throughout content**:
    - Add `![Hero Image Alt](IMAGE_PLACEHOLDER_HERO)` after the TL;DR section
