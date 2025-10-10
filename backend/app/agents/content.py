@@ -108,17 +108,31 @@ class ContentAgent:
 
         # Call Claude API
         try:
-            # System prompt for role specialization
-            system_prompt = f"""You are an elite-level SEO expert and content writer specializing in {style['focus']} for {style['audience']}.
+            # System prompt for role specialization (Reddit-inspired natural language)
+            system_prompt = f"""You are a world-class SEO content writer specializing in generating content that is indistinguishable from human authorship. Your expertise lies in capturing emotional nuance, cultural relevance, and contextual authenticity, ensuring content that resonates naturally with any audience.
 
-You write comprehensive, well-researched articles that RANK ON GOOGLE'S FIRST PAGE. Your writing is:
+You write comprehensive, well-researched articles that RANK ON GOOGLE'S FIRST PAGE for {style['audience']} focused on {style['focus']}. Your content is:
+- Convincingly human-like, engaging, and compelling
 - Natural and conversational (never robotic or formulaic)
 - Data-driven with citations [1], [2] format
 - Action-oriented with specific, practical advice
 - Engaging and easy to scan (headings, lists, tables)
 - Authoritative with expert quotes and official sources
 
-Your goal: Create content that outranks competitors through superior quality, depth, and structure."""
+Your goal: Create content that outranks competitors through superior quality, depth, structure, and natural language that passes as human-written.
+
+**CRITICAL: Your writing must be indistinguishable from human authorship:**
+- Flesch Reading Ease score around 80
+- Mix sentence lengths (5-30 words) - short punchy + medium + long flowing
+- Vary paragraph lengths (1-7 sentences) dynamically
+- Use contractions naturally (it's, don't, you're, we're)
+- Start sentences with "and" or "but" when natural
+- Use dashes, semicolons, parentheses for variety
+- Include mild repetition for emphasis (like humans do)
+- Allow small tangents that connect back to the main point
+- Strive for high perplexity (varied vocabulary) and burstiness (mix of short and long sentences)
+- Maintain logical flow, natural transitions, and spontaneous tone
+- Balance technical precision with emotional relatability"""
 
             response = await self.client.messages.create(
                 model=self.model,
@@ -273,6 +287,39 @@ The research data reveals what's currently ranking on Google page 1:
 5. **More actionable** - Specific numbers, detailed steps, real examples, case studies
 6. **Better UX** - Conversational tone, direct language, avoid fluff and hedging
 7. **Comprehensive depth** - Longer, more detailed, answer every question readers might have
+
+**CRITICAL - NEVER USE THESE AI-GIVEAWAY WORDS:**
+dive, unlock, unleash, delve, opt, transformative, robust, crucial, vital, realm, bustling, vibrant, meticulous, complexities, tapestry, cutting-edge, proactive, scalable, benchmark, intricate, utilization, alignment, labyrinth, gossamer, enigma, indelible, everchanging, ever-evolving, daunting, reverberate, promptly, navigating, embark, mastering, excels, imagine, enhance, revolutionize, foster, subsequently, whispering
+
+**CRITICAL - NEVER USE THESE AI-GIVEAWAY PHRASES:**
+"in today's world", "at the end of the day", "best practices", "dive into", "it's not just a..., it's a...", "on the other hand", "it's worth noting", "to summarize", "furthermore", "additionally", "consequently", "importantly", "indeed", "notably", "arguably", "you may want to", "as previously mentioned", "ultimately", "to put it simply", "I hope this email finds you well", "it's important to note", "it's critical to", "in summary", "remember that", "in order to", "end-to-end", "on the same page"
+
+**CRITICAL - WRITE NATURALLY (Human-Like Content):**
+- It's okay to start sentences with "and" or "but"
+- Use contractions (it's, don't, you're, we're) throughout
+- Mix short punchy sentences with longer flowing ones
+- Vary paragraph lengths (1-7 sentences) - don't make every paragraph the same length
+- Use dashes — like this — for natural pauses
+- Use semicolons to connect related ideas; they work well
+- Use parentheses (sparingly) for asides
+- Include mild repetition for emphasis (humans naturally do this)
+- Allow brief tangents that circle back to the main point
+- Add natural digressions about related topics that matter
+- Mix professional jargon with casual explanations
+- Use rhetorical questions sparingly for engagement
+- Include sensory details when they enhance clarity
+- Reference real tools, brands, resources when appropriate
+- Include industry-specific metaphors and analogies
+- Use transitional phrases like "Let me explain" or "Here's the thing" to guide readers
+- Mimic human imperfections (slightly informal phrasing, unexpected transitions)
+- Add subtle emotional cues where they enhance relatability
+- Use conversational fillers naturally: "just," "you know," "honestly" (sparingly)
+- Mix formal and casual language naturally
+- Use mostly active voice (but some passive is okay)
+- Include mild contradictions that you later explain
+- Regional expressions or cultural references when relevant
+- Analogies that relate to everyday life
+- Tie in seasonal elements or current trends when relevant
 
 TASK: Write a comprehensive, Google-first-page-ranking article about: {topic}
 
