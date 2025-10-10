@@ -150,7 +150,7 @@ class ClusterResearchCache:
                 topic=topic,
                 reuse_count=result["reuse_count"] + 1,
                 cost_saved=0.25,
-                age_days=(datetime.now() - result["created_at"]).days
+                age_days=(datetime.now(timezone.utc) - result["created_at"]).days
             )
 
             return {
