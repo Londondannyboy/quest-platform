@@ -54,22 +54,35 @@ class ContentAgent:
         target_site: str,
         topic: str,
         content_type: str = "standard",
-        link_context: Optional[Dict] = None
+        link_context: Optional[Dict] = None,
+        template_guidance: Optional[Dict] = None
     ) -> Dict:
         """
-        Generate article content from research
+        Generate article content from research with Template Intelligence
 
         Args:
             research: Research data from ResearchAgent
             target_site: Target site (relocation/placement/rainmaker)
             topic: Article topic
             content_type: Content format (standard, listicle, alternative, comparison)
+            link_context: Link validation context
+            template_guidance: Template Intelligence recommendations from TemplateDetector
+                {
+                    "detected_archetype": "skyscraper",
+                    "recommended_template": "ultimate_guide",
+                    "target_word_count": 8500,
+                    "target_module_count": 14,
+                    "common_modules": ["tldr", "faq", "calculator"]
+                }
 
         Returns:
             Dict with article data and cost
         """
         logger.info(
-            "content_agent.start", topic=topic, target_site=target_site
+            "content_agent.start",
+            topic=topic,
+            target_site=target_site,
+            archetype=template_guidance.get("detected_archetype") if template_guidance else None
         )
 
         # Get site-specific style guide
@@ -77,8 +90,14 @@ class ContentAgent:
             target_site, self.style_guides["relocation"]
         )
 
-        # Build prompt based on content type
-        if content_type == "listicle":
+        # Build prompt based on template guidance or content type
+        if template_guidance:
+            # Use Template Intelligence archetype-specific prompts
+            archetype = template_guidance.get("detected_archetype", "skyscraper")
+            prompt = self._build_archetype_prompt(
+                research, style, topic, link_context, template_guidance, archetype
+            )
+        elif content_type == "listicle":
             prompt = self._build_listicle_prompt(research, style, topic, link_context)
         elif content_type == "alternative":
             prompt = self._build_alternative_prompt(research, style, topic, link_context)
@@ -502,3 +521,255 @@ IMPORTANT:
 - Direct, confident language
 
 OUTPUT FORMAT: Same JSON with tldr, key_takeaways, faqs"""
+
+    def _build_archetype_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict,
+        archetype: str
+    ) -> str:
+        """
+        Build archetype-specific prompt using Template Intelligence recommendations
+        """
+        if archetype == "skyscraper":
+            return self._build_skyscraper_prompt(research, style, topic, link_context, template_guidance)
+        elif archetype == "deep_dive":
+            return self._build_deep_dive_prompt(research, style, topic, link_context, template_guidance)
+        elif archetype == "comparison_matrix":
+            return self._build_comparison_matrix_prompt(research, style, topic, link_context, template_guidance)
+        elif archetype == "cluster_hub":
+            return self._build_cluster_hub_prompt(research, style, topic, link_context, template_guidance)
+        elif archetype == "news_hub":
+            return self._build_news_hub_prompt(research, style, topic, link_context, template_guidance)
+        else:
+            return self._build_prompt(research, style, topic, link_context)
+
+    def _build_skyscraper_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict
+    ) -> str:
+        """Build prompt for SKYSCRAPER archetype (8000-15000 words, 12-20 modules)"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+        target_word_count = template_guidance.get("target_word_count", 8000)
+        common_modules = template_guidance.get("common_modules", [])
+
+        link_instructions = self._build_link_instructions(link_context)
+        seo_instructions = self._build_seo_instructions(link_context, topic)
+
+        return f"""You are creating a SKYSCRAPER article - the definitive resource that dominates this topic.
+
+**ARCHETYPE: SKYSCRAPER** (Comprehensive domain authority hub)
+Target: {target_word_count}+ words, 12-20 modules, 30+ internal links, 20+ citations
+
+RESEARCH DATA (Competitor Analysis):
+{research_content}
+{link_instructions}
+{seo_instructions}
+
+TASK: Write the ultimate {topic} guide
+
+STYLE: {style['tone']} for {style['audience']}
+
+**E-E-A-T REQUIREMENTS (YMYL Critical):**
+- 2-3 detailed case studies
+- 3-5 expert quotes
+- Official sources (.gov, embassy sites)
+- Specific data with citations
+- Accuracy disclaimers for legal/tax advice
+
+Common Modules (competitors use): {', '.join(common_modules) if common_modules else 'standard modules'}
+
+OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+Write the complete SKYSCRAPER article starting with # {topic}"""
+
+    def _build_deep_dive_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict
+    ) -> str:
+        """Build prompt for DEEP DIVE archetype (3000-5000 words, 8-12 modules)"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+        target_word_count = template_guidance.get("target_word_count", 3500)
+
+        link_instructions = self._build_link_instructions(link_context)
+        seo_instructions = self._build_seo_instructions(link_context, topic)
+
+        return f"""You are creating a DEEP DIVE article - the definitive answer to ONE specific question.
+
+**ARCHETYPE: DEEP DIVE SPECIALIST** (Maximum depth on single topic)
+Target: {target_word_count}+ words, 8-12 focused sections, 12+ citations
+
+RESEARCH DATA:
+{research_content}
+{link_instructions}
+{seo_instructions}
+
+TASK: Write the definitive deep-dive guide on: {topic}
+
+STYLE: {style['tone']} for {style['audience']}
+
+**E-E-A-T REQUIREMENTS:**
+- 1 detailed case study
+- 2-3 expert quotes
+- Official documentation cited
+- Step-by-step accuracy
+
+OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+Write the complete DEEP DIVE article starting with # {topic}"""
+
+    def _build_comparison_matrix_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict
+    ) -> str:
+        """Build prompt for COMPARISON MATRIX archetype (3000-4000 words, 9-12 modules)"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+        target_word_count = template_guidance.get("target_word_count", 3500)
+
+        link_instructions = self._build_link_instructions(link_context)
+        seo_instructions = self._build_seo_instructions(link_context, topic)
+
+        return f"""You are creating a COMPARISON MATRIX article - an interactive decision engine.
+
+**ARCHETYPE: COMPARISON MATRIX** (Help users make informed decisions)
+Target: {target_word_count}+ words, 9-12 sections, 3+ comparison tables, 10+ citations
+
+RESEARCH DATA:
+{research_content}
+{link_instructions}
+{seo_instructions}
+
+TASK: Write comprehensive comparison: {topic}
+
+STYLE: {style['tone']} for {style['audience']}
+
+**REQUIREMENTS:**
+- 3+ comparison tables (side-by-side)
+- Individual option reviews (pros/cons/best for/pricing)
+- Decision framework ("Choose X if...")
+- Transparent comparison methodology
+
+OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+Write the complete COMPARISON MATRIX article starting with # {topic}"""
+
+    def _build_cluster_hub_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict
+    ) -> str:
+        """Build prompt for CLUSTER HUB archetype (4000-6000 words, 8-12 modules)"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+        target_word_count = template_guidance.get("target_word_count", 4000)
+
+        link_instructions = self._build_link_instructions(link_context)
+        seo_instructions = self._build_seo_instructions(link_context, topic)
+
+        return f"""You are creating a CLUSTER HUB article - a navigation center for a topic cluster.
+
+**ARCHETYPE: CLUSTER HUB** (Topic overview + gateway to detailed content)
+Target: {target_word_count}+ words, 8-12 sections, 10-20 internal links
+
+RESEARCH DATA:
+{research_content}
+{link_instructions}
+{seo_instructions}
+
+TASK: Write topic cluster hub: {topic}
+
+STYLE: {style['tone']} for {style['audience']}
+
+OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+Write the complete CLUSTER HUB article starting with # {topic}"""
+
+    def _build_news_hub_prompt(
+        self,
+        research: Dict,
+        style: Dict,
+        topic: str,
+        link_context: Optional[Dict],
+        template_guidance: Dict
+    ) -> str:
+        """Build prompt for NEWS HUB archetype (2000-3000 words, 7-10 modules)"""
+        research_content = research["content"] if isinstance(research, dict) else str(research)
+        target_word_count = template_guidance.get("target_word_count", 2000)
+
+        link_instructions = self._build_link_instructions(link_context)
+        seo_instructions = self._build_seo_instructions(link_context, topic)
+
+        return f"""You are creating a NEWS HUB article - tracking changes and updates.
+
+**ARCHETYPE: NEWS HUB** (Living document tracking changes)
+Target: {target_word_count}+ words, 7-10 sections, timely and accurate
+
+RESEARCH DATA:
+{research_content}
+{link_instructions}
+{seo_instructions}
+
+TASK: Write news/update article: {topic}
+
+STYLE: {style['tone']} for {style['audience']}
+
+OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+Write the complete NEWS HUB article starting with # {topic}"""
+
+    def _build_link_instructions(self, link_context: Optional[Dict]) -> str:
+        """Build link instructions section"""
+        if not link_context:
+            return ""
+
+        external_links = "\n".join([
+            f"   - {link['url']}"
+            for link in link_context.get('external_links', [])[:12]
+        ])
+
+        internal_links = "\n".join([
+            f"   - [{link['title']}]({link['link']})"
+            for link in link_context.get('internal_links', [])[:5]
+        ])
+
+        return f"""
+
+VALIDATED LINKS TO USE:
+External Links (use 8-12 of these):
+{external_links}
+
+Internal Links (use 3-5 of these):
+{internal_links}
+
+**IMPORTANT**: Only use the links provided above."""
+
+    def _build_seo_instructions(self, link_context: Optional[Dict], topic: str) -> str:
+        """Build SEO instructions section"""
+        if not link_context or not link_context.get('seo_data'):
+            return ""
+
+        seo_data = link_context['seo_data']
+        return f"""
+
+**SEO OPTIMIZATION:**
+- Primary Keyword: "{seo_data.get('primary_keyword', topic)}"
+- Search Volume: {seo_data.get('search_volume', 'N/A')}/month
+- Competition: {seo_data.get('competition', 'N/A')}
+- Target keyword density: 1-2% (natural usage)"""
