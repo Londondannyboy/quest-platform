@@ -182,7 +182,10 @@ class ChunkedContentAgent:
         template_guidance: Optional[Dict]
     ) -> list:
         """
-        Generate 3 content chunks in parallel using Gemini Flash 2.0
+        Generate 3 content chunks using Gemini 2.5 Pro
+
+        Note: Falls back to sequential generation if parallel fails due to rate limits.
+        Gemini free tier: 2 requests/minute - if we exceed this, we generate sequentially.
 
         Chunks:
         1. Introduction + Overview (1000 words)
@@ -201,14 +204,57 @@ class ChunkedContentAgent:
             self._build_chunk_prompt(3, "practical_guide", research, style, topic, link_context, template_guidance),
         ]
 
-        # Generate all chunks in parallel
-        tasks = [
-            self._generate_gemini_chunk(i+1, prompt)
-            for i, prompt in enumerate(chunk_prompts)
-        ]
+        # Try parallel generation first
+        try:
+            tasks = [
+                self._generate_gemini_chunk(i+1, prompt)
+                for i, prompt in enumerate(chunk_prompts)
+            ]
+            chunk_results = await asyncio.gather(*tasks)
+            logger.info("chunked_content.parallel_generation_success", chunks=len(chunk_results))
+            return chunk_results
 
-        chunk_results = await asyncio.gather(*tasks)
+        except Exception as e:
+            # If parallel fails (likely rate limiting), fall back to sequential
+            if "quota" in str(e).lower() or "429" in str(e):
+                logger.warning(
+                    "chunked_content.parallel_failed_rate_limit",
+                    error=str(e),
+                    message="Falling back to sequential chunk generation"
+                )
+                return await self._generate_chunks_sequential(chunk_prompts)
+            else:
+                # If it's not a rate limit error, re-raise
+                raise
 
+    async def _generate_chunks_sequential(self, chunk_prompts: list) -> list:
+        """
+        Generate chunks sequentially (fallback for rate limiting)
+
+        Waits 30 seconds between chunks to respect Gemini free tier quota.
+        """
+        logger.info("chunked_content.generating_chunks_sequential", count=len(chunk_prompts))
+
+        chunk_results = []
+        for i, prompt in enumerate(chunk_prompts):
+            try:
+                result = await self._generate_gemini_chunk(i+1, prompt)
+                chunk_results.append(result)
+
+                # Wait 30 seconds between chunks (free tier: 2/minute)
+                if i < len(chunk_prompts) - 1:
+                    logger.info("chunked_content.waiting_for_rate_limit", seconds=30, next_chunk=i+2)
+                    await asyncio.sleep(30)
+
+            except Exception as e:
+                logger.error(
+                    "chunked_content.sequential_chunk_failed",
+                    chunk=i+1,
+                    error=str(e)
+                )
+                raise
+
+        logger.info("chunked_content.sequential_generation_complete", chunks=len(chunk_results))
         return chunk_results
 
     async def _generate_gemini_chunk(self, chunk_number: int, prompt: str) -> Dict:
