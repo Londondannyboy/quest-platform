@@ -54,7 +54,7 @@ class AdaptiveChunkingStrategy:
         """
         genai.configure(api_key=gemini_api_key)
         # Use Flash for ultra-fast, ultra-cheap analysis ($0.001/analysis)
-        self.flash_model = genai.GenerativeModel("gemini-2.5-flash-002")
+        self.flash_model = genai.GenerativeModel("gemini-2.5-flash")
 
     async def analyze_complexity(self, topic: str, research: Optional[Dict] = None) -> Dict:
         """

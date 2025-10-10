@@ -969,7 +969,7 @@ Pure markdown, no JSON, no code fences."""
 
         try:
             # Use Gemini 2.5 Flash for fast, cheap weaving
-            flash_model = genai.GenerativeModel("gemini-2.5-flash-002")
+            flash_model = genai.GenerativeModel("gemini-2.5-flash")
 
             response = flash_model.generate_content(
                 weaving_prompt,
