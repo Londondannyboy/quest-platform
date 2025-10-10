@@ -48,9 +48,9 @@ class ChunkedContentAgent:
             raise ValueError("GEMINI_API_KEY required for chunked content generation")
 
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        # Use Gemini 2.0 Flash for fast, cheap chunk generation
-        # (gemini-2.5-pro-002 not available yet, using 2.0-flash-exp)
-        self.gemini_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        # Use Gemini 2.5 Pro for high-quality chunk generation
+        # Best balance of quality and cost ($0.15/M input, $0.60/M output)
+        self.gemini_model = genai.GenerativeModel("gemini-2.5-pro")
 
         # Initialize Claude Sonnet
         self.claude_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -497,12 +497,14 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
 
 **CRITICAL REQUIREMENTS:**
 
-1. **Merge & Enhance** (~3000-3500 words total)
-   - Combine chunks into cohesive narrative
+1. **Merge & EXPAND** (MUST reach 3500+ words minimum)
+   - Combine all 3 chunks into cohesive narrative
    - Add smooth transitions between sections
-   - Expand thin areas with more detail, examples, data
-   - Remove redundancy
-   - Maintain natural flow
+   - EXPAND every section with more detail, examples, and data
+   - Add new subsections where needed for depth
+   - DO NOT condense or summarize - EXPAND and elaborate
+   - Keep ALL original content from chunks, just enhance it
+   - Maintain natural flow while adding substance
 
 2. **Add Structure** (MUST include all):
    - # {topic} (H1 title)
@@ -543,7 +545,13 @@ Return ONLY the complete refined article in pure markdown format.
 Start with # {topic} and include ALL required sections.
 NO JSON, NO code fences, just pure markdown.
 
-IMPORTANT: This article MUST be 3000+ words with 8+ citations, or it will be REJECTED."""
+CRITICAL WARNINGS:
+- Article MUST be 3500+ words MINIMUM (not counting references)
+- You received ~2000 words of chunks - your output must be LONGER, not shorter
+- DO NOT condense, summarize, or shorten the chunks
+- EXPAND and elaborate on every section
+- Articles under 3000 words will be AUTOMATICALLY REJECTED
+- Minimum 8+ citations required throughout"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""

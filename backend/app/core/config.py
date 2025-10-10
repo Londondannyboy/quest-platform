@@ -71,8 +71,8 @@ class Settings(BaseSettings):
         default="claude-3-5-sonnet-20241022", description="Claude model"
     )
     CONTENT_MODEL: str = Field(
-        default="claude-3-5-haiku-20241022",
-        description="Claude model for content generation (haiku=fast/cheap, sonnet=quality)"
+        default="claude-3-5-sonnet-20241022",
+        description="Claude model for content generation - MUST be Sonnet for 3000+ words"
     )
 
     OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key (optional - only for embeddings cache)")
@@ -80,9 +80,9 @@ class Settings(BaseSettings):
         default="text-embedding-ada-002", description="OpenAI embedding model"
     )
 
-    GEMINI_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API key (optional - for content generation alternative)")
+    GEMINI_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API key (optional - for chunked content generation)")
     GEMINI_MODEL: str = Field(
-        default="gemini-2.0-flash-exp", description="Gemini model for content generation"
+        default="gemini-2.5-pro", description="Gemini model for chunk generation - 2.5 Pro recommended"
     )
 
     REPLICATE_API_KEY: str = Field(..., description="Replicate API key")
