@@ -17,7 +17,7 @@ Architecture:
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import structlog
 from app.core.database import get_db
 
@@ -160,7 +160,7 @@ class ClusterResearchCache:
                 "serp_analysis": result["serp_analysis"],
                 "ai_insights": result["ai_insights"],
                 "cached": True,
-                "cache_age_days": (datetime.now() - result["created_at"]).days
+                "cache_age_days": (datetime.now(timezone.utc) - result["created_at"]).days
             }
 
         logger.info(
@@ -198,7 +198,7 @@ class ClusterResearchCache:
             return False
 
         cluster_id = cluster["cluster_id"]
-        expires_at = datetime.now() + timedelta(days=90)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=90)
 
         # Insert or update cluster research
         query = """
