@@ -27,7 +27,8 @@ class ImageAgent:
     """
 
     # Negative prompt for quality control (what to avoid)
-    NEGATIVE_PROMPT = "low quality, blurry, distorted, watermark, text overlay, amateur, cartoon, illustration, drawing, 3d render, unrealistic"
+    # CRITICAL: Absolutely no text, words, numbers, or letters
+    NEGATIVE_PROMPT = "text, words, numbers, letters, writing, typography, labels, captions, signs, watermark, text overlay, low quality, blurry, distorted, amateur, cartoon, illustration, drawing, 3d render, unrealistic"
 
     # Image specifications by type
     IMAGE_SPECS = {

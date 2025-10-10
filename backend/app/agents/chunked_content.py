@@ -621,7 +621,7 @@ Start with the appropriate H2 header for this section and write naturally."""
         try:
             response = await self.claude_client.messages.create(
                 model=self.sonnet_model,
-                max_tokens=12288,  # Increased from 8192 to ensure References section completes
+                max_tokens=16384,  # Maximum for Sonnet - ensures References section completes
                 temperature=0.7,
                 system=self._build_sonnet_system_prompt(style),
                 messages=[{"role": "user", "content": prompt}],
@@ -672,25 +672,41 @@ Start with the appropriate H2 header for this section and write naturally."""
             for i, chunk in enumerate(chunks)
         ])
 
-        # Build link instructions
+        # Build link instructions with ACTUAL URLs for hyperlinks
         link_instructions = ""
         if link_context:
+            # Format external links with clear URL formatting
             external_links = "\n".join([
-                f"   - {link['url']}"
-                for link in link_context.get('external_links', [])[:12]
+                f"   [{i+1}] {link['url']}"
+                for i, link in enumerate(link_context.get('external_links', [])[:25])
             ])
+
+            # Format internal links as actual markdown links
             internal_links = "\n".join([
                 f"   - [{link['title']}]({link['link']})"
                 for link in link_context.get('internal_links', [])[:5]
             ])
+
             link_instructions = f"""
 
-VALIDATED LINKS TO USE:
-External Links (use 8-12 for citations):
+VALIDATED EXTERNAL URLS (MUST use in References section):
 {external_links}
 
-Internal Links (use 3-5 for related content):
-{internal_links}"""
+INTERNAL LINKS TO USE (add 3-5 contextual links in article body):
+{internal_links}
+
+**CRITICAL INSTRUCTIONS FOR LINKS:**
+1. **In-text citations**: Use simple brackets like [1], [2], [3] throughout the article
+2. **References section**: MUST create actual HYPERLINKS like this:
+
+   ## References
+
+   [1] [Source Title](https://actual-url.com/page)
+   [2] [Another Source](https://example.gov/source)
+   [3] [Research Paper](https://academic.edu/paper)
+
+3. **Internal links**: Naturally weave 3-5 internal links into the article body using markdown: [anchor text](/internal/path)
+4. **NEVER use bare URLs** - always format as markdown links: [Text](URL)"""
 
         return f"""You are refining a comprehensive article about: {topic}
 
@@ -778,25 +794,29 @@ CRITICAL WARNINGS - READ CAREFULLY:
 - More citations = higher authority = better SEO rankings
 - Every factual claim, statistic, date, or process MUST have a citation
 
-**THE #1 CRITICAL REQUIREMENT - REFERENCES SECTION:**
+**THE #1 CRITICAL REQUIREMENT - REFERENCES SECTION WITH HYPERLINKS:**
 - EVERY article MUST end with ## References as the FINAL section
 - This is the MOST IMPORTANT part of the article
 - The ## References section is NOT OPTIONAL
-- Format EXACTLY as shown below (one citation per line):
+- Format EXACTLY as shown below using MARKDOWN HYPERLINKS:
 
 ## References
 
-[1] Government Source - https://example.gov/source1
-[2] Research Paper - https://academic.edu/source2
-[3] Industry Report - https://industry.com/source3
-[4] News Article - https://news.com/source4
+[1] [Government Source Title](https://example.gov/source1)
+[2] [Research Paper Title](https://academic.edu/source2)
+[3] [Industry Report Name](https://industry.com/source3)
+[4] [News Article Headline](https://news.com/source4)
 ...
-[20] Expert Blog - https://expert.com/source20
+[20] [Expert Blog Title](https://expert.com/source20)
 
-- Articles without a complete References section will AUTOMATICALLY FAIL
+**CRITICAL FORMAT REQUIREMENTS:**
+- Each reference MUST be a clickable markdown link: [Title](URL)
+- Use the actual URLs provided in the VALIDATED EXTERNAL URLS section above
+- Match citation numbers [1], [2] in article to reference numbers in this section
+- Include descriptive title for each link (not just URL)
+- Articles without a complete References section with hyperlinks will AUTOMATICALLY FAIL
 - NEVER truncate or skip the References section
-- The References section should list ALL 15-25 citations used in the article
-- Ensure you have enough tokens reserved to complete the References section"""
+- Reserve ~1500 tokens minimum for the References section to ensure completion"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""
