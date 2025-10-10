@@ -14,6 +14,7 @@ import structlog
 from app.core.config import settings
 from app.core.database import get_db
 from app.agents.keyword_researcher import KeywordResearcher
+from app.agents.template_detector import TemplateDetector
 from app.agents.research import ResearchAgent
 from app.agents.content import ContentAgent
 from app.agents.editor import EditorAgent
@@ -27,21 +28,26 @@ TargetSite = Literal["relocation", "placement", "rainmaker"]
 
 class ArticleOrchestrator:
     """
-    Orchestrates the enhanced 5-agent pipeline for article generation
+    Orchestrates the Template Intelligence pipeline for SERP-competitive article generation
 
-    Enhanced Pipeline (with keyword research):
-    1. KeywordResearcher (20-30s) → Identify & validate keywords with DataForSEO
-    2. ResearchAgent (30-60s) → Gather intelligence from 6 APIs
-    3. ContentAgent (60-90s) → Generate article with SEO optimization
-    4. EditorAgent (20-30s) → Score quality with citation validation
-    5. ImageAgent (60s, parallel) → Generate 4 specialized images
+    Pipeline (v2.5 - Template Intelligence):
+    0. KeywordResearcher (20-30s) → Identify & validate keywords with DataForSEO
+    0.5. TemplateDetector (10-20s) → Analyze SERP winners, detect archetype/template
+    1. ResearchAgent (30-60s) → Gather intelligence from 6 APIs
+    1.5. LinkValidator → Validate external links, suggest internal links
+    2. ContentAgent (60-90s) → Generate archetype-specific content with E-E-A-T
+    3. EditorAgent (20-30s) → Score quality & E-E-A-T compliance
+    4. ImageAgent (60s, parallel) → Generate 4 specialized images
+    5. PerformanceTracker → Store archetype/template metrics for learning
 
     Total: 2.5-3.5 minutes per article
-    Cost: ~$0.77 per article (with all APIs)
+    Cost: ~$0.68-$0.90 per article (Template Intelligence + all APIs)
+    Cost (cached): ~$0.60 per article (50%+ cache hit rate)
     """
 
     def __init__(self):
         self.keyword_researcher = KeywordResearcher()
+        self.template_detector = TemplateDetector()
         self.research_agent = ResearchAgent()
         self.content_agent = ContentAgent()
         self.editor_agent = EditorAgent()
@@ -77,6 +83,7 @@ class ArticleOrchestrator:
         # Initialize cost tracking
         costs = {
             "keyword_research": Decimal("0.00"),
+            "template_detection": Decimal("0.00"),
             "research": Decimal("0.00"),
             "content": Decimal("0.00"),
             "editor": Decimal("0.00"),
@@ -110,6 +117,28 @@ class ArticleOrchestrator:
                 competition=seo_data["competition"]
             )
 
+            # STEP 0.5: Template Intelligence - SERP Analysis (10-20s) - NEW!
+            await self._update_job_status(
+                job_id, "processing", 10, "template_detection"
+            )
+
+            # Use primary keyword for SERP analysis
+            template_guidance = await self.template_detector.run(
+                keyword=seo_data["primary_keyword"],
+                use_cache=True,
+                max_competitors=3
+            )
+            costs["template_detection"] = template_guidance.get("cost", Decimal("0.00"))
+
+            logger.info(
+                "orchestrator.template_detected",
+                archetype=template_guidance.get("detected_archetype"),
+                template=template_guidance.get("recommended_template"),
+                confidence=template_guidance.get("confidence_score"),
+                target_words=template_guidance.get("target_word_count"),
+                from_cache=template_guidance.get("from_cache", False)
+            )
+
             # STEP 1: Research (30-60s)
             await self._update_job_status(
                 job_id, "processing", 15, "research"
@@ -131,12 +160,13 @@ class ArticleOrchestrator:
                 job_id, "processing", 35, "content"
             )
 
-            # STEP 2: Content Generation (60-90s) - Pass link context with SEO data
+            # STEP 2: Content Generation (60-90s) - Pass link context with SEO data + template guidance
             content_result = await self.content_agent.run(
                 research_result["research"],
                 target_site,
                 topic,
-                link_context=link_context  # Pass validated links + SEO data
+                link_context=link_context,  # Pass validated links + SEO data
+                template_guidance=template_guidance  # Pass Template Intelligence recommendations
             )
             costs["content"] = content_result["cost"]
 
@@ -190,13 +220,15 @@ class ArticleOrchestrator:
                     "costs": costs,
                 }
 
-            # Create article in database
+            # Create article in database (with Template Intelligence metadata)
             article_id = await self._create_article(
                 content_result["article"],
                 target_site,
                 quality_score,
                 editor_result["feedback"],
                 status="review" if decision == "review" else "approved",
+                template_guidance=template_guidance,  # Include archetype/template
+                eeat_score=editor_result.get("eeat_score", 0)  # E-E-A-T score from editor
             )
 
             await self._update_job_status(
@@ -233,6 +265,17 @@ class ArticleOrchestrator:
             else:
                 # No image generation
                 final_status = "review" if decision != "publish" else "approved"
+
+            # STEP 5: Store Template Performance (non-blocking)
+            # Calculate word count from content
+            content_word_count = len(content_result["article"].get("content", "").split())
+            await self._store_template_performance(
+                article_id,
+                template_guidance,
+                quality_score,
+                editor_result.get("eeat_score", 0),
+                content_word_count
+            )
 
             # Update job as completed
             total_cost = sum(costs.values())
@@ -368,6 +411,8 @@ class ArticleOrchestrator:
         quality_score: int,
         editor_feedback: str,
         status: str = "draft",
+        template_guidance: Dict = None,
+        eeat_score: int = 0
     ) -> str:
         """
         Create article in database
@@ -381,8 +426,9 @@ class ArticleOrchestrator:
             query = """
                 INSERT INTO articles
                 (title, slug, content, excerpt, target_site, status, quality_score,
-                 keywords, meta_title, meta_description, reading_time_minutes)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                 keywords, meta_title, meta_description, reading_time_minutes,
+                 target_archetype, surface_template, eeat_score)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 RETURNING id
             """
 
@@ -392,6 +438,10 @@ class ArticleOrchestrator:
             slug = re.sub(r'[^a-z0-9\s-]', '', title.lower())  # Remove punctuation
             slug = re.sub(r'\s+', '-', slug)  # Replace spaces with hyphens
             slug = re.sub(r'-+', '-', slug).strip('-')[:100]  # Clean up multiple hyphens
+
+            # Extract Template Intelligence metadata
+            target_archetype = template_guidance.get("detected_archetype") if template_guidance else None
+            surface_template = template_guidance.get("recommended_template") if template_guidance else None
 
             async with pool.acquire() as conn:
                 article_id = await conn.fetchval(
@@ -407,6 +457,9 @@ class ArticleOrchestrator:
                     article_data.get("meta_title"),
                     article_data.get("meta_description"),
                     article_data.get("reading_time_minutes"),
+                    target_archetype,
+                    surface_template,
+                    eeat_score
                 )
 
             logger.info(
@@ -493,3 +546,61 @@ class ArticleOrchestrator:
                 error=str(e),
                 exc_info=e,
             )
+
+    async def _store_template_performance(
+        self,
+        article_id: str,
+        template_guidance: Dict,
+        quality_score: int,
+        eeat_score: int,
+        word_count: int
+    ):
+        """
+        Store template performance data for learning
+
+        Args:
+            article_id: Article UUID
+            template_guidance: Template Intelligence recommendations
+            quality_score: Overall quality score
+            eeat_score: E-E-A-T compliance score
+            word_count: Actual word count
+        """
+        pool = get_db()
+
+        try:
+            # Extract module count from content (count H2 headers as modules)
+            module_count = len(template_guidance.get("common_modules", []))
+
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO template_performance
+                    (article_id, archetype_used, template_used, modules_used,
+                     word_count, module_count, quality_score, eeat_score)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    """,
+                    article_id,
+                    template_guidance.get("detected_archetype"),
+                    template_guidance.get("recommended_template"),
+                    template_guidance.get("common_modules", []),
+                    word_count,
+                    module_count,
+                    quality_score,
+                    eeat_score
+                )
+
+            logger.info(
+                "orchestrator.performance_tracked",
+                article_id=article_id,
+                archetype=template_guidance.get("detected_archetype"),
+                quality=quality_score,
+                eeat=eeat_score
+            )
+
+        except Exception as e:
+            logger.error(
+                "orchestrator.performance_tracking_failed",
+                error=str(e),
+                exc_info=e
+            )
+            # Don't raise - performance tracking is non-critical
