@@ -585,9 +585,11 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - FAQ section (8-10 Q&A pairs, COMPLETE all questions fully)
    - **ABSOLUTELY MANDATORY:** ## References section (MUST be the FINAL section)
 
-3. **Add Citations** (MINIMUM 8-12 required):
+3. **Add Citations** (MINIMUM 15-25 required for high authority):
    - Add inline citations [1], [2], [3] for ALL factual claims
    - Use research sources from above
+   - Target: 1 citation per 150-200 words (industry best practice)
+   - Diversify sources: government sites, research papers, industry reports, news
    - **ABSOLUTELY REQUIRED - References Section Format:**
 
      ## References
@@ -595,10 +597,12 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
      [1] Source Name - https://example.com/source1
      [2] Source Name - https://example.com/source2
      [3] Source Name - https://example.com/source3
+     ...
+     [20] Source Name - https://example.com/source20
 
    - The ## References section is THE MOST CRITICAL requirement
    - EVERY article MUST end with a complete References section
-   - List ALL citations used in the article (minimum 8-12 sources)
+   - List ALL citations used in the article (minimum 15-25 sources for 3500+ words)
 
 4. **Enhance Quality**:
    - Add specific data points and statistics
@@ -629,7 +633,13 @@ CRITICAL WARNINGS - READ CAREFULLY:
 - DO NOT condense, summarize, or shorten the chunks
 - EXPAND and elaborate on every section
 - Articles under 3000 words will be AUTOMATICALLY REJECTED
-- Minimum 8+ citations required throughout
+
+**CITATION DENSITY REQUIREMENT (HIGH AUTHORITY STANDARD):**
+- MINIMUM 15-25 citations required for 3500+ word articles
+- Target: 1 citation per 150-200 words (industry best practice)
+- Diversify sources: .gov sites, research papers, industry reports, news, expert blogs
+- More citations = higher authority = better SEO rankings
+- Every factual claim, statistic, date, or process MUST have a citation
 
 **THE #1 CRITICAL REQUIREMENT - REFERENCES SECTION:**
 - EVERY article MUST end with ## References as the FINAL section
@@ -639,14 +649,16 @@ CRITICAL WARNINGS - READ CAREFULLY:
 
 ## References
 
-[1] Source Name - https://example.com/source1
-[2] Source Name - https://example.com/source2
-[3] Source Name - https://example.com/source3
-[4] Source Name - https://example.com/source4
+[1] Government Source - https://example.gov/source1
+[2] Research Paper - https://academic.edu/source2
+[3] Industry Report - https://industry.com/source3
+[4] News Article - https://news.com/source4
+...
+[20] Expert Blog - https://expert.com/source20
 
 - Articles without a complete References section will AUTOMATICALLY FAIL
 - NEVER truncate or skip the References section
-- The References section should list ALL 8-12 citations used in the article
+- The References section should list ALL 15-25 citations used in the article
 - Ensure you have enough tokens reserved to complete the References section"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:

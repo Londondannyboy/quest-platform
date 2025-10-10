@@ -575,12 +575,21 @@ Do NOT include any JSON, code fences, or explanatory text - just the refined mar
         # Passed if score >= 70
         passed = seo_score >= 70
 
+        # NEW: Check citation density (1 per 150-200 words = high authority)
+        word_count = len(content.split())
+        if word_count > 0:
+            citation_density = (external_links / word_count) * 1000  # Citations per 1000 words
+            target_density = 5.0  # 5 per 1000 words = 1 per 200 words
+            if citation_density < target_density:
+                issues.append(f"Low citation density: {citation_density:.1f} per 1K words (target: {target_density}+)")
+
         logger.info(
             "editor_agent.seo_validation",
             seo_score=seo_score,
             keyword_density=keyword_density if keywords else 0,
             headers=f"H1:{h1_count},H2:{h2_count},H3:{h3_count}",
             links=f"Internal:{internal_links},External:{external_links}",
+            citation_density=f"{citation_density:.1f}/1K words" if word_count > 0 else "N/A",
             readability=readability_score,
             issues_count=len(issues),
             passed=passed
