@@ -2,8 +2,15 @@
 
 **Purpose:** Authoritative documentation for the primary article generation script
 **Script:** `backend/generate_article.py`
-**Last Updated:** October 10, 2025 (Evening)
-**Status:** ✅ Production Ready (Haiku Model, 6-API Research)
+**Last Updated:** October 10, 2025 (Evening - Chunked Content Breakthrough)
+**Status:** ✅ Production Ready (Chunked Gemini+Sonnet, 5K+ words, Google-Safe)
+
+**⚠️ CRITICAL: READ BEFORE GENERATING CONTENT**
+- **`QUEST_CONTENT_PUBLISHING_GUIDELINES.md`** - MANDATORY compliance document
+- All AI agents MUST read publishing guidelines at session start
+- Publication rate limits ENFORCED: 2-10/day based on site age
+- Quality gates ENFORCED: 3000+ words, 15+ citations, References section
+- Google penalty prevention: TailRide case study shows 244/day = manual action
 
 ---
 
@@ -57,32 +64,52 @@ python3 generate_article.py --batch topics.txt --count 50
 
 ---
 
-## 🏗️ ARCHITECTURE FLOW (Updated Oct 10, 2025)
+## 🏗️ ARCHITECTURE FLOW (Updated Oct 10, 2025 - Evening)
 
 ```
 backend/generate_article.py
     ↓
-ArticleOrchestrator (5 Agents + LinkValidator)
-    ├── KeywordResearcher (DataForSEO + Perplexity)
-    ├── ResearchAgent (6 APIs: Serper → Firecrawl → Perplexity + Tavily + LinkUp + DataForSEO)
-    ├── LinkValidator (External URL validation)
-    ├── ContentAgent (Claude Haiku - 25x cheaper!)
-    ├── EditorAgent (Quality scoring + citation validation)
+QUEST_CONTENT_PUBLISHING_GUIDELINES.md (Read compliance rules)
+    ↓
+Pre-Publication Validation (Rate limits, topic diversity)
+    ↓
+ArticleOrchestrator (ChunkedContentAgent + 4 Support Agents)
+    ├── ResearchAgent (6 APIs: Perplexity + Tavily + Serper + LinkUp + Firecrawl + DataForSEO)
+    ├── LinkValidator (External URL validation + internal link suggestions)
+    ├── ChunkedContentAgent (NEW - Hybrid Gemini + Sonnet)
+    │   ├── Gemini 2.5 Pro: Generate 3 chunks in parallel (1,293 words)
+    │   ├── Gemini 2.5 Flash: Weave chunks with transitions ($0.01)
+    │   └── Sonnet 4.5: Expand & refine to 5,344 words (310% growth!)
+    ├── EditorAgent (Quality scoring + citation validation + References section check)
     └── ImageAgent (FLUX + Cloudinary - 4 images/article)
+    ↓
+Post-Publication Validation (Quality gates, spam pattern detection)
     ↓
 Database (Neon PostgreSQL)
     ↓
-Directus CMS (Publishing workflow)
+Directus CMS (Publishing workflow - if quality > 75)
     ↓
 Frontend (relocation.quest)
 ```
 
-**Major Updates:**
+**🎉 BREAKTHROUGH Updates (Oct 10, 2025 - Evening):**
+- ✅ **Chunked Content System** - Gemini 2.5 Pro (chunks) + Sonnet 4.5 (refinement)
+  - Gemini generates 3 chunks: 1,293 words
+  - Sonnet expands to 5,344 words (310% growth!)
+  - Cost: $0.75/article | Quality: 15-25 citations
+- ✅ **Publishing Guidelines** - `QUEST_CONTENT_PUBLISHING_GUIDELINES.md` MANDATORY
+  - Pre-validation: Rate limits (2-10/day), topic diversity
+  - Post-validation: Quality gates (3000+ words, 15+ citations, References)
+  - Spam pattern detection prevents Google penalties
+- ✅ **Safety-First** - 122x safer than TailRide (they got penalized at 244/day)
+  - Max 200 articles/month (vs TailRide's 7,333/month penalty)
+  - Sustainable scaling: 1,550 articles/year target
+
+**Previous Updates:**
 - ✅ Multi-API research (6 APIs integrated)
-- ✅ Haiku model ($0.03 vs $0.75 Sonnet)
 - ✅ Pure markdown output (no JSON wrapper)
 - ✅ DataForSEO keyword validation
-- ✅ Citation validation (minimum 5 required)
+- ✅ Citation validation (minimum 15 required, was 5)
 
 ---
 
@@ -195,11 +222,14 @@ python3 generate_full_article.py --topic "Test topic for quality check"
 
 ## 🚨 IMPORTANT NOTES
 
-1. **This is the ONLY script for article generation** - Do not create test scripts
-2. **Always includes full pipeline** - All 7 agents, link validation, image generation
-3. **Production database** - Directly writes to Neon PostgreSQL
-4. **Cost implications** - Each article costs ~$0.35-$0.45
-5. **Rate limiting** - 10-second pause between batch articles
+1. **READ PUBLISHING GUIDELINES FIRST** - `QUEST_CONTENT_PUBLISHING_GUIDELINES.md` is MANDATORY
+2. **This is the ONLY script for article generation** - Do not create test scripts
+3. **Always includes full pipeline** - ChunkedContentAgent + 4 support agents, link validation, images
+4. **Production database** - Directly writes to Neon PostgreSQL
+5. **Cost implications** - Each article costs ~$0.75 (chunked Gemini + Sonnet)
+6. **Rate limiting ENFORCED** - Max 2/day (new sites) → 10/day (established sites)
+7. **Quality gates ENFORCED** - 3000+ words, 15+ citations, References section required
+8. **Google penalty prevention** - Follow TailRide lessons (they got penalized at 244/day)
 
 ---
 
