@@ -30,7 +30,8 @@ hiredis==2.3.2                  # Fast Redis protocol parser
 # ============================================================================
 anthropic==0.17.0               # Claude API
 openai==1.10.0                  # OpenAI Embeddings API
-google-generativeai==0.8.3      # Google Gemini API (research compression, SERP analysis)
+google-generativeai==0.8.3      # Google Gemini API (legacy)
+google-genai==0.2.2             # NEW: Google Gemini with Search Grounding (fact-checking)
 httpx==0.26.0                   # HTTP client for Perplexity, Replicate
 replicate==0.22.0               # FLUX image generation
 

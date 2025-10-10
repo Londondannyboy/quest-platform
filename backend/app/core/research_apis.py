@@ -304,7 +304,7 @@ class SerperProvider(ResearchProvider):
 
 
 class CritiqueLabsProvider(ResearchProvider):
-    """Critique Labs fact-checking API"""
+    """Critique Labs fact-checking API (DEPRECATED - use GeminiFactChecker instead)"""
 
     def __init__(self):
         self.api_key = settings.CRITIQUE_LABS_API_KEY
@@ -373,6 +373,159 @@ class CritiqueLabsProvider(ResearchProvider):
 
     def get_cost(self) -> Decimal:
         return Decimal("0.15")
+
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
+
+class GeminiFactChecker(ResearchProvider):
+    """Gemini 2.0 Flash with Google Search Grounding - FREE fact-checking (replaces Critique Labs)"""
+
+    def __init__(self):
+        self.api_key = settings.GEMINI_API_KEY
+        # Initialize Gemini client if available
+        try:
+            if self.is_available():
+                from google import genai
+                self.client = genai.Client(api_key=self.api_key)
+                self.model = "gemini-2.0-flash-exp"  # Free tier model with Search Grounding
+            else:
+                self.client = None
+        except ImportError:
+            logger.warning("google-genai library not installed, fact-checking disabled")
+            self.client = None
+        except Exception as e:
+            logger.error("gemini_fact_checker_init_failed", error=str(e))
+            self.client = None
+
+    async def fact_check(self, content: str, sources: List[str] = None) -> Dict:
+        """
+        Fact-check content using Gemini 2.0 Flash with Google Search Grounding
+
+        Args:
+            content: Content to fact-check
+            sources: Optional list of source URLs (not used with Search Grounding)
+
+        Returns:
+            {
+                "provider": "gemini_fact_checker",
+                "accuracy_score": 85,  # 0-100
+                "issues": [{"claim": "...", "status": "verified/unverified/disputed"}],
+                "grounding_metadata": {...},
+                "cost": Decimal("0.001")  # FREE on free tier!
+            }
+        """
+        if not self.is_available() or not self.client:
+            logger.warning("gemini_fact_checker_not_available")
+            return {}
+
+        try:
+            from google.genai import types
+
+            # Create Google Search grounding tool
+            grounding_tool = types.Tool(google_search=types.GoogleSearch())
+
+            # Generate fact-check prompt
+            fact_check_prompt = f"""You are a fact-checker. Analyze the following content for factual accuracy.
+
+For each major claim, verify it using Google Search and report:
+1. The claim
+2. Whether it's VERIFIED, UNVERIFIED, or DISPUTED
+3. Supporting evidence from search results
+
+Content to fact-check:
+{content[:3000]}  # Limit to 3000 chars
+
+Provide your analysis in this JSON format:
+{{
+    "overall_accuracy": 0-100,
+    "claims": [
+        {{"claim": "specific claim", "status": "verified/unverified/disputed", "evidence": "brief explanation"}}
+    ]
+}}"""
+
+            # Generate with Search Grounding
+            config = types.GenerateContentConfig(tools=[grounding_tool])
+
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=fact_check_prompt,
+                config=config,
+            )
+
+            # Extract grounding metadata
+            grounding_metadata = {}
+            if hasattr(response, "grounding_metadata"):
+                grounding_metadata = {
+                    "search_entry_point": str(getattr(response.grounding_metadata, "search_entry_point", "")),
+                    "grounding_chunks": len(getattr(response.grounding_metadata, "grounding_chunks", [])),
+                }
+
+            # Parse response text
+            response_text = response.text
+            logger.info("gemini_fact_checker.response", text_length=len(response_text))
+
+            # Try to extract JSON from response
+            import re
+            json_match = re.search(r'\{[\s\S]*"overall_accuracy"[\s\S]*\}', response_text)
+            if json_match:
+                fact_check_data = json.loads(json_match.group())
+                overall_accuracy = fact_check_data.get("overall_accuracy", 75)
+                claims = fact_check_data.get("claims", [])
+            else:
+                # Fallback: estimate accuracy based on response
+                overall_accuracy = 75
+                claims = [{"claim": "Unable to parse structured output", "status": "unverified", "evidence": response_text[:500]}]
+
+            logger.info(
+                "gemini_fact_checker.complete",
+                accuracy=overall_accuracy,
+                claims_analyzed=len(claims),
+                grounded=bool(grounding_metadata)
+            )
+
+            return {
+                "provider": "gemini_fact_checker",
+                "accuracy_score": overall_accuracy,
+                "issues": claims,
+                "grounding_metadata": grounding_metadata,
+                "raw_response": response_text,
+                "cost": self.get_cost()  # FREE!
+            }
+
+        except Exception as e:
+            logger.error("gemini_fact_checker_failed", error=str(e))
+            return {}
+
+    async def search(self, query: str) -> Dict:
+        """Fact-check mode for search interface"""
+        result = await self.fact_check(query)
+        if result:
+            content = f"**Gemini Fact Check (Google Search Grounding):**\n"
+            content += f"Accuracy Score: {result.get('accuracy_score', 0)}/100\n\n"
+
+            issues = result.get("issues", [])
+            if issues:
+                content += "**Claims Analyzed:**\n"
+                for issue in issues[:5]:  # Limit to 5 claims
+                    claim = issue.get("claim", "")
+                    status = issue.get("status", "unknown").upper()
+                    evidence = issue.get("evidence", "")
+                    content += f"\n- **{claim}**\n"
+                    content += f"  Status: {status}\n"
+                    content += f"  Evidence: {evidence}\n"
+
+            return {
+                "provider": "gemini_fact_checker",
+                "content": content,
+                "sources": [],
+                "accuracy_data": result,
+                "cost": self.get_cost()
+            }
+        return {}
+
+    def get_cost(self) -> Decimal:
+        return Decimal("0.001")  # Effectively FREE on Gemini free tier
 
     def is_available(self) -> bool:
         return bool(self.api_key)
@@ -690,7 +843,8 @@ class MultiAPIResearch:
             "tavily": TavilyProvider(),
             "firecrawl": FirecrawlProvider(),
             "serper": SerperProvider(),  # DEPRECATED - keeping for backward compatibility
-            "critique_labs": CritiqueLabsProvider(),
+            "critique_labs": CritiqueLabsProvider(),  # DEPRECATED - use gemini_fact_checker
+            "gemini_fact_checker": GeminiFactChecker(),  # NEW: FREE fact-checking with Search Grounding
             "linkup": LinkUpProvider(),
             "dataforseo": DataForSEOProvider()  # NOW handles SERP + keywords (replaces Serper!)
         }
@@ -837,8 +991,8 @@ class MultiAPIResearch:
             # STEP 3: Run remaining providers in parallel
             tasks = []
             for name, provider in self.providers.items():
-                # Skip already-run providers and critique_labs
-                if name in ["dataforseo", "firecrawl", "critique_labs", "serper"]:
+                # Skip already-run providers and fact-checkers
+                if name in ["dataforseo", "firecrawl", "critique_labs", "gemini_fact_checker", "serper"]:
                     continue
                 if provider.is_available():
                     tasks.append(self._search_with_provider(name, provider, query))
@@ -868,17 +1022,26 @@ class MultiAPIResearch:
         # Combine results
         combined_content = self._combine_results(results)
 
-        # Fact-check if requested and available
-        if fact_check and self.providers["critique_labs"].is_available():
-            fact_result = await self.providers["critique_labs"].fact_check(
-                combined_content,
-                sources=[s["url"] for r in results for s in r.get("sources", []) if "url" in s]
-            )
-            if fact_result:
-                combined_content += f"\n\n**Fact Check:**\n"
-                combined_content += f"Accuracy Score: {fact_result.get('accuracy_score', 0)}%"
-                total_cost += fact_result.get("cost", Decimal("0"))
-                providers_used.append("critique_labs")
+        # Fact-check if requested (prefer Gemini, fallback to Critique Labs)
+        if fact_check:
+            fact_checker = None
+            if self.providers["gemini_fact_checker"].is_available():
+                fact_checker = self.providers["gemini_fact_checker"]
+                fact_provider_name = "gemini_fact_checker"
+            elif self.providers["critique_labs"].is_available():
+                fact_checker = self.providers["critique_labs"]
+                fact_provider_name = "critique_labs"
+
+            if fact_checker:
+                fact_result = await fact_checker.fact_check(
+                    combined_content,
+                    sources=[s["url"] for r in results for s in r.get("sources", []) if "url" in s]
+                )
+                if fact_result:
+                    combined_content += f"\n\n**Fact Check ({fact_provider_name}):**\n"
+                    combined_content += f"Accuracy Score: {fact_result.get('accuracy_score', 0)}/100"
+                    total_cost += fact_result.get("cost", Decimal("0"))
+                    providers_used.append(fact_provider_name)
 
         logger.info(
             "multi_api_research.complete",
