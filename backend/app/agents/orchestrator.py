@@ -20,6 +20,7 @@ from app.agents.gemini_summarizer import GeminiSummarizer
 from app.agents.content import ContentAgent
 from app.agents.chunked_content import ChunkedContentAgent
 from app.agents.editor import EditorAgent
+from app.agents.citation_verifier import CitationVerifierAgent
 from app.agents.image import ImageAgent
 from app.core.link_validator import LinkValidator
 
@@ -55,6 +56,7 @@ class ArticleOrchestrator:
         self.content_agent = ContentAgent()
         self.chunked_content_agent = ChunkedContentAgent() if settings.GEMINI_API_KEY else None
         self.editor_agent = EditorAgent()
+        self.citation_verifier = CitationVerifierAgent()
         self.image_agent = ImageAgent()
         self.link_validator = LinkValidator()
 
@@ -92,6 +94,7 @@ class ArticleOrchestrator:
             "gemini_compression": Decimal("0.00"),
             "content": Decimal("0.00"),
             "editor": Decimal("0.00"),  # Includes refinement if triggered
+            "citation_verification": Decimal("0.00"),
             "image": Decimal("0.00"),
         }
 
@@ -341,6 +344,59 @@ class ArticleOrchestrator:
                     "reason": editor_result["feedback"],
                     "costs": costs,
                 }
+
+            # STEP 3.75: Citation Verification (NEW - 5-10s)
+            # Verify citations against research sources to prevent hallucinations
+            await self._update_job_status(
+                job_id, "processing", 82, "citation_verification"
+            )
+
+            try:
+                citation_result = await self.citation_verifier.verify_citations(
+                    content_result["article"],
+                    research_result.get("sources", [])
+                )
+                costs["citation_verification"] = citation_result["cost"]
+
+                # Log verification results
+                logger.info(
+                    "orchestrator.citation_verification_complete",
+                    job_id=job_id,
+                    passed=citation_result["verification_passed"],
+                    confidence=citation_result["confidence_score"],
+                    verified_urls=citation_result["verified_urls"],
+                    total_refs=citation_result["total_references"],
+                    fake_urls=len(citation_result["fake_urls"])
+                )
+
+                # Flag article for review if citation verification fails
+                if not citation_result["verification_passed"]:
+                    logger.warning(
+                        "orchestrator.citation_verification_failed",
+                        job_id=job_id,
+                        confidence=citation_result["confidence_score"],
+                        fake_urls=citation_result["fake_urls"],
+                        suspicious_claims=len(citation_result["suspicious_claims"])
+                    )
+                    # Downgrade to review status
+                    if decision == "publish":
+                        decision = "review"
+                        logger.info(
+                            "orchestrator.decision_downgraded",
+                            job_id=job_id,
+                            reason="Citation verification failed",
+                            new_decision="review"
+                        )
+
+            except Exception as citation_error:
+                logger.warning(
+                    "orchestrator.citation_verification_error",
+                    job_id=job_id,
+                    error=str(citation_error),
+                    message="Continuing without citation verification"
+                )
+                # Continue without failing the entire job
+                pass
 
             # Create article in database (with Template Intelligence metadata)
             article_id = await self._create_article(
