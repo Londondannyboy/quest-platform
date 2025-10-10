@@ -363,7 +363,7 @@ class ChunkedContentAgent:
         # Chunk-specific instructions (adaptive 2-5 chunks)
         chunk_instructions = {
             "introduction": f"""
-**CHUNK {chunk_number}: INTRODUCTION + OVERVIEW (~1000 words)**
+**CHUNK {chunk_number}: INTRODUCTION + OVERVIEW (~700-800 words)**
 
 Write the opening section of the article that hooks the reader and sets the stage.
 
@@ -398,7 +398,7 @@ IMPORTANT:
 - Use specific examples and data points
 - NO citations yet (will be added during refinement)
 - Focus on engaging the reader
-- Target 1000 words
+- Target 700-800 words (leave room for References section)
 """,
             "main_content_1": f"""
 **CHUNK {chunk_number}: CORE REQUIREMENTS + FOUNDATION (~1500 words)**
@@ -500,7 +500,7 @@ IMPORTANT:
 - Target 1500 words
 """,
             "main_content": f"""
-**CHUNK 2: MAIN CONTENT + REQUIREMENTS (~1000 words)**
+**CHUNK 2: MAIN CONTENT + REQUIREMENTS (~700-800 words)**
 
 Write the core informational section with detailed requirements and processes.
 
@@ -533,10 +533,10 @@ IMPORTANT:
 - Use bullet points and numbered lists
 - NO citations yet (will be added during refinement)
 - Focus on actionable information
-- Target 1000 words
+- Target 700-800 words (leave room for References)
 """,
             "practical_guide": f"""
-**CHUNK 3: PRACTICAL GUIDE + CONCLUSION (~1000 words)**
+**CHUNK 3: PRACTICAL GUIDE + CONCLUSION (~700-800 words)**
 
 Write the practical application section with tips, examples, and next steps.
 
@@ -573,7 +573,7 @@ IMPORTANT:
 - Be practical and actionable
 - NO citations yet (will be added during refinement)
 - End with clear next steps
-- Target 1000 words
+- Target 700-800 words (reserve space for References)
 """
         }
 
@@ -633,6 +633,9 @@ Start with the appropriate H2 header for this section and write naturally."""
             input_tokens = response.usage.input_tokens
             output_tokens = response.usage.output_tokens
             cost = self._calculate_sonnet_cost(input_tokens, output_tokens)
+
+            # SAFETY NET: Add References section if Sonnet didn't create one (Codex Fix #2)
+            refined_content = self._ensure_references_section(refined_content, link_context)
 
             # Extract metadata from refined content
             article_data = self._extract_article_data(refined_content, topic)
@@ -721,7 +724,7 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
 
 **CRITICAL REQUIREMENTS:**
 
-1. **Merge & EXPAND** (MUST reach 3500+ words minimum)
+1. **Merge & EXPAND** (Target 3200-3600 words; do NOT exceed 4000 words)
    - Combine all 3 chunks into cohesive narrative
    - Add smooth transitions between sections
    - EXPAND every section with more detail, examples, and data
@@ -729,6 +732,8 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - DO NOT condense or summarize - EXPAND and elaborate
    - Keep ALL original content from chunks, just enhance it
    - Maintain natural flow while adding substance
+   - **CRITICAL:** Stop adding new content once every major section is covered
+   - **RESERVE ROOM:** You MUST leave space for the full References section (minimum 25 entries)
 
 2. **Add Structure** (MUST include all):
    - # {topic} (H1 title)
@@ -781,11 +786,13 @@ Start with # {topic} and include ALL required sections.
 NO JSON, NO code fences, just pure markdown.
 
 CRITICAL WARNINGS - READ CAREFULLY:
-- Article MUST be 3500+ words MINIMUM (not counting references)
-- You received ~2000 words of chunks - your output must be LONGER, not shorter
+- Article target: 3200-3600 words (NOT counting References section)
+- DO NOT exceed 4000 words - you must leave room for References
+- You received ~2100-2400 words of chunks - expand moderately, not excessively
 - DO NOT condense, summarize, or shorten the chunks
-- EXPAND and elaborate on every section
-- Articles under 3000 words will be AUTOMATICALLY REJECTED
+- EXPAND and elaborate on every section with care
+- **STOP WRITING MAIN CONTENT** once all sections are well-covered
+- Articles under 3000 words OR without References will be REJECTED
 
 **CITATION DENSITY REQUIREMENT (HIGH AUTHORITY STANDARD):**
 - MINIMUM 15-25 citations required for 3500+ word articles
@@ -851,6 +858,77 @@ CRITICAL ACCURACY REQUIREMENTS (YMYL Content):
 
 CRITICAL: Every factual claim needs a citation [1], [2], etc.
 Minimum 8 citations required throughout the article."""
+
+    def _ensure_references_section(self, content: str, link_context: Optional[Dict]) -> str:
+        """
+        Safety net: Add References section if Sonnet didn't create one
+
+        This is Codex Fix #2 - guarantees References section even if Sonnet hits token limit
+
+        Args:
+            content: Article content from Sonnet
+            link_context: Validated URLs from LinkValidator
+
+        Returns:
+            Content with References section guaranteed
+        """
+        import re
+
+        # Check if References section already exists
+        if "## References" in content or "## Sources" in content:
+            logger.info("references.already_present", message="Sonnet created References section")
+            return content
+
+        logger.warning("references.missing", message="Sonnet did not create References - adding programmatically")
+
+        # Extract citation numbers from content
+        citations = sorted(set(int(c) for c in re.findall(r'\[(\d+)\]', content)))
+
+        if not citations:
+            logger.warning("references.no_citations", message="No citations found in article")
+            return content
+
+        # Build References section from validated URLs
+        references = ["\n\n## References\n"]
+
+        if link_context and link_context.get('external_links'):
+            external_links = link_context['external_links']
+
+            for idx, citation_num in enumerate(citations):
+                if idx < len(external_links):
+                    link_data = external_links[idx]
+                    url = link_data.get('final_url') or link_data.get('url', '')
+
+                    # Extract title from URL domain if not provided
+                    try:
+                        from urllib.parse import urlparse
+                        parsed = urlparse(url)
+                        domain = parsed.netloc.replace('www.', '').replace('.com', '').replace('.org', '').replace('.gov', '')
+                        title = domain.title() + " - " + parsed.path.strip('/').split('/')[-1].replace('-', ' ').title()
+
+                        if len(title) > 60:
+                            title = domain.title()
+                    except:
+                        title = f"Source {citation_num}"
+
+                    references.append(f"[{citation_num}] [{title}]({url})")
+                else:
+                    # Fallback if we run out of URLs
+                    references.append(f"[{citation_num}] Source {citation_num} (citation needs manual verification)")
+        else:
+            # No link context - create placeholder references
+            for citation_num in citations:
+                references.append(f"[{citation_num}] Source {citation_num} (citation needs manual verification)")
+
+        references_section = "\n".join(references)
+
+        logger.info(
+            "references.added_programmatically",
+            citation_count=len(citations),
+            url_count=len(link_context.get('external_links', []))  if link_context else 0
+        )
+
+        return content + references_section
 
     def _extract_article_data(self, content: str, topic: str) -> Dict:
         """Extract metadata from refined markdown content"""
