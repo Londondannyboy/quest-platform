@@ -219,6 +219,10 @@ class Settings(BaseSettings):
     ENABLE_BATCH_API: bool = Field(
         default=True, description="Enable batch API for cost savings"
     )
+    ENABLE_CHUNKED_CONTENT: bool = Field(
+        default=True,
+        description="Enable chunked content generation (Gemini 2.5 Pro + Sonnet refinement)"
+    )
 
     # ========================================================================
     # TESTING

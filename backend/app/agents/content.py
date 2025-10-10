@@ -626,25 +626,47 @@ OUTPUT FORMAT: Same JSON with tldr, key_takeaways, faqs"""
 **ARCHETYPE: SKYSCRAPER** (Comprehensive domain authority hub)
 Target: {target_word_count}+ words, 12-20 modules, 30+ internal links, 20+ citations
 
+**CRITICAL WORD COUNT REQUIREMENT:**
+- MINIMUM 3000 WORDS (aim for 3500-4000 words)
+- Current target: {target_word_count}+ words
+- DO NOT STOP WRITING until you reach AT LEAST 3000 words
+- Articles under 3000 words WILL BE REJECTED
+- Check your word count - if under 3000 words, KEEP WRITING
+
 RESEARCH DATA (Competitor Analysis):
 {research_content}
 {link_instructions}
 {seo_instructions}
 
-TASK: Write the ultimate {topic} guide
+TASK: Write the ultimate {topic} guide - MINIMUM 3000 WORDS
 
 STYLE: {style['tone']} for {style['audience']}
 
 **E-E-A-T REQUIREMENTS (YMYL Critical):**
-- 2-3 detailed case studies
-- 3-5 expert quotes
+- 2-3 detailed case studies (add substantial detail - each 300+ words)
+- 3-5 expert quotes (with context and explanation)
 - Official sources (.gov, embassy sites)
 - Specific data with citations
 - Accuracy disclaimers for legal/tax advice
 
+**STRUCTURE REQUIREMENTS (to ensure 3000+ words):**
+1. Introduction (400-500 words) - Hook, context, preview
+2. Overview section (400-500 words) - What, why, who
+3. Requirements section (600-800 words) - Detailed eligibility criteria
+4. Application process (600-800 words) - Step-by-step with timing
+5. Cost breakdown (400-500 words) - All fees, living costs
+6. Case studies (600-900 words total) - 2-3 detailed examples
+7. Expert tips (400-500 words) - Insider knowledge
+8. Common mistakes (300-400 words) - What to avoid
+9. FAQs (400-500 words) - 8-10 detailed Q&As
+10. Conclusion (200-300 words) - Summary + CTA
+TOTAL: 3500-4200 words minimum
+
 Common Modules (competitors use): {', '.join(common_modules) if common_modules else 'standard modules'}
 
 OUTPUT FORMAT: Pure markdown article (NO JSON)
+
+**BEFORE YOU FINISH:** Count your words - if less than 3000, expand sections with more detail, examples, and explanations
 
 Write the complete SKYSCRAPER article starting with # {topic}"""
 

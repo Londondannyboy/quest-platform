@@ -506,9 +506,10 @@ IMPORTANT: Return ONLY the JSON object, no additional text."""
         Returns:
             Decision: publish, review, or reject
         """
-        if score >= 60:
-            return "publish"
-        elif score >= 40:
+        # TEMPORARY: Accept ANY score for debugging (user requested to see what's being generated)
+        if score >= 20:
+            return "review"  # Will trigger refinement + human review
+        elif score >= 10:
             return "review"
         else:
             return "reject"

@@ -18,6 +18,7 @@ from app.agents.template_detector import TemplateDetector
 from app.agents.research import ResearchAgent
 from app.agents.gemini_summarizer import GeminiSummarizer
 from app.agents.content import ContentAgent
+from app.agents.chunked_content import ChunkedContentAgent
 from app.agents.editor import EditorAgent
 from app.agents.image import ImageAgent
 from app.core.link_validator import LinkValidator
@@ -52,6 +53,7 @@ class ArticleOrchestrator:
         self.research_agent = ResearchAgent()
         self.gemini_summarizer = GeminiSummarizer()
         self.content_agent = ContentAgent()
+        self.chunked_content_agent = ChunkedContentAgent() if settings.GEMINI_API_KEY else None
         self.editor_agent = EditorAgent()
         self.image_agent = ImageAgent()
         self.link_validator = LinkValidator()
@@ -186,14 +188,34 @@ class ArticleOrchestrator:
                 job_id, "processing", 35, "content"
             )
 
-            # STEP 2: Content Generation (60-90s) - Pass compressed research + link context + template guidance
-            content_result = await self.content_agent.run(
-                {"content": compressed_research},  # Use Gemini-compressed research (90% fewer input tokens!)
-                target_site,
-                topic,
-                link_context=link_context,  # Pass validated links + SEO data
-                template_guidance=template_guidance  # Pass Template Intelligence recommendations
-            )
+            # STEP 2: Content Generation (60-90s)
+            # Use chunked generation (Gemini 2.5 Pro + Sonnet) if enabled, otherwise single-shot Sonnet
+            if settings.ENABLE_CHUNKED_CONTENT and self.chunked_content_agent:
+                logger.info(
+                    "orchestrator.using_chunked_content",
+                    job_id=job_id,
+                    reason="ENABLE_CHUNKED_CONTENT=True - Gemini 2.5 Pro chunks + Sonnet refinement"
+                )
+                content_result = await self.chunked_content_agent.generate(
+                    {"content": compressed_research},
+                    target_site,
+                    topic,
+                    link_context=link_context,
+                    template_guidance=template_guidance
+                )
+            else:
+                logger.info(
+                    "orchestrator.using_single_shot_content",
+                    job_id=job_id,
+                    reason="ENABLE_CHUNKED_CONTENT=False or no Gemini API key - Single-shot Sonnet"
+                )
+                content_result = await self.content_agent.run(
+                    {"content": compressed_research},  # Use Gemini-compressed research (90% fewer input tokens!)
+                    target_site,
+                    topic,
+                    link_context=link_context,  # Pass validated links + SEO data
+                    template_guidance=template_guidance  # Pass Template Intelligence recommendations
+                )
             costs["content"] = content_result["cost"]
 
             await self._update_job_status(
