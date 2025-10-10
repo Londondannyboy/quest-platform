@@ -80,6 +80,11 @@ class Settings(BaseSettings):
         default="text-embedding-ada-002", description="OpenAI embedding model"
     )
 
+    GEMINI_API_KEY: Optional[str] = Field(default=None, description="Google Gemini API key (optional - for content generation alternative)")
+    GEMINI_MODEL: str = Field(
+        default="gemini-2.0-flash-exp", description="Gemini model for content generation"
+    )
+
     REPLICATE_API_KEY: str = Field(..., description="Replicate API key")
     REPLICATE_MODEL: str = Field(
         default="black-forest-labs/flux-schnell", description="Replicate image model"
