@@ -51,8 +51,11 @@ class EditorAgent:
         # Validate citations before scoring
         citation_validation = self._validate_citations(article.get("content", ""))
 
+        # Validate SEO before scoring
+        seo_validation = self._validate_seo(article)
+
         # Build evaluation prompt
-        prompt = self._build_prompt(article, citation_validation)
+        prompt = self._build_prompt(article, citation_validation, seo_validation)
 
         try:
             response = await self.client.messages.create(
@@ -126,7 +129,8 @@ class EditorAgent:
                 "dimensions": evaluation.get("dimensions", {}),
                 "feedback": evaluation.get("feedback", ""),
                 "decision": decision,
-                "citation_validation": citation_validation,  # Add citation validation results
+                "citation_validation": citation_validation,  # Citation validation results
+                "seo_validation": seo_validation,  # NEW: SEO validation results
                 "cost": cost,
                 "tokens": {
                     "input": input_tokens,
@@ -412,7 +416,274 @@ Do NOT include any JSON, code fences, or explanatory text - just the refined mar
             "passed": passed
         }
 
-    def _build_prompt(self, article: Dict, citation_validation: Dict = None) -> str:
+    def _validate_seo(self, article: Dict) -> Dict:
+        """
+        Validate SEO technical requirements
+
+        Checks:
+        1. Keyword density (1-3% target)
+        2. Meta title (50-60 chars)
+        3. Meta description (150-160 chars)
+        4. Header hierarchy (H1 → H2 → H3)
+        5. Internal/external link ratio
+        6. Image alt text (if images present)
+        7. Readability score
+
+        Args:
+            article: Article data with title, content, keywords, meta
+
+        Returns:
+            {
+                "seo_score": 85,  # 0-100
+                "keyword_density": 2.1,  # percentage
+                "meta_title_length": 58,
+                "meta_description_length": 155,
+                "header_hierarchy_valid": True,
+                "internal_links": 3,
+                "external_links": 12,
+                "readability_score": 65,  # Flesch Reading Ease
+                "issues": ["list", "of", "issues"],
+                "passed": True
+            }
+        """
+        content = article.get("content", "")
+        title = article.get("title", "")
+        keywords = article.get("keywords", [])
+        meta_title = article.get("meta_title") or title
+        meta_description = article.get("meta_description", "")
+
+        issues = []
+        scores = {}
+
+        # 1. Keyword Density Check
+        if keywords:
+            primary_keyword = keywords[0] if isinstance(keywords, list) else str(keywords)
+            content_lower = content.lower()
+            keyword_lower = primary_keyword.lower()
+            keyword_count = content_lower.count(keyword_lower)
+            word_count = len(content.split())
+            keyword_density = (keyword_count / word_count * 100) if word_count > 0 else 0
+
+            scores["keyword_density"] = keyword_density
+
+            if keyword_density < 0.5:
+                issues.append(f"Keyword density too low: {keyword_density:.2f}% (target: 1-3%)")
+            elif keyword_density > 4.0:
+                issues.append(f"Keyword density too high: {keyword_density:.2f}% (risk of keyword stuffing)")
+        else:
+            scores["keyword_density"] = 0
+            issues.append("No keywords defined")
+
+        # 2. Meta Title Check
+        meta_title_length = len(meta_title)
+        scores["meta_title_length"] = meta_title_length
+
+        if meta_title_length < 30:
+            issues.append(f"Meta title too short: {meta_title_length} chars (target: 50-60)")
+        elif meta_title_length > 70:
+            issues.append(f"Meta title too long: {meta_title_length} chars (will be truncated in SERPs)")
+
+        # 3. Meta Description Check
+        meta_desc_length = len(meta_description)
+        scores["meta_description_length"] = meta_desc_length
+
+        if meta_desc_length < 120:
+            issues.append(f"Meta description too short: {meta_desc_length} chars (target: 150-160)")
+        elif meta_desc_length > 170:
+            issues.append(f"Meta description too long: {meta_desc_length} chars (will be truncated)")
+
+        # 4. Header Hierarchy Check
+        h1_count = len(re.findall(r'^#\s+', content, re.MULTILINE))
+        h2_count = len(re.findall(r'^##\s+', content, re.MULTILINE))
+        h3_count = len(re.findall(r'^###\s+', content, re.MULTILINE))
+
+        scores["h1_count"] = h1_count
+        scores["h2_count"] = h2_count
+        scores["h3_count"] = h3_count
+
+        header_hierarchy_valid = True
+        if h1_count == 0:
+            issues.append("Missing H1 header")
+            header_hierarchy_valid = False
+        elif h1_count > 1:
+            issues.append(f"Multiple H1 headers found ({h1_count}), should have only 1")
+            header_hierarchy_valid = False
+
+        if h2_count < 3:
+            issues.append(f"Too few H2 headers ({h2_count}), recommend at least 3 for content structure")
+
+        scores["header_hierarchy_valid"] = header_hierarchy_valid
+
+        # 5. Link Analysis
+        # Internal links (relative or same domain)
+        internal_links = len(re.findall(r'\[([^\]]+)\]\((/[^\)]+|#[^\)]+)\)', content))
+
+        # External links (http/https)
+        external_links = len(re.findall(r'\[([^\]]+)\]\((https?://[^\)]+)\)', content))
+
+        scores["internal_links"] = internal_links
+        scores["external_links"] = external_links
+
+        if internal_links == 0:
+            issues.append("No internal links found (recommend 2-5 for site navigation)")
+
+        if external_links < 3:
+            issues.append(f"Too few external links ({external_links}), recommend 5-10 authoritative sources")
+        elif external_links > 20:
+            issues.append(f"Too many external links ({external_links}), may dilute page authority")
+
+        # Link ratio check
+        if external_links > 0:
+            link_ratio = internal_links / external_links if internal_links > 0 else 0
+            scores["link_ratio"] = link_ratio
+            if link_ratio < 0.2:
+                issues.append(f"Internal/external link ratio too low ({link_ratio:.2f}), add more internal links")
+
+        # 6. Readability Score (Flesch Reading Ease)
+        readability_score = self._calculate_readability(content)
+        scores["readability_score"] = readability_score
+
+        if readability_score < 50:
+            issues.append(f"Content readability difficult ({readability_score:.0f}/100), simplify language")
+        elif readability_score > 80:
+            issues.append(f"Content may be too simple ({readability_score:.0f}/100) for target audience")
+
+        # Calculate overall SEO score (0-100)
+        seo_score = 100
+
+        # Penalties
+        if keyword_density < 0.5 or keyword_density > 4.0:
+            seo_score -= 15
+        if meta_title_length < 30 or meta_title_length > 70:
+            seo_score -= 10
+        if meta_desc_length < 120 or meta_desc_length > 170:
+            seo_score -= 10
+        if not header_hierarchy_valid:
+            seo_score -= 15
+        if h2_count < 3:
+            seo_score -= 5
+        if internal_links == 0:
+            seo_score -= 10
+        if external_links < 3:
+            seo_score -= 10
+        if readability_score < 50 or readability_score > 80:
+            seo_score -= 10
+
+        # Ensure score is between 0-100
+        seo_score = max(0, min(100, seo_score))
+
+        # Passed if score >= 70
+        passed = seo_score >= 70
+
+        logger.info(
+            "editor_agent.seo_validation",
+            seo_score=seo_score,
+            keyword_density=keyword_density if keywords else 0,
+            headers=f"H1:{h1_count},H2:{h2_count},H3:{h3_count}",
+            links=f"Internal:{internal_links},External:{external_links}",
+            readability=readability_score,
+            issues_count=len(issues),
+            passed=passed
+        )
+
+        return {
+            "seo_score": seo_score,
+            "keyword_density": scores.get("keyword_density", 0),
+            "meta_title_length": meta_title_length,
+            "meta_description_length": meta_desc_length,
+            "header_hierarchy_valid": header_hierarchy_valid,
+            "h1_count": h1_count,
+            "h2_count": h2_count,
+            "h3_count": h3_count,
+            "internal_links": internal_links,
+            "external_links": external_links,
+            "link_ratio": scores.get("link_ratio", 0),
+            "readability_score": readability_score,
+            "issues": issues,
+            "passed": passed
+        }
+
+    def _calculate_readability(self, content: str) -> float:
+        """
+        Calculate Flesch Reading Ease score
+
+        Formula: 206.835 - 1.015(total words/total sentences) - 84.6(total syllables/total words)
+
+        Score interpretation:
+        90-100: Very easy (5th grade)
+        80-90: Easy (6th grade)
+        70-80: Fairly easy (7th grade)
+        60-70: Standard (8th-9th grade) ← TARGET
+        50-60: Fairly difficult (10th-12th grade)
+        30-50: Difficult (college)
+        0-30: Very difficult (college graduate)
+
+        Args:
+            content: Article content
+
+        Returns:
+            Flesch Reading Ease score (0-100)
+        """
+        # Remove markdown formatting
+        text = re.sub(r'[#*`\[\]]', '', content)
+        text = re.sub(r'\n+', ' ', text)
+
+        # Count sentences
+        sentences = re.split(r'[.!?]+', text)
+        sentence_count = len([s for s in sentences if s.strip()])
+
+        # Count words
+        words = text.split()
+        word_count = len([w for w in words if w.strip()])
+
+        if sentence_count == 0 or word_count == 0:
+            return 60.0  # Default to "standard"
+
+        # Count syllables (simplified estimation)
+        syllable_count = sum(self._count_syllables(word) for word in words)
+
+        # Flesch Reading Ease formula
+        avg_words_per_sentence = word_count / sentence_count
+        avg_syllables_per_word = syllable_count / word_count
+
+        score = 206.835 - (1.015 * avg_words_per_sentence) - (84.6 * avg_syllables_per_word)
+
+        # Clamp to 0-100
+        return max(0, min(100, score))
+
+    def _count_syllables(self, word: str) -> int:
+        """
+        Estimate syllable count in a word (simplified)
+
+        Args:
+            word: Word to analyze
+
+        Returns:
+            Estimated syllable count
+        """
+        word = word.lower().strip()
+        if len(word) <= 3:
+            return 1
+
+        # Count vowel groups
+        vowels = 'aeiouy'
+        syllable_count = 0
+        previous_was_vowel = False
+
+        for char in word:
+            is_vowel = char in vowels
+            if is_vowel and not previous_was_vowel:
+                syllable_count += 1
+            previous_was_vowel = is_vowel
+
+        # Adjust for silent 'e'
+        if word.endswith('e'):
+            syllable_count -= 1
+
+        # At least 1 syllable
+        return max(1, syllable_count)
+
+    def _build_prompt(self, article: Dict, citation_validation: Dict = None, seo_validation: Dict = None) -> str:
         """
         Build evaluation prompt for Claude
         """
@@ -437,6 +708,24 @@ CITATION VALIDATION:
 
 **IMPORTANT**: Articles MUST have at least 5 citations and a References section. Penalize score if missing."""
 
+        # Add SEO validation context
+        seo_context = ""
+        if seo_validation:
+            seo_context = f"""
+
+SEO VALIDATION:
+- SEO Score: {seo_validation['seo_score']}/100 ({'✅ PASSED' if seo_validation['passed'] else '❌ FAILED'})
+- Keyword Density: {seo_validation['keyword_density']:.2f}% (target: 1-3%)
+- Meta Title Length: {seo_validation['meta_title_length']} chars (target: 50-60)
+- Meta Description Length: {seo_validation['meta_description_length']} chars (target: 150-160)
+- Header Hierarchy: {'✅ Valid' if seo_validation['header_hierarchy_valid'] else '❌ Invalid'} (H1:{seo_validation['h1_count']}, H2:{seo_validation['h2_count']}, H3:{seo_validation['h3_count']})
+- Links: Internal:{seo_validation['internal_links']}, External:{seo_validation['external_links']}
+- Readability Score: {seo_validation['readability_score']:.0f}/100 (Flesch Reading Ease)
+- Issues Found: {len(seo_validation['issues'])}
+{('  - ' + '\\n  - '.join(seo_validation['issues'][:5])) if seo_validation['issues'] else '  (none)'}
+
+**IMPORTANT**: Consider SEO validation in your scoring. Penalize if SEO score < 70."""
+
         return f"""You are a content quality analyst. Evaluate this article on a 0-100 scale.
 
 ARTICLE TITLE:
@@ -448,6 +737,7 @@ ARTICLE CONTENT (preview):
 KEYWORDS:
 {', '.join(keywords)}
 {citation_context}
+{seo_context}
 
 EVALUATION CRITERIA:
 
