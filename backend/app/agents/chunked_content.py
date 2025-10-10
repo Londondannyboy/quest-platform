@@ -426,7 +426,7 @@ Start with the appropriate H2 header for this section and write naturally."""
         try:
             response = await self.claude_client.messages.create(
                 model=self.sonnet_model,
-                max_tokens=8192,
+                max_tokens=12288,  # Increased from 8192 to ensure References section completes
                 temperature=0.7,
                 system=self._build_sonnet_system_prompt(style),
                 messages=[{"role": "user", "content": prompt}],
@@ -524,20 +524,23 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - TL;DR section (150 words, right after title)
    - Key Takeaways (5 bullet points)
    - All chunk content with H2/H3 headers
-   - FAQ section (8-10 Q&A pairs, near end)
-   - **CRITICAL:** References section (## References, at very end)
+   - FAQ section (8-10 Q&A pairs, COMPLETE all questions fully)
+   - **ABSOLUTELY MANDATORY:** ## References section (MUST be the FINAL section)
 
 3. **Add Citations** (MINIMUM 8-12 required):
    - Add inline citations [1], [2], [3] for ALL factual claims
    - Use research sources from above
-   - **MANDATORY FORMAT for References section:**
+   - **ABSOLUTELY REQUIRED - References Section Format:**
+
      ## References
 
      [1] Source Name - https://example.com/source1
      [2] Source Name - https://example.com/source2
      [3] Source Name - https://example.com/source3
-   - MUST create complete References section at end of article
-   - Distribute citations throughout article body
+
+   - The ## References section is THE MOST CRITICAL requirement
+   - EVERY article MUST end with a complete References section
+   - List ALL citations used in the article (minimum 8-12 sources)
 
 4. **Enhance Quality**:
    - Add specific data points and statistics
@@ -562,16 +565,31 @@ Return ONLY the complete refined article in pure markdown format.
 Start with # {topic} and include ALL required sections.
 NO JSON, NO code fences, just pure markdown.
 
-CRITICAL WARNINGS:
+CRITICAL WARNINGS - READ CAREFULLY:
 - Article MUST be 3500+ words MINIMUM (not counting references)
 - You received ~2000 words of chunks - your output must be LONGER, not shorter
 - DO NOT condense, summarize, or shorten the chunks
 - EXPAND and elaborate on every section
 - Articles under 3000 words will be AUTOMATICALLY REJECTED
 - Minimum 8+ citations required throughout
-- **MANDATORY:** ## References section with ALL citations at the very end
-- Format EXACTLY: [1] Source Name - URL (one per line)
-- Articles without proper References section will FAIL quality check"""
+
+**THE #1 CRITICAL REQUIREMENT - REFERENCES SECTION:**
+- EVERY article MUST end with ## References as the FINAL section
+- This is the MOST IMPORTANT part of the article
+- The ## References section is NOT OPTIONAL
+- Format EXACTLY as shown below (one citation per line):
+
+## References
+
+[1] Source Name - https://example.com/source1
+[2] Source Name - https://example.com/source2
+[3] Source Name - https://example.com/source3
+[4] Source Name - https://example.com/source4
+
+- Articles without a complete References section will AUTOMATICALLY FAIL
+- NEVER truncate or skip the References section
+- The References section should list ALL 8-12 citations used in the article
+- Ensure you have enough tokens reserved to complete the References section"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""
