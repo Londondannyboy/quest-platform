@@ -1,22 +1,23 @@
 # Quest Platform - Progress Tracker
 
 **Last Updated:** October 10, 2025 (Evening)
-**Current Phase:** ✅ Phase 1 Complete - Production Live (Haiku Model)
-**Status:** 🟢 Operational - All Systems Ready
+**Current Phase:** ✅ Phase 1 Complete - Production Live (Haiku Model) + 🎨 Template Intelligence Design Complete
+**Status:** 🟢 Operational - All Systems Ready + Design Phase Complete
 
 ---
 
 ## 📊 Overall Progress
 
 ```
-████████████████████████████░░ 95% Complete
+███████████████████████████░░░ 93% Complete
 
-✅ Phase 1: Core Platform (COMPLETE)           [100%]
-✅ Backend API & 7-Agent Pipeline               [100%]
-✅ Frontend Deployment (relocation.quest)      [100%]
-✅ TIER 0 Critical Fixes (OPUS)                [100%]
-⏳ Phase 2: Scale & Optimize (IN PROGRESS)     [25%]
-⏳ Phase 3: Multi-Site Expansion                [0%]
+✅ Phase 1: Core Platform (COMPLETE)               [100%]
+✅ Backend API & 7-Agent Pipeline                  [100%]
+✅ Frontend Deployment (relocation.quest)          [100%]
+✅ TIER 0 Critical Fixes (OPUS)                    [100%]
+⏳ Phase 2: Scale & Optimize (IN PROGRESS)         [30%]
+🎨 Phase 2.5: Template Intelligence (NEW)          [15%]
+⏳ Phase 3: Multi-Site Expansion                   [0%]
 ```
 
 ---
@@ -216,6 +217,203 @@
 - [ ] API response caching (Redis)
 - [ ] Database query optimization
 - [ ] Full-text search indexes
+
+---
+
+## 🎨 PHASE 2.5: TEMPLATE INTELLIGENCE (15% COMPLETE)
+
+**Status:** Design Complete, Implementation Pending
+**Start Date:** October 10, 2025
+**Target Completion:** November 15, 2025
+**Priority:** HIGH - Competitive moat
+
+### What is Template Intelligence?
+
+Revolutionary content architecture that analyzes SERP winners (Serper + Firecrawl) to detect **content archetypes** (strategic depth) vs **visual templates** (user-facing structure), then generates SERP-competitive content using modular components.
+
+**Core Innovation:** Distinguishes between:
+- **ARCHETYPE** = Strategic depth (what ranks): Skyscraper, Cluster Hub, Deep Dive, Comparison Matrix, News Hub
+- **TEMPLATE** = Visual structure (what users expect): Ultimate Guide, Listicle, Comparison, Location Guide, etc.
+
+**Example:** "Top 10 Digital Nomad Visas" LOOKS like a simple listicle, but IS a 12,000-word skyscraper with 14 modules, ranking for 750+ keywords.
+
+### Implementation Checklist
+
+#### TIER 0.5: Foundation (Week 1-2)
+
+**Database Schema (5 New Tables):**
+- [ ] Create `content_archetypes` table - Archetype definitions (Skyscraper, Cluster Hub, etc.)
+- [ ] Create `content_templates` table - Template definitions (Ultimate Guide, Listicle, etc.)
+- [ ] Create `serp_intelligence` table - SERP analysis results (cached recommendations)
+- [ ] Create `scraped_competitors` table - Individual competitor analysis
+- [ ] Create `template_performance` table - Learning from results
+- [ ] Add `target_archetype`, `surface_template`, `modules_used` columns to `articles` table
+- [ ] Create indexes (archetype, template, keyword, URL)
+
+**TemplateDetector Agent:**
+- [ ] Implement `TemplateDetector` class (`backend/app/agents/template_detector.py`)
+- [ ] Integrate Serper.dev API (SERP analysis)
+- [ ] Integrate Firecrawl API (competitor scraping)
+- [ ] Implement multi-dimensional archetype detection algorithm
+  - [ ] Word count & section depth analysis
+  - [ ] Module detection (FAQ, calculator, tables, etc.)
+  - [ ] Internal linking patterns
+  - [ ] Schema stacking detection
+  - [ ] E-E-A-T signals (expert quotes, case studies, citations)
+- [ ] Implement recommendation engine
+  - [ ] Dominant archetype selection
+  - [ ] Template recommendation
+  - [ ] Required modules extraction
+  - [ ] Target word count calculation
+- [ ] Implement caching (30-day TTL)
+
+**ContentAgent Enhancement:**
+- [ ] Update ContentAgent to receive archetype + template guidance
+- [ ] Add archetype-specific prompts (Skyscraper vs Deep Dive vs Comparison)
+- [ ] Add template-specific structure instructions
+- [ ] Add module assembly logic
+- [ ] Add E-E-A-T requirement enforcement for YMYL content
+
+#### TIER 0.6: Frontend Templates (Week 3-4)
+
+**Astro Template Components (12 Templates):**
+- [ ] UltimateGuide.astro (most common wrapper)
+- [ ] Listicle.astro (numbered rankings)
+- [ ] Comparison.astro (X vs Y)
+- [ ] LocationGuide.astro (country/city-specific)
+- [ ] DeepDiveTutorial.astro (how-to)
+- [ ] CategoryPillar.astro (topic overview)
+- [ ] ProblemSolution.astro
+- [ ] NewsUpdate.astro
+- [ ] CaseStudy.astro
+- [ ] DataStudy.astro
+- [ ] ToolCalculator.astro
+- [ ] Interview.astro
+
+**Modular Component Library (35 Components):**
+
+_Content Modules (15):_
+- [ ] TldrSection.astro
+- [ ] KeyTakeaways.astro
+- [ ] StatsCallout.astro
+- [ ] ProsConsList.astro
+- [ ] StepByStep.astro
+- [ ] FaqAccordion.astro
+- [ ] ComparisonTable.astro
+- [ ] ExpertQuote.astro
+- [ ] CaseStudyCard.astro
+- [ ] ResourceGrid.astro
+- [ ] GlossaryTerms.astro
+- [ ] VideoEmbed.astro
+- [ ] Infographic.astro
+- [ ] Timeline.astro
+- [ ] Checklist.astro
+
+_Interactive Modules (10):_
+- [ ] Calculator.astro (JS-powered computation)
+- [ ] Quiz.astro (assessment with results)
+- [ ] InteractiveMap.astro (Google Maps embed)
+- [ ] FilterSystem.astro (refine table/grid)
+- [ ] ComparisonCheckbox.astro (select items)
+- [ ] CostEstimator.astro (multi-variable calculator)
+- [ ] ProgressTracker.astro (save user's place)
+- [ ] BookmarkTool.astro (save for later)
+- [ ] EmailCapture.astro (newsletter signup)
+- [ ] LiveData.astro (real-time stats)
+
+_Schema Modules (10):_
+- [ ] ArticleSchema.ts
+- [ ] HowToSchema.ts
+- [ ] FaqSchema.ts
+- [ ] ReviewSchema.ts
+- [ ] BreadcrumbSchema.ts
+- [ ] TableSchema.ts
+- [ ] VideoSchema.ts
+- [ ] EventSchema.ts
+- [ ] PersonSchema.ts
+- [ ] OrganizationSchema.ts
+
+**Dynamic Template Routing:**
+- [ ] Update `src/pages/[slug].astro` for dynamic template selection
+- [ ] Add template component mapping logic
+- [ ] Add fallback to UltimateGuide template
+
+#### TIER 0.7: Integration & Testing (Week 5-6)
+
+**Orchestrator Updates:**
+- [ ] Add TemplateDetector to article generation pipeline
+- [ ] Update flow: Research → TemplateDetector → Content → Editor → Image
+- [ ] Add SchemaGenerator for multi-schema JSON-LD stacking
+- [ ] Store archetype/template/modules in `template_performance` table
+
+**Content Strategy:**
+- [ ] Reclassify 993 topics in `QUEST_RELOCATION_RESEARCH.md` by archetype
+  - 40% Skyscraper (foundation content)
+  - 20% Deep Dive Specialist (specific processes)
+  - 20% Comparison Matrix (decision content)
+  - 15% Cluster Hub (category overviews)
+  - 5% News Hub (timely updates)
+- [ ] Add `recommended_archetype` column to topic queue
+
+**Testing & Validation:**
+- [ ] Generate first 10 template-driven articles
+  - 5 Skyscraper articles (8000+ words, 12+ modules)
+  - 3 Deep Dive articles (3500+ words, 9+ modules)
+  - 2 Comparison Matrix articles (3500+ words, 10+ modules)
+- [ ] Validate archetype detection accuracy (target: >85%)
+- [ ] Validate E-E-A-T requirements for YMYL content
+- [ ] Manual review: Archetype matches SERP analysis
+- [ ] Performance test: Latency impact of TemplateDetector
+
+### Success Metrics
+
+**Template Detection:**
+- Archetype detection accuracy: >85%
+- SERP analysis cache hit rate: >50%
+- Template recommendation confidence: >80%
+
+**Content Quality:**
+- Skyscraper articles: 8000+ words, 12+ modules, 85+ quality score
+- Deep Dive articles: 3500+ words, 9+ modules, 85+ quality score
+- E-E-A-T signals present in 100% of YMYL content
+
+**Performance:**
+- Template detection latency: <30 seconds
+- Total generation time: <90 seconds per article
+- Cost per article: <$0.70 (including Template Intelligence premium)
+
+### Documentation
+
+**Complete Documentation:**
+- ✅ `QUEST_TEMPLATES.md` (980 lines) - Authority document
+  - 5 content archetypes with specifications
+  - 12 visual templates with structure
+  - 35 modular components library
+  - Multi-dimensional archetype detection algorithm
+  - E-E-A-T optimization framework
+  - SERP intelligence workflow
+
+**Related Updates:**
+- ✅ `QUEST_ARCHITECTURE_V2_4.md` - Template Intelligence System architecture
+- ⏳ `QUEST_SEO.md` - Archetype-first SEO strategy
+- ⏳ `QUEST_RELOCATION_RESEARCH.md` - Topics reclassified by archetype
+- ⏳ `QUEST_PEER_REVIEW.md` - Template Intelligence review criteria
+
+### Cost Analysis (Template Intelligence Premium)
+
+**Added Costs:**
+- Serper.dev (SERP analysis): ~$50/month (1000 articles) = $0.05/article
+- Firecrawl (competitor scraping): ~$30/month (1000 articles) = $0.03/article
+- **Template Intelligence Premium:** $0.08/article
+
+**Total Cost Per Article:**
+- Previous: $0.60/article (6-API research + Haiku)
+- With Template Intelligence: $0.68/article
+- **ROI:** $0.08 investment → Ranks 10+ positions higher (SERP-competitive content)
+
+**Break-Even Analysis:**
+- Position #15 → Position #5 = 3x traffic increase
+- $0.08 premium per article pays for itself in increased organic reach
 
 ---
 
