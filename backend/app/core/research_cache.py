@@ -19,7 +19,7 @@ Architecture:
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import structlog
-from app.core.database import DatabaseManager
+from app.core.database import get_db
 
 logger = structlog.get_logger()
 
@@ -73,8 +73,8 @@ class ClusterResearchCache:
         }
     }
 
-    def __init__(self, db: DatabaseManager):
-        self.db = db
+    def __init__(self):
+        pass  # Uses get_db() for pool access
 
     async def identify_cluster(self, topic: str) -> Optional[Dict]:
         """
@@ -133,14 +133,16 @@ class ClusterResearchCache:
             LIMIT 1
         """
 
-        result = await self.db.fetchrow(query, cluster_id)
+        pool = get_db()
+        async with pool.acquire() as conn:
+            result = await conn.fetchrow(query, cluster_id)
 
-        if result:
-            # Increment reuse counter
-            await self.db.execute(
-                "UPDATE cluster_research SET reuse_count = reuse_count + 1 WHERE cluster_id = $1",
-                cluster_id
-            )
+            if result:
+                # Increment reuse counter
+                await conn.execute(
+                    "UPDATE cluster_research SET reuse_count = reuse_count + 1 WHERE cluster_id = $1",
+                    cluster_id
+                )
 
             logger.info(
                 "research_cache.hit",
@@ -220,15 +222,17 @@ class ClusterResearchCache:
                 created_at = NOW()
         """
 
-        await self.db.execute(
-            query,
-            cluster_id,
-            research_data,
-            seo_data or {},
-            serp_analysis or {},
-            ai_insights or {},
-            expires_at
-        )
+        pool = get_db()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                query,
+                cluster_id,
+                research_data,
+                seo_data or {},
+                serp_analysis or {},
+                ai_insights or {},
+                expires_at
+            )
 
         logger.info(
             "research_cache.saved",
@@ -256,7 +260,9 @@ class ClusterResearchCache:
             FROM cluster_research
         """
 
-        stats = await self.db.fetchrow(query)
+        pool = get_db()
+        async with pool.acquire() as conn:
+            stats = await conn.fetchrow(query)
 
         total_reuses = stats["total_reuses"] or 0
         cluster_count = stats["cluster_count"] or 0

@@ -14,7 +14,7 @@ from openai import AsyncOpenAI
 import structlog
 
 from app.core.config import settings
-from app.core.database import get_db, DatabaseManager
+from app.core.database import get_db
 from app.core.research_queue import ResearchGovernance
 from app.core.research_apis import MultiAPIResearch
 from app.core.research_cache import ClusterResearchCache
@@ -41,7 +41,7 @@ class ResearchAgent:
         self.cache_ttl_days = settings.RESEARCH_CACHE_TTL_DAYS
         self.governance = ResearchGovernance()
         self.multi_api = MultiAPIResearch()
-        self.cluster_cache = ClusterResearchCache(DatabaseManager())
+        self.cluster_cache = ClusterResearchCache()
 
     async def run(self, topic: str) -> Dict:
         """

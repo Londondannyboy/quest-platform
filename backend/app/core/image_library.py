@@ -21,7 +21,7 @@ from typing import Dict, List, Optional
 from decimal import Decimal
 import structlog
 
-from app.core.database import DatabaseManager
+from app.core.database import get_db
 
 logger = structlog.get_logger()
 
@@ -69,14 +69,9 @@ class ImageLibrary:
     # Reuse rate (70% means 70% of images are reused from library)
     REUSE_RATE = 0.7
 
-    def __init__(self, db: DatabaseManager):
-        """
-        Initialize image library
-
-        Args:
-            db: Database manager for storing/retrieving images
-        """
-        self.db = db
+    def __init__(self):
+        """Initialize image library"""
+        pass  # Uses get_db() for pool access
 
     def categorize_topic(self, topic: str) -> str:
         """
@@ -235,7 +230,9 @@ class ImageLibrary:
                 LIMIT 50
             """
 
-            results = await self.db.fetch(query, category)
+            pool = get_db()
+            async with pool.acquire() as conn:
+                results = await conn.fetch(query, category)
 
             return [
                 {
@@ -282,7 +279,9 @@ class ImageLibrary:
                 ON CONFLICT (url) DO NOTHING
             """
 
-            await self.db.execute(query, category, image_url, topic, metadata)
+            pool = get_db()
+            async with pool.acquire() as conn:
+                await conn.execute(query, category, image_url, topic, metadata)
 
             logger.info(
                 "image_library.added",
@@ -318,7 +317,9 @@ class ImageLibrary:
                 ORDER BY image_count DESC
             """
 
-            category_stats = await self.db.fetch(query)
+            pool = get_db()
+            async with pool.acquire() as conn:
+                category_stats = await conn.fetch(query)
 
             total_images = sum(row["image_count"] for row in category_stats)
 
