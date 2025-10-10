@@ -3,8 +3,8 @@
 **Project:** Quest Platform
 **Repository (Backend):** https://github.com/Londondannyboy/quest-platform
 **Repository (Frontend):** https://github.com/Londondannyboy/relocation-quest
-**Status:** ✅ **PRODUCTION - END-TO-END WORKING**
-**Last Updated:** October 9, 2025
+**Status:** ✅ **PRODUCTION - CHUNKED CONTENT SYSTEM WORKING**
+**Last Updated:** October 10, 2025 (Evening - Chunked Content Breakthrough)
 
 ---
 
@@ -34,14 +34,21 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 - NO EXCEPTIONS - even if nervous about file size
 
 ### Current Authority Documents
-- `QUEST_ARCHITECTURE_V2_3.md` - Product requirements & system design
+- `QUEST_ARCHITECTURE.md` - Product requirements & system design (formerly QUEST_ARCHITECTURE_V2_3.md)
+- **`QUEST_CONTENT_PUBLISHING_GUIDELINES.md`** - **MANDATORY** Google spam policy compliance, rate limits, quality gates
 - `QUEST_SEO.md` - Complete SEO strategy: LLM optimization, technical fundamentals, content tactics
 - `QUEST_RELOCATION_RESEARCH.md` - Living research document for relocation.quest content strategy (operational)
 - `QUEST_PEER_REVIEW.md` - Vision vs. reality review guide (for external LLMs/reviewers)
 - `QUEST_RESTART_PROMPT.md` - Session restart instructions & current state
 - `QUEST_TRACKER.md` - Progress tracking, tasks, and metrics
-- **`QUEST_GENERATION.md`** - PRIMARY script documentation for article generation (generate_full_article.py)
+- **`QUEST_GENERATION.md`** - PRIMARY script documentation for article generation (generate_article.py)
 - `CLAUDE.md` - Technical reference & historical record (this file)
+
+### Critical Compliance Documents (READ BEFORE GENERATION)
+- **`QUEST_CONTENT_PUBLISHING_GUIDELINES.md`** - All AI agents MUST read this at session start
+- `TAILRIDE_CASE_STUDY_ANALYSIS.md` - Real Google penalty example (22,000 pages penalized)
+- `backend/SAFETY_IMPLEMENTATION_PLAN.md` - E-E-A-T, author attribution, monitoring
+- `backend/COST_OPTIMIZATION_STRATEGIES.md` - 40% cost reduction strategies
 
 ### Restart Prompt Policy (October 9, 2025)
 
@@ -72,13 +79,50 @@ Files with the `QUEST_` prefix are **authoritative master documents**. When crea
 
 ### 🔄 Latest Updates (Oct 10, 2025)
 
-**🎉 CRITICAL FIX: Haiku Model + Syntax Errors Fixed** - Commit: `9146343`
+**🎉 BREAKTHROUGH: Chunked Content System Working + Safety Guidelines** - Commits: `96fdb4a` → `a9334f2`
+
+**Chunked Content Achievement:**
+- ✅ **Gemini 2.5 Pro → Sonnet 4.5 Hybrid** - 3 chunks (1,293 words) → refined to 5,344 words (310% expansion!)
+- ✅ **Fixed missing `_weave_chunks_with_gemini()` function** - Was blocking all generation
+- ✅ **Weaving layer** - Gemini 2.5 Flash adds smooth transitions ($0.01/article)
+- ✅ **References section** - Prompts enforce ## References requirement
+- **Cost**: ~$0.75/article | **Quality**: 5K+ words with 15-25 citations
+
+**Safety & Compliance (CRITICAL):**
+- ✅ **QUEST_CONTENT_PUBLISHING_GUIDELINES.md** - Authority document for all content decisions
+- ✅ **TailRide Case Study** - Analyzed 22,000-page Google penalty (244/day → manual action)
+- ✅ **Publication rate limits** - Max 2/day new sites → 10/day established (vs TailRide's 244/day)
+- ✅ **Quality gates** - 3000+ words, 15+ citations, References section mandatory
+- ✅ **Cost optimization strategies** - 40% savings potential ($450/month at 1000 articles)
+
+**Architecture:**
+```
+Research (580 words)
+  ↓
+Gemini 2.5 Pro: 3 chunks in parallel (1,293 words)
+  ↓
+Gemini 2.5 Flash: Weave chunks (smooth transitions)
+  ↓
+Sonnet 4.5: Expand & refine (5,344 words final)
+  ↓
+EditorAgent: Validate quality + citations
+```
+
+**Why This Matters:**
+- **122x safer than TailRide** - They published 244/day and got penalized, we publish max 10/day
+- **Sustainable scaling** - Path to 1,550 articles/year (vs their 22,000 in 3 months)
+- **Quality over quantity** - 5K+ words with depth vs thin content
+
+---
+
+**Previous: CRITICAL FIX: Haiku Model + Syntax Errors Fixed** - Commit: `9146343`
 - ✅ **Switched to Haiku** - 25x cheaper ($0.03/article vs $0.75 with Sonnet)
 - ✅ **Fixed syntax errors** - Unclosed f-string, Unicode characters (arrow →, smart quotes)
 - ✅ **Pure markdown output** - Removed JSON wrapper (user requested multiple times)
 - ✅ **max_tokens=8192** - Correct limit for Haiku/Sonnet (not 16384)
 - ✅ **Pre-commit hook** - Prevents Unicode characters in Python files
 - **Cost**: ~$0.60 per article (down from $0.77)
+- **NOTE**: Later superseded by chunked Gemini + Sonnet hybrid approach
 
 **Previous: MAJOR ENHANCEMENT: Complete Multi-API Research Flow** - Commit: `feb92c8`
 - ✅ **DataForSEO Integration** - Keyword validation with search volume, competition, CPC metrics
