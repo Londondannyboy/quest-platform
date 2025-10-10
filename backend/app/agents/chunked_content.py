@@ -52,9 +52,9 @@ class ChunkedContentAgent:
         # Best balance of quality and cost ($0.15/M input, $0.60/M output)
         self.gemini_model = genai.GenerativeModel("gemini-2.5-pro")
 
-        # Initialize Claude Sonnet
+        # Initialize Claude Sonnet 4.5 (latest model, Sept 2025)
         self.claude_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.sonnet_model = "claude-3-5-sonnet-20241022"
+        self.sonnet_model = "claude-sonnet-4-5-20250929"
 
         # Site-specific writing styles
         self.style_guides = {
