@@ -202,6 +202,7 @@ class EditorAgent:
                 model="claude-3-5-sonnet-20241022",  # Always use Sonnet for refinement
                 max_tokens=8192,
                 temperature=0.7,
+                timeout=180.0,  # 3 minute timeout (Bug Fix #2)
                 messages=[{"role": "user", "content": refinement_prompt}],
             )
 
@@ -262,6 +263,18 @@ class EditorAgent:
         content = article.get("content", "")
         citation_validation = feedback.get("citation_validation", {})
         dimensions = feedback.get("dimensions", {})
+
+        # Bug Fix #3: Truncate very long content to prevent token overflow
+        max_content_length = 15000  # chars (~3750 tokens, leaves room for prompt)
+        content_truncated = False
+        if len(content) > max_content_length:
+            content = content[:max_content_length] + "\n\n[Content truncated for refinement...]"
+            content_truncated = True
+            logger.info(
+                "editor_agent.content_truncated",
+                original_length=len(content),
+                truncated_to=max_content_length
+            )
 
         # Build issue-specific instructions
         refinement_instructions = []

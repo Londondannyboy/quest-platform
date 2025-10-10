@@ -203,6 +203,9 @@ class ArticleOrchestrator:
             # STEP 3.5: Article Refinement (NEW - if score 60-74)
             # Trigger refinement for medium-quality articles
             if 60 <= quality_score < 75:
+                # Store original score before refinement for improvement tracking
+                original_quality_score = quality_score
+
                 logger.info(
                     "orchestrator.triggering_refinement",
                     job_id=job_id,
@@ -249,12 +252,16 @@ class ArticleOrchestrator:
                     decision = editor_result["decision"]
                     quality_score = editor_result["quality_score"]
 
+                    # Calculate actual score improvement (fixed bug)
+                    score_improvement = quality_score - original_quality_score
+
                     logger.info(
                         "orchestrator.refinement_rescored",
                         job_id=job_id,
+                        original_score=original_quality_score,
                         new_score=quality_score,
-                        new_decision=decision,
-                        score_improvement=quality_score - editor_result.get("quality_score", quality_score)
+                        score_improvement=score_improvement,
+                        new_decision=decision
                     )
 
                 except Exception as refinement_error:
