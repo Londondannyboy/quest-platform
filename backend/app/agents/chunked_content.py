@@ -3,11 +3,11 @@ Quest Platform v2.5 - ChunkedContentAgent
 Hybrid Gemini (chunks) + Sonnet (refinement) for guaranteed 3000+ word articles with citations
 
 Architecture:
-1. Gemini 2.5 Pro: Generate 3 parallel chunks (~1000 words each)
+1. Gemini 2.0 Flash: Generate 3 parallel chunks (~1000 words each)
 2. Sonnet 4.5: Merge + refine + add citations
 3. Guaranteed: 3000+ words, 5+ citations, References section
 
-Cost: $0.068/article (68% cheaper than Sonnet-only $0.21)
+Cost: $0.017/article (92% cheaper than Sonnet-only $0.21)
 Time: 80-110 seconds
 Success Rate: 95%+
 """
@@ -31,15 +31,15 @@ class ChunkedContentAgent:
     Chunked Content Agent: Generate articles using hybrid Gemini + Sonnet approach
 
     Why this architecture?
-    - Gemini 2.5 Pro: High-quality draft generation ($0.018/chunk)
+    - Gemini 2.0 Flash: Ultra-fast, ultra-cheap draft generation ($0.0005/chunk)
     - Parallel chunking: 3 chunks simultaneously = 20-30 seconds total
     - Sonnet refinement: Merge + enhance + citations = production quality
     - Guaranteed output: 3000+ words, 5+ citations
 
     Cost breakdown:
-    - Gemini chunks: 3 × $0.018 = $0.053
+    - Gemini chunks: 3 × $0.0005 = $0.0015
     - Sonnet refinement: $0.015
-    - Total: $0.068/article
+    - Total: $0.017/article (92% cheaper than Sonnet-only)
     """
 
     def __init__(self):
@@ -48,8 +48,9 @@ class ChunkedContentAgent:
             raise ValueError("GEMINI_API_KEY required for chunked content generation")
 
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        # Use Gemini 2.5 Pro for better quality chunks
-        self.gemini_model = genai.GenerativeModel("gemini-2.5-pro-002")
+        # Use Gemini 2.0 Flash for fast, cheap chunk generation
+        # (gemini-2.5-pro-002 not available yet, using 2.0-flash-exp)
+        self.gemini_model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
         # Initialize Claude Sonnet
         self.claude_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
