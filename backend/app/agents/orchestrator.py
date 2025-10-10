@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.agents.keyword_researcher import KeywordResearcher
 from app.agents.template_detector import TemplateDetector
 from app.agents.research import ResearchAgent
+from app.agents.gemini_summarizer import GeminiSummarizer
 from app.agents.content import ContentAgent
 from app.agents.editor import EditorAgent
 from app.agents.image import ImageAgent
@@ -49,6 +50,7 @@ class ArticleOrchestrator:
         self.keyword_researcher = KeywordResearcher()
         self.template_detector = TemplateDetector()
         self.research_agent = ResearchAgent()
+        self.gemini_summarizer = GeminiSummarizer()
         self.content_agent = ContentAgent()
         self.editor_agent = EditorAgent()
         self.image_agent = ImageAgent()
@@ -85,6 +87,7 @@ class ArticleOrchestrator:
             "keyword_research": Decimal("0.00"),
             "template_detection": Decimal("0.00"),
             "research": Decimal("0.00"),
+            "gemini_compression": Decimal("0.00"),
             "content": Decimal("0.00"),
             "editor": Decimal("0.00"),  # Includes refinement if triggered
             "image": Decimal("0.00"),
@@ -147,6 +150,29 @@ class ArticleOrchestrator:
             research_result = await self.research_agent.run(topic)
             costs["research"] = research_result["cost"]
 
+            # STEP 1.25: Gemini Research Compression (NEW - 5-10s)
+            # Compress massive research data into high-signal summary
+            await self._update_job_status(
+                job_id, "processing", 20, "gemini_compression"
+            )
+
+            gemini_result = await self.gemini_summarizer.compress_research(
+                research_result.get("research", {}),
+                topic,
+                target_site
+            )
+            costs["gemini_compression"] = gemini_result["cost"]
+
+            # Use compressed research for content generation (saves 90% on input tokens!)
+            compressed_research = gemini_result["compressed_research"]
+
+            logger.info(
+                "orchestrator.research_compressed",
+                compression_ratio=f"{gemini_result['compression_ratio']:.2%}",
+                gemini_cost=float(gemini_result["cost"]),
+                input_tokens_saved=gemini_result["tokens"]["input"]
+            )
+
             # STEP 1.5: Link Validation (Option 3 - Pre-generation)
             sources = research_result.get("sources", [])
             link_context = await self.link_validator.prepare_link_context(
@@ -160,9 +186,9 @@ class ArticleOrchestrator:
                 job_id, "processing", 35, "content"
             )
 
-            # STEP 2: Content Generation (60-90s) - Pass link context with SEO data + template guidance
+            # STEP 2: Content Generation (60-90s) - Pass compressed research + link context + template guidance
             content_result = await self.content_agent.run(
-                research_result["research"],
+                {"content": compressed_research},  # Use Gemini-compressed research (90% fewer input tokens!)
                 target_site,
                 topic,
                 link_context=link_context,  # Pass validated links + SEO data
