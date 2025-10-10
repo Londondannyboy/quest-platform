@@ -51,7 +51,7 @@ class GeminiSummarizer:
         Compress massive research data into high-signal summary
 
         Args:
-            research_data: Dictionary with research from all APIs
+            research_data: Dictionary with research from all APIs OR JSON string from cache
                 {
                     "perplexity": {...},
                     "tavily": {...},
@@ -75,11 +75,26 @@ class GeminiSummarizer:
                 "tokens": {"input": 0, "output": 0}
             }
 
+        # Handle both dict and JSON string from cache
+        if isinstance(research_data, str):
+            try:
+                research_data = json.loads(research_data)
+                logger.info("gemini_summarizer.parsed_json_string", message="Parsed JSON string from cache")
+            except json.JSONDecodeError:
+                # If it's already a markdown string, just return it
+                logger.info("gemini_summarizer.already_compressed", message="Research data is already a string")
+                return {
+                    "compressed_research": research_data,
+                    "compression_ratio": 1.0,
+                    "cost": Decimal("0.00"),
+                    "tokens": {"input": 0, "output": 0}
+                }
+
         logger.info(
             "gemini_summarizer.start",
             topic=topic,
             target_site=target_site,
-            api_count=len(research_data)
+            api_count=len(research_data) if isinstance(research_data, dict) else 1
         )
 
         # Build compression prompt
