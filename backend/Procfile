@@ -1,5 +1,4 @@
 # Quest Platform - Railway Deployment
-# FastAPI web server + BullMQ worker
+# FastAPI web server + BullMQ worker (both in single process)
 
-web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-worker: python -m app.worker
+web: uvicorn app.main:app --host 0.0.0.0 --port $PORT & python -m app.worker

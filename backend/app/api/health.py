@@ -86,9 +86,9 @@ async def get_metrics():
         pool = get_db()
 
         async with pool.acquire() as conn:
-            # Queue depth (from Redis)
+            # Queue depth (from Redis) - check waiting queue
             redis_client = get_redis()
-            queue_depth = await redis_client.llen("quest:jobs:queued")
+            queue_depth = await redis_client.zcard("quest:articles:waiting")
 
             # Recent job stats (last 24 hours)
             job_stats = await conn.fetchrow(
@@ -189,7 +189,7 @@ async def check_queue_depth() -> str:
     """Check queue depth (warn if >100)"""
     try:
         redis_client = get_redis()
-        depth = await redis_client.llen("quest:jobs:queued")
+        depth = await redis_client.zcard("quest:articles:waiting")
 
         if depth > 100:
             return f"warning: {depth} jobs queued"

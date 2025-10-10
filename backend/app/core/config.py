@@ -89,7 +89,11 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: Optional[str] = Field(default=None, description="Tavily API key")
     FIRECRAWL_API_KEY: Optional[str] = Field(default=None, description="Firecrawl API key")
     SERPER_API_KEY: Optional[str] = Field(default=None, description="Serper.dev API key")
-    CRITIQUE_LABS_API_KEY: Optional[str] = Field(default=None, description="Critique Labs API key")
+    CRITIQUE_LABS_API_KEY: Optional[str] = Field(
+        default=None,
+        validation_alias="CRITIQUE_API_KEY",
+        description="Critique Labs API key"
+    )
     LINKUP_API_KEY: Optional[str] = Field(default=None, description="LinkUp API key")
 
     # DataForSEO (keyword validation)
