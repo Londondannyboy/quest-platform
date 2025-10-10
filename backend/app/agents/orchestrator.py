@@ -86,7 +86,7 @@ class ArticleOrchestrator:
             "template_detection": Decimal("0.00"),
             "research": Decimal("0.00"),
             "content": Decimal("0.00"),
-            "editor": Decimal("0.00"),
+            "editor": Decimal("0.00"),  # Includes refinement if triggered
             "image": Decimal("0.00"),
         }
 
@@ -180,7 +180,7 @@ class ArticleOrchestrator:
             )
             costs["editor"] = editor_result["cost"]
 
-            # Check cost cap
+            # Check cost cap before potential refinement
             total_cost = sum(costs.values())
             if (
                 settings.ENABLE_COST_CIRCUIT_BREAKER
@@ -199,6 +199,73 @@ class ArticleOrchestrator:
             # Decision based on quality score
             decision = editor_result["decision"]
             quality_score = editor_result["quality_score"]
+
+            # STEP 3.5: Article Refinement (NEW - if score 60-74)
+            # Trigger refinement for medium-quality articles
+            if 60 <= quality_score < 75:
+                logger.info(
+                    "orchestrator.triggering_refinement",
+                    job_id=job_id,
+                    quality_score=quality_score,
+                    reason="Medium quality score - attempting improvement"
+                )
+
+                await self._update_job_status(
+                    job_id, "processing", 70, "refinement"
+                )
+
+                try:
+                    # Refine the article
+                    refinement_result = await self.editor_agent.refine(
+                        article=content_result["article"],
+                        feedback=editor_result
+                    )
+
+                    # Track refinement cost
+                    costs["editor"] += refinement_result["cost"]
+
+                    # Update article with refined version
+                    content_result["article"] = refinement_result["article"]
+
+                    logger.info(
+                        "orchestrator.refinement_complete",
+                        job_id=job_id,
+                        word_count_added=refinement_result["improvements"]["word_count_added"],
+                        citations_added=refinement_result["improvements"]["citations_added"],
+                        refinement_cost=float(refinement_result["cost"])
+                    )
+
+                    # Re-score the refined article
+                    await self._update_job_status(
+                        job_id, "processing", 75, "re_scoring"
+                    )
+
+                    editor_result = await self.editor_agent.score(
+                        content_result["article"]
+                    )
+                    costs["editor"] += editor_result["cost"]
+
+                    # Update decision and quality score with refined version
+                    decision = editor_result["decision"]
+                    quality_score = editor_result["quality_score"]
+
+                    logger.info(
+                        "orchestrator.refinement_rescored",
+                        job_id=job_id,
+                        new_score=quality_score,
+                        new_decision=decision,
+                        score_improvement=quality_score - editor_result.get("quality_score", quality_score)
+                    )
+
+                except Exception as refinement_error:
+                    logger.warning(
+                        "orchestrator.refinement_failed",
+                        job_id=job_id,
+                        error=str(refinement_error),
+                        message="Continuing with original article"
+                    )
+                    # Continue with original article if refinement fails
+                    pass
 
             if decision == "reject":
                 logger.warning(

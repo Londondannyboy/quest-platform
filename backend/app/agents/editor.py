@@ -148,6 +148,201 @@ class EditorAgent:
             logger.error("editor_agent.scoring_failed", error=str(e), exc_info=e)
             raise
 
+    async def refine(self, article: Dict, feedback: Dict) -> Dict:
+        """
+        Refine article based on quality feedback
+
+        Improvements:
+        1. Citation Enhancement - Add missing citations (ensure >=5)
+        2. Content Expansion - Expand thin sections to 3000+ words
+        3. Grammar & Spelling - Fix errors, improve readability
+        4. Link Enhancement - Validate links, add internal links
+        5. E-E-A-T Enhancement - Add expert quotes, case studies
+
+        Args:
+            article: Article data with content/title/etc
+            feedback: Quality dimensions from score() method
+                {
+                    "dimensions": {"accuracy": 75, "writing": 70, ...},
+                    "feedback": "Needs more citations...",
+                    "citation_validation": {"citation_count": 3, ...}
+                }
+
+        Returns:
+            Dict with refined article + cost
+        """
+        logger.info(
+            "editor_agent.refine_start",
+            title=article.get("title", "Unknown"),
+            current_score=feedback.get("quality_score", 0)
+        )
+
+        # Analyze what needs refinement
+        citation_validation = feedback.get("citation_validation", {})
+        dimensions = feedback.get("dimensions", {})
+
+        needs_citations = citation_validation.get("citation_count", 0) < 5
+        needs_expansion = citation_validation.get("word_count", 0) < 3000
+        needs_grammar = dimensions.get("writing", 100) < 75
+        needs_accuracy = dimensions.get("accuracy", 100) < 80
+
+        # Build refinement prompt based on needs
+        refinement_prompt = self._build_refinement_prompt(
+            article,
+            feedback,
+            needs_citations,
+            needs_expansion,
+            needs_grammar,
+            needs_accuracy
+        )
+
+        try:
+            # Use Claude Sonnet for refinement (higher quality)
+            response = await self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",  # Always use Sonnet for refinement
+                max_tokens=8192,
+                temperature=0.7,
+                messages=[{"role": "user", "content": refinement_prompt}],
+            )
+
+            # Parse refined content
+            refined_content = response.content[0].text.strip()
+
+            # Calculate cost
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+            cost = self._calculate_cost(input_tokens, output_tokens)
+
+            # Update article with refined content
+            refined_article = article.copy()
+            refined_article["content"] = refined_content
+
+            # Re-validate citations in refined content
+            new_citation_validation = self._validate_citations(refined_content)
+
+            logger.info(
+                "editor_agent.refine_complete",
+                original_words=citation_validation.get("word_count", 0),
+                refined_words=new_citation_validation.get("word_count", 0),
+                original_citations=citation_validation.get("citation_count", 0),
+                refined_citations=new_citation_validation.get("citation_count", 0),
+                cost=float(cost)
+            )
+
+            return {
+                "article": refined_article,
+                "cost": cost,
+                "tokens": {
+                    "input": input_tokens,
+                    "output": output_tokens,
+                },
+                "improvements": {
+                    "word_count_added": new_citation_validation.get("word_count", 0) - citation_validation.get("word_count", 0),
+                    "citations_added": new_citation_validation.get("citation_count", 0) - citation_validation.get("citation_count", 0),
+                }
+            }
+
+        except Exception as e:
+            logger.error("editor_agent.refinement_failed", error=str(e), exc_info=e)
+            raise
+
+    def _build_refinement_prompt(
+        self,
+        article: Dict,
+        feedback: Dict,
+        needs_citations: bool,
+        needs_expansion: bool,
+        needs_grammar: bool,
+        needs_accuracy: bool
+    ) -> str:
+        """
+        Build targeted refinement prompt based on identified issues
+        """
+        title = article.get("title", "")
+        content = article.get("content", "")
+        citation_validation = feedback.get("citation_validation", {})
+        dimensions = feedback.get("dimensions", {})
+
+        # Build issue-specific instructions
+        refinement_instructions = []
+
+        if needs_citations:
+            refinement_instructions.append(f"""
+**CITATION ENHANCEMENT REQUIRED:**
+- Current citations: {citation_validation.get("citation_count", 0)} (need 5+)
+- Add inline citations [1], [2], [3] for all factual claims
+- Create or expand References section at the end
+- Format: [1] Source Name - URL
+""")
+
+        if needs_expansion:
+            refinement_instructions.append(f"""
+**CONTENT EXPANSION REQUIRED:**
+- Current word count: {citation_validation.get("word_count", 0)} (target 3000+)
+- Expand thin sections with:
+  * Real-world examples
+  * Case studies or success stories
+  * Step-by-step guides
+  * Expert insights
+  * Data and statistics (with citations)
+- Add depth without fluff
+""")
+
+        if needs_grammar:
+            refinement_instructions.append(f"""
+**WRITING QUALITY IMPROVEMENT REQUIRED:**
+- Current writing score: {dimensions.get("writing", 0)}/100
+- Fix grammar and spelling errors
+- Improve sentence flow and readability
+- Break up long paragraphs
+- Enhance transitions between sections
+- Use active voice
+""")
+
+        if needs_accuracy:
+            refinement_instructions.append(f"""
+**ACCURACY ENHANCEMENT REQUIRED:**
+- Current accuracy score: {dimensions.get("accuracy", 0)}/100
+- Verify all factual claims
+- Add authoritative sources
+- Include official data (.gov, embassy sites)
+- Add accuracy disclaimers for legal/tax advice
+""")
+
+        refinement_tasks = "\n".join(refinement_instructions)
+
+        return f"""You are an expert content editor tasked with refining and improving this article.
+
+ARTICLE TITLE:
+{title}
+
+CURRENT ARTICLE CONTENT:
+{content}
+
+QUALITY FEEDBACK:
+{feedback.get("feedback", "General improvements needed")}
+
+SPECIFIC REFINEMENT TASKS:
+{refinement_tasks}
+
+**YOUR JOB:**
+1. Keep the existing structure and main points
+2. Address ALL the refinement tasks listed above
+3. Maintain the article's tone and style
+4. Output the COMPLETE refined article (not just changes)
+
+**CRITICAL REQUIREMENTS:**
+- Minimum 3000 words (expand if needed)
+- Minimum 5 inline citations [1], [2], [3]
+- Complete References section at end
+- Professional, error-free writing
+- Natural keyword integration
+
+**OUTPUT FORMAT:**
+Return the complete refined article in pure markdown format. Start with # {title} and include all sections with improvements applied.
+
+Do NOT include any JSON, code fences, or explanatory text - just the refined markdown article."""
+
     def _validate_citations(self, content: str) -> Dict:
         """
         Validate citation format and count
