@@ -735,7 +735,7 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
 
 **CRITICAL REQUIREMENTS:**
 
-1. **Merge & EXPAND** (Target 3200-3600 words; do NOT exceed 4000 words)
+1. **Merge & EXPAND** (Target 3200-3400 words MAXIMUM to stay within token limit)
    - Combine all 3 chunks into cohesive narrative
    - Add smooth transitions between sections
    - EXPAND every section with more detail, examples, and data
@@ -743,8 +743,9 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - DO NOT condense or summarize - EXPAND and elaborate
    - Keep ALL original content from chunks, just enhance it
    - Maintain natural flow while adding substance
-   - **CRITICAL:** Stop adding new content once every major section is covered
-   - **RESERVE ROOM:** You MUST leave space for the full References section (minimum 25 entries)
+   - **TOKEN LIMIT CRITICAL:** Stop at 3400 words to reserve 800 tokens for Further Reading
+   - **STOP WRITING:** Once main content reaches 3400 words, immediately write Further Reading section
+   - **NEVER EXCEED 3400 WORDS** in main body - or References section will be truncated
 
 2. **Add Structure** (MUST include all):
    - DO NOT include H1 title (frontend already displays it)
@@ -818,14 +819,16 @@ Start with ## What You Need to Know (NO H1 - frontend displays title separately)
 Include ALL required sections.
 NO JSON, NO code fences, just pure markdown.
 
-CRITICAL WARNINGS - READ CAREFULLY:
-- Article target: 3200-3600 words (NOT counting References section)
-- DO NOT exceed 4000 words - you must leave room for References
-- You received ~2100-2400 words of chunks - expand moderately, not excessively
-- DO NOT condense, summarize, or shorten the chunks
-- EXPAND and elaborate on every section with care
-- **STOP WRITING MAIN CONTENT** once all sections are well-covered
-- Articles under 3000 words OR without References will be REJECTED
+CRITICAL TOKEN LIMIT WARNINGS - READ CAREFULLY:
+- **MAXIMUM OUTPUT: 8192 tokens total (Sonnet hard limit)**
+- **Main body target: 3200-3400 words (~5000-5300 tokens)**
+- **Further Reading reserve: 800-1000 tokens (~500-600 words)**
+- **YOU WILL HIT TOKEN LIMIT** if main body exceeds 3400 words
+- You received ~1800 words of chunks - expand to 3200-3400 words, then STOP
+- DO NOT condense, summarize, or shorten the chunks - expand them carefully
+- **STOP WRITING MAIN CONTENT** at 3400 words - immediately start Further Reading
+- **IF YOU EXCEED 3400 WORDS:** Further Reading section will be truncated mid-sentence
+- Articles under 3000 words OR without complete Further Reading will be REJECTED
 
 **INLINE HYPERLINK DENSITY REQUIREMENT (HIGH AUTHORITY STANDARD):**
 - MINIMUM 15-25 inline hyperlinks required for 3500+ word articles
