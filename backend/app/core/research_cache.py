@@ -144,13 +144,20 @@ class ClusterResearchCache:
                     cluster_id
                 )
 
+            # Make created_at timezone-aware if it isn't already
+            created_at = result["created_at"]
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+
+            age_days = (datetime.now(timezone.utc) - created_at).days
+
             logger.info(
                 "research_cache.hit",
                 cluster_id=cluster_id,
                 topic=topic,
                 reuse_count=result["reuse_count"] + 1,
                 cost_saved=0.25,
-                age_days=(datetime.now(timezone.utc) - result["created_at"]).days
+                age_days=age_days
             )
 
             return {
@@ -160,7 +167,7 @@ class ClusterResearchCache:
                 "serp_analysis": result["serp_analysis"],
                 "ai_insights": result["ai_insights"],
                 "cached": True,
-                "cache_age_days": (datetime.now(timezone.utc) - result["created_at"]).days
+                "cache_age_days": age_days
             }
 
         logger.info(
