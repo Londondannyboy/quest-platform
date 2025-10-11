@@ -1,11 +1,12 @@
 """
-Quest Platform v2.2 - ImageAgent
-Generates hero images using FLUX Schnell via Replicate + Cloudinary CDN
+Quest Platform v2.3 - ImageAgent
+Generates themed images with H2 overlays using Ideogram V3 Turbo + Cloudinary CDN
 """
 
 import asyncio
+import re
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import replicate
 import cloudinary
@@ -19,36 +20,44 @@ logger = structlog.get_logger(__name__)
 
 class ImageAgent:
     """
-    Image Agent: Generate hero images with FLUX Schnell
+    Image Agent: Generate themed images with H2 text overlays
 
-    Cost: $0.003 per image
-    Quality: Photorealistic, suitable for hero images
-    Latency: 30-60 seconds
+    Strategy:
+    - Hero: 3:1 ultra-wide banner with article title overlay
+    - Content 1-3: 16:9 images with H2 section headings as overlay text
+    - Neon aesthetic: Consistent branded look across all images
+
+    Model: Ideogram V3 Turbo (better text rendering than FLUX)
+    Cost: $0.003-$0.005 per image
+    Quality: Photorealistic with clean neon text overlays
+    Latency: 7-10 seconds per image
     """
 
-    # Negative prompt for quality control (what to avoid)
-    # CRITICAL: Absolutely no text, words, numbers, or letters
-    NEGATIVE_PROMPT = "text, words, numbers, letters, writing, typography, labels, captions, signs, watermark, text overlay, low quality, blurry, distorted, amateur, cartoon, illustration, drawing, 3d render, unrealistic"
+    # Negative prompt: Allow REQUESTED text overlays, block unwanted text
+    NEGATIVE_PROMPT = "unwanted text, random words, watermark, logo, unrelated typography, low quality, blurry, distorted, amateur, cartoon, illustration, drawing, 3d render, unrealistic"
 
     # Image specifications by type
     IMAGE_SPECS = {
         "hero": {
-            "aspect_ratio": "16:9",
-            "description": "Wide hero image - vibrant, professional, business context"
+            "aspect_ratio": "3:1",  # Ultra-wide banner (1344x448 or similar)
+            "description": "Hero banner with article title overlay"
         },
         "content_1": {
-            "aspect_ratio": "16:9",
-            "description": "Infographic or process diagram - clear visual hierarchy"
+            "aspect_ratio": "16:9",  # Standard article image
+            "description": "First content section with H2 overlay"
         },
         "content_2": {
             "aspect_ratio": "16:9",
-            "description": "Business scene with people - modern office or location"
+            "description": "Second content section with H2 overlay"
         },
         "content_3": {
             "aspect_ratio": "16:9",
-            "description": "Visual metaphor - symbolic representation, clean composition"
+            "description": "Third content section with H2 overlay"
         }
     }
+
+    # Time of day variations for visual diversity
+    TIMES_OF_DAY = ["golden hour", "dusk", "sunset", "twilight"]
 
     def __init__(self):
         # Configure Replicate with token
@@ -72,6 +81,38 @@ class ImageAgent:
 
         # Neon aesthetic guidance (applied to all images)
         self.neon_aesthetic = "subtle neon outline glow on key subjects, glowing edges, cyberpunk-inspired lighting accents, modern futuristic aesthetic, vibrant rim lighting"
+
+    def _extract_h2_sections(self, content: str) -> List[str]:
+        """
+        Extract H2 headings from markdown content for image overlays
+
+        Args:
+            content: Article markdown content
+
+        Returns:
+            List of H2 headings (excluding "Further Reading & Sources")
+        """
+        h2_pattern = r'^## (.+)$'
+        h2_matches = re.findall(h2_pattern, content, re.MULTILINE)
+
+        # Filter out common footer sections
+        excluded = [
+            "Further Reading & Sources",
+            "References",
+            "Sources",
+            "Conclusion",
+            "Summary"
+        ]
+        h2_sections = [h2 for h2 in h2_matches if h2 not in excluded]
+
+        logger.info(
+            "image_agent.h2_extraction",
+            total_h2=len(h2_matches),
+            usable_h2=len(h2_sections),
+            sections=h2_sections[:3]  # Log first 3 for debugging
+        )
+
+        return h2_sections
 
     async def generate(
         self, article: Dict, target_site: str, slug: str
@@ -101,15 +142,16 @@ class ImageAgent:
             }
 
         try:
-            # Step 1: Craft prompts for all 4 images
+            # Step 1: Craft prompts for all 4 images (with H2 overlays)
             prompts = self._create_all_prompts(article, target_site)
 
-            # Step 2: Generate all 4 images in parallel (60s total instead of 240s)
+            # Step 2: Generate all 4 images in parallel (~7 seconds each)
+            # Hero: 3:1 ultra-wide banner, Content: 16:9 standard
             image_tasks = [
-                self._generate_via_flux(prompts["hero"]),
-                self._generate_via_flux(prompts["content_1"]),
-                self._generate_via_flux(prompts["content_2"]),
-                self._generate_via_flux(prompts["content_3"]),
+                self._generate_via_ideogram(prompts["hero"], aspect_ratio="3:1"),
+                self._generate_via_ideogram(prompts["content_1"], aspect_ratio="16:9"),
+                self._generate_via_ideogram(prompts["content_2"], aspect_ratio="16:9"),
+                self._generate_via_ideogram(prompts["content_3"], aspect_ratio="16:9"),
             ]
             generated_urls = await asyncio.gather(*image_tasks, return_exceptions=True)
 
@@ -132,7 +174,7 @@ class ImageAgent:
                 "content_image_1_url": cdn_urls[1] if not isinstance(cdn_urls[1], Exception) else None,
                 "content_image_2_url": cdn_urls[2] if not isinstance(cdn_urls[2], Exception) else None,
                 "content_image_3_url": cdn_urls[3] if not isinstance(cdn_urls[3], Exception) else None,
-                "cost": Decimal("0.012"),  # 4 images × $0.003
+                "cost": Decimal("0.016"),  # 4 images × $0.004 (Ideogram V2 Turbo)
             }
 
             logger.info(
@@ -210,13 +252,13 @@ Mood: Inspirational and informative"""
 
     def _create_all_prompts(self, article: Dict, target_site: str) -> Dict[str, str]:
         """
-        Create specialized prompts for all 4 images (hero + 3 content)
+        Create themed prompts with H2 overlays for all 4 images
 
-        Each image type has a specific purpose:
-        - Hero: Wide, vibrant, attention-grabbing main image
-        - Content 1: Infographic or diagram style
-        - Content 2: People/scene oriented
-        - Content 3: Conceptual/metaphor
+        Strategy:
+        - Hero: Article title as neon overlay on iconic landmark
+        - Content 1-3: H2 section headings as neon overlays on sequential landmarks
+
+        Magic Prompt will enhance simple prompts into detailed descriptions
 
         Args:
             article: Article with title and content
@@ -227,99 +269,102 @@ Mood: Inspirational and informative"""
         """
         title = article.get("title", "")
         content = article.get("content", "")
-        style = self.style_guides.get(target_site, self.style_guides["relocation"])
 
-        # Extract topic from title
+        # Extract location/country from title (for now, use generic descriptions)
+        # TODO Phase 2: Replace with actual landmark detection via Perplexity
         topic = title.replace("Complete Guide", "").replace("2025", "").strip()
 
-        # Hero prompt (main topic) - Wide, vibrant, business context with neon accents
-        hero_prompt = f"""Professional editorial photograph about {topic}.
-{self.IMAGE_SPECS['hero']['description']}
+        # Extract H2 sections for content image overlays
+        h2_sections = self._extract_h2_sections(content)
 
-Style: {style}, {self.neon_aesthetic}
-Format: 16:9 aspect ratio, high quality, photorealistic, 4k resolution
-Lighting: Natural professional lighting with neon outline glow accents on subjects
-Mood: Inspirational authoritative with modern futuristic edge
+        # Hero prompt: Ultra-wide banner with title overlay
+        hero_prompt = f"""Scenic location related to {topic} at {self.TIMES_OF_DAY[0]} with neon overlay text: "{title}".
 
-AVOID: {self.NEGATIVE_PROMPT}"""
+Do not include any other text in the image."""
 
-        # Content image 1: Infographic/diagram style with neon highlights
-        content_1_prompt = f"""Detailed infographic or diagram showing the process of {topic}.
-{self.IMAGE_SPECS['content_1']['description']}
+        # Content images: H2 overlays on sequential images
+        prompts = {"hero": hero_prompt}
 
-Style: {style}, {self.neon_aesthetic}, clean layout with glowing highlights
-Format: 16:9 aspect ratio, high quality, clear visual hierarchy
-Visual elements: Charts icons step-by-step flow with neon outline accents
-Mood: Educational professional with modern tech aesthetic
+        for i in range(1, 4):
+            # Use H2 if available, otherwise use generic description
+            if i-1 < len(h2_sections):
+                overlay_text = h2_sections[i-1]
+            else:
+                overlay_text = f"Section {i}"
 
-AVOID: {self.NEGATIVE_PROMPT}"""
+            time_of_day = self.TIMES_OF_DAY[i % len(self.TIMES_OF_DAY)]
 
-        # Content image 2: Business scene with neon rim lighting
-        content_2_prompt = f"""Professional business scene related to {topic}.
-{self.IMAGE_SPECS['content_2']['description']}
+            prompts[f"content_{i}"] = f"""Scenic location related to {topic} at {time_of_day} with neon overlay text: "{overlay_text}".
 
-Style: {style}, {self.neon_aesthetic}, people working together
-Format: 16:9 aspect ratio, high quality, photorealistic
-Scene: Professional office environment with subtle neon edge lighting on people
-Mood: Collaborative productive with futuristic modern vibe
+Do not include any other text in the image."""
 
-AVOID: {self.NEGATIVE_PROMPT}"""
+        logger.info(
+            "image_agent.prompts_created",
+            hero_overlay=title[:50],
+            content_overlays=[h2_sections[i][:30] if i < len(h2_sections) else f"Section {i+1}" for i in range(3)]
+        )
 
-        # Content image 3: Visual metaphor with glowing edges
-        content_3_prompt = f"""Visual metaphor or conceptual image representing {topic}.
-{self.IMAGE_SPECS['content_3']['description']}
+        return prompts
 
-Style: {style}, {self.neon_aesthetic}, symbolic minimalist with glowing accents
-Format: 16:9 aspect ratio, high quality, artistic photorealistic
-Composition: Clean focused meaningful symbolism with neon outline highlights
-Mood: Thoughtful sophisticated with modern futuristic edge
-
-AVOID: {self.NEGATIVE_PROMPT}"""
-
-        return {
-            "hero": hero_prompt,
-            "content_1": content_1_prompt,
-            "content_2": content_2_prompt,
-            "content_3": content_3_prompt,
-        }
-
-    async def _generate_via_flux(self, prompt: str) -> str:
+    async def _generate_via_ideogram(
+        self,
+        prompt: str,
+        aspect_ratio: str = "16:9"
+    ) -> str:
         """
-        Generate image via Replicate FLUX Schnell
+        Generate image via Replicate Ideogram V3 Turbo with magic prompt
+
+        Ideogram V3 Turbo excels at:
+        - Clean text rendering (neon overlays)
+        - Photorealistic scenes
+        - Fast generation (~7 seconds)
 
         Args:
-            prompt: Image generation prompt
+            prompt: Simple image description (magic prompt will enhance)
+            aspect_ratio: "3:1" (hero) or "16:9" (content)
 
         Returns:
             URL of generated image
         """
         try:
             output = await replicate.async_run(
-                self.replicate_model,
+                "ideogram-ai/ideogram-v2-turbo",  # Using V2 Turbo (V3 may not be available yet)
                 input={
                     "prompt": prompt,
-                    "num_outputs": 1,
-                    "aspect_ratio": "16:9",
-                    "output_format": "jpg",
-                    "output_quality": 90,
+                    "aspect_ratio": aspect_ratio,
+                    "magic_prompt_option": "On",  # Let Replicate enhance our prompts
+                    "style_type": "None",  # Photorealistic
+                    "style_preset": "None",
                 },
             )
 
-            # Output is a list of URLs
-            image_url = output[0] if isinstance(output, list) else output
+            # Output is either a string URL or list
+            image_url = output if isinstance(output, str) else output[0]
 
-            logger.info("image_agent.flux_generated", url=image_url[:50])
+            logger.info(
+                "image_agent.ideogram_generated",
+                url=image_url[:50],
+                aspect_ratio=aspect_ratio
+            )
             return image_url
 
         except Exception as e:
-            logger.error("image_agent.flux_failed", error=str(e), exc_info=e)
+            logger.error(
+                "image_agent.ideogram_failed",
+                error=str(e),
+                aspect_ratio=aspect_ratio,
+                exc_info=e
+            )
             raise
 
     async def _upload_to_cloudinary(
         self, image_url: str, target_site: str, slug: str
     ) -> str:
         """
-        Upload image to Cloudinary CDN with transformations
+        Upload image to Cloudinary CDN with responsive transformations
+
+        Preserves original aspect ratios (3:1 for hero, 16:9 for content)
+        while optimizing quality and format
 
         Args:
             image_url: Source image URL from Replicate
@@ -330,23 +375,25 @@ AVOID: {self.NEGATIVE_PROMPT}"""
             Cloudinary CDN URL
         """
         try:
+            # Determine if this is a hero image (3:1) based on slug suffix
+            is_hero = slug.endswith("-hero")
+
             # Wrap synchronous Cloudinary upload in thread to prevent event loop blocking
-            # This prevents 100-500ms blocking for every concurrent request
             result = await asyncio.to_thread(
                 cloudinary.uploader.upload,
                 image_url,
                 folder=f"quest/{target_site}",
                 public_id=slug,
                 transformation=[
-                    # Resize and crop
-                    {"width": 1200, "height": 675, "crop": "fill", "gravity": "auto"},
-                    # Quality optimization
-                    {"quality": "auto"},
-                    # Format optimization
+                    # Preserve aspect ratio, set quality
+                    {"width": 1920 if not is_hero else 1344, "crop": "limit"},
+                    # Quality: Higher for hero, standard for content
+                    {"quality": "auto:best" if is_hero else "auto:good"},
+                    # Format optimization (WebP for modern browsers, JPG fallback)
                     {"fetch_format": "auto"},
                 ],
                 overwrite=True,
-                timeout=5,  # 5 second timeout to prevent hanging
+                timeout=10,  # Longer timeout for larger images
             )
 
             cdn_url = result["secure_url"]
@@ -356,10 +403,11 @@ AVOID: {self.NEGATIVE_PROMPT}"""
                 slug=slug,
                 cdn_url=cdn_url,
                 bytes=result.get("bytes"),
+                is_hero=is_hero
             )
 
             return cdn_url
 
         except Exception as e:
-            logger.error("image_agent.cloudinary_failed", error=str(e), exc_info=e)
+            logger.error("image_agent.cloudinary_failed", error=str(e), slug=slug, exc_info=e)
             raise
