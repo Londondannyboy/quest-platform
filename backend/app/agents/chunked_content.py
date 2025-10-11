@@ -853,7 +853,7 @@ Additional authoritative resources for deeper research:
 - Group by type: official government, tax/legal, expat community
 - Articles without a complete Further Reading section will AUTOMATICALLY FAIL
 - NEVER truncate or skip the Further Reading section
-- Reserve ~800 tokens minimum for the Further Reading section to ensure completion
+- Reserve ~800 tokens minimum for the Further Reading section to ensure completion"""
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""
