@@ -1,0 +1,350 @@
+{
+  "italy": {
+    "country": "Italy",
+    "landmarks": [
+      {
+        "name": "Colosseum",
+        "location": "Rome",
+        "rank": 1,
+        "description": "Ancient amphitheater, iconic symbol of Rome"
+      },
+      {
+        "name": "Venice Canals",
+        "location": "Venice",
+        "rank": 2,
+        "description": "Historic waterways with gondolas and bridges"
+      },
+      {
+        "name": "Florence Duomo",
+        "location": "Florence",
+        "rank": 3,
+        "description": "Cathedral with iconic Brunelleschi dome"
+      },
+      {
+        "name": "Amalfi Coast",
+        "location": "Amalfi",
+        "rank": 4,
+        "description": "Dramatic coastline with colorful clifftop villages"
+      }
+    ]
+  },
+  "spain": {
+    "country": "Spain",
+    "landmarks": [
+      {
+        "name": "Sagrada Familia",
+        "location": "Barcelona",
+        "rank": 1,
+        "description": "Gaudí's unfinished basilica masterpiece"
+      },
+      {
+        "name": "Alhambra",
+        "location": "Granada",
+        "rank": 2,
+        "description": "Moorish palace and fortress complex"
+      },
+      {
+        "name": "Plaza Mayor",
+        "location": "Madrid",
+        "rank": 3,
+        "description": "Grand central square in Madrid's heart"
+      },
+      {
+        "name": "Park Güell",
+        "location": "Barcelona",
+        "rank": 4,
+        "description": "Gaudí's colorful mosaic park overlooking Barcelona"
+      }
+    ]
+  },
+  "portugal": {
+    "country": "Portugal",
+    "landmarks": [
+      {
+        "name": "Belém Tower",
+        "location": "Lisbon",
+        "rank": 1,
+        "description": "16th-century fortified tower on the Tagus River"
+      },
+      {
+        "name": "Pena Palace",
+        "location": "Sintra",
+        "rank": 2,
+        "description": "Colorful Romanticist castle atop Sintra hills"
+      },
+      {
+        "name": "Dom Luís I Bridge",
+        "location": "Porto",
+        "rank": 3,
+        "description": "Double-deck metal arch bridge over Douro River"
+      },
+      {
+        "name": "Algarve Cliffs",
+        "location": "Lagos",
+        "rank": 4,
+        "description": "Dramatic golden cliffs and sea caves"
+      }
+    ]
+  },
+  "france": {
+    "country": "France",
+    "landmarks": [
+      {
+        "name": "Eiffel Tower",
+        "location": "Paris",
+        "rank": 1,
+        "description": "Iconic iron lattice tower, symbol of Paris"
+      },
+      {
+        "name": "Louvre Museum",
+        "location": "Paris",
+        "rank": 2,
+        "description": "World's largest art museum with glass pyramid"
+      },
+      {
+        "name": "Mont Saint-Michel",
+        "location": "Normandy",
+        "rank": 3,
+        "description": "Medieval abbey on tidal island"
+      },
+      {
+        "name": "Palace of Versailles",
+        "location": "Versailles",
+        "rank": 4,
+        "description": "Opulent royal château and gardens"
+      }
+    ]
+  },
+  "greece": {
+    "country": "Greece",
+    "landmarks": [
+      {
+        "name": "Acropolis",
+        "location": "Athens",
+        "rank": 1,
+        "description": "Ancient citadel with Parthenon temple"
+      },
+      {
+        "name": "Santorini Caldera",
+        "location": "Santorini",
+        "rank": 2,
+        "description": "White-washed buildings on volcanic cliffs"
+      },
+      {
+        "name": "Meteora Monasteries",
+        "location": "Kalabaka",
+        "rank": 3,
+        "description": "Monasteries perched on towering rock pillars"
+      },
+      {
+        "name": "Mykonos Windmills",
+        "location": "Mykonos",
+        "rank": 4,
+        "description": "Iconic white windmills overlooking the sea"
+      }
+    ]
+  },
+  "cyprus": {
+    "country": "Cyprus",
+    "landmarks": [
+      {
+        "name": "Paphos Harbor",
+        "location": "Paphos",
+        "rank": 1,
+        "description": "Picturesque harbor with medieval fort and cafes"
+      },
+      {
+        "name": "Kyrenia Castle",
+        "location": "Kyrenia",
+        "rank": 2,
+        "description": "Byzantine castle guarding historic harbor"
+      },
+      {
+        "name": "Aphrodite's Rock",
+        "location": "Petra tou Romiou",
+        "rank": 3,
+        "description": "Legendary birthplace of Aphrodite by the sea"
+      },
+      {
+        "name": "Limassol Marina",
+        "location": "Limassol",
+        "rank": 4,
+        "description": "Modern marina with luxury yachts and promenade"
+      }
+    ]
+  },
+  "croatia": {
+    "country": "Croatia",
+    "landmarks": [
+      {
+        "name": "Dubrovnik Old Town",
+        "location": "Dubrovnik",
+        "rank": 1,
+        "description": "Medieval walled city on Adriatic coast"
+      },
+      {
+        "name": "Plitvice Lakes",
+        "location": "Plitvice",
+        "rank": 2,
+        "description": "Cascading turquoise lakes and waterfalls"
+      },
+      {
+        "name": "Diocletian's Palace",
+        "location": "Split",
+        "rank": 3,
+        "description": "Roman palace complex now a living city quarter"
+      },
+      {
+        "name": "Hvar Town Harbor",
+        "location": "Hvar",
+        "rank": 4,
+        "description": "Venetian architecture and lavender fields"
+      }
+    ]
+  },
+  "malta": {
+    "country": "Malta",
+    "landmarks": [
+      {
+        "name": "Valletta Waterfront",
+        "location": "Valletta",
+        "rank": 1,
+        "description": "Baroque capital city with Grand Harbor views"
+      },
+      {
+        "name": "Blue Lagoon",
+        "location": "Comino",
+        "rank": 2,
+        "description": "Crystal-clear turquoise waters and white sand"
+      },
+      {
+        "name": "Mdina",
+        "location": "Mdina",
+        "rank": 3,
+        "description": "Silent medieval fortified city"
+      },
+      {
+        "name": "Azure Window",
+        "location": "Gozo",
+        "rank": 4,
+        "description": "Dramatic coastal rock formations (similar to former arch)"
+      }
+    ]
+  },
+  "germany": {
+    "country": "Germany",
+    "landmarks": [
+      {
+        "name": "Brandenburg Gate",
+        "location": "Berlin",
+        "rank": 1,
+        "description": "Neoclassical monument, symbol of German reunification"
+      },
+      {
+        "name": "Neuschwanstein Castle",
+        "location": "Bavaria",
+        "rank": 2,
+        "description": "Fairy-tale castle in Bavarian Alps"
+      },
+      {
+        "name": "Cologne Cathedral",
+        "location": "Cologne",
+        "rank": 3,
+        "description": "Gothic cathedral with twin spires by Rhine River"
+      },
+      {
+        "name": "Munich Marienplatz",
+        "location": "Munich",
+        "rank": 4,
+        "description": "Central square with New Town Hall and Glockenspiel"
+      }
+    ]
+  },
+  "netherlands": {
+    "country": "Netherlands",
+    "landmarks": [
+      {
+        "name": "Amsterdam Canals",
+        "location": "Amsterdam",
+        "rank": 1,
+        "description": "Historic canal ring with narrow houses"
+      },
+      {
+        "name": "Kinderdijk Windmills",
+        "location": "Kinderdijk",
+        "rank": 2,
+        "description": "19 traditional windmills along waterways"
+      },
+      {
+        "name": "Rijksmuseum",
+        "location": "Amsterdam",
+        "rank": 3,
+        "description": "Dutch Golden Age art museum"
+      },
+      {
+        "name": "Keukenhof Gardens",
+        "location": "Lisse",
+        "rank": 4,
+        "description": "World's largest tulip garden (spring)"
+      }
+    ]
+  },
+  "united_kingdom": {
+    "country": "United Kingdom",
+    "landmarks": [
+      {
+        "name": "Big Ben",
+        "location": "London",
+        "rank": 1,
+        "description": "Iconic clock tower at Houses of Parliament"
+      },
+      {
+        "name": "Tower Bridge",
+        "location": "London",
+        "rank": 2,
+        "description": "Victorian bascule bridge over River Thames"
+      },
+      {
+        "name": "Edinburgh Castle",
+        "location": "Edinburgh",
+        "rank": 3,
+        "description": "Historic fortress atop Castle Rock"
+      },
+      {
+        "name": "Stonehenge",
+        "location": "Wiltshire",
+        "rank": 4,
+        "description": "Prehistoric monument of massive stones"
+      }
+    ]
+  },
+  "ireland": {
+    "country": "Ireland",
+    "landmarks": [
+      {
+        "name": "Cliffs of Moher",
+        "location": "Clare",
+        "rank": 1,
+        "description": "Dramatic sea cliffs rising 700 feet"
+      },
+      {
+        "name": "Trinity College Library",
+        "location": "Dublin",
+        "rank": 2,
+        "description": "Historic library with Book of Kells"
+      },
+      {
+        "name": "Ring of Kerry",
+        "location": "Kerry",
+        "rank": 3,
+        "description": "Scenic coastal and mountain drive"
+      },
+      {
+        "name": "Giant's Causeway",
+        "location": "Antrim",
+        "rank": 4,
+        "description": "Hexagonal basalt columns by the sea"
+      }
+    ]
+  }
+}

@@ -1273,26 +1273,34 @@ Workflow in Directus:
   5. Approved articles proceed to image generation
 ```
 
-### Agent 4: ImageAgent (FLUX via Replicate)
+### Agent 4: ImageAgent (Ideogram V2 Turbo via Replicate)
 
-**Purpose:** Generate hero images for articles
+**Purpose:** Generate themed images with H2 text overlays
 
 ```yaml
-Model: FLUX.1 Schnell (via Replicate)
-Cost: $0.003 per image
-Quality: Photorealistic, suitable for hero images
+Model: Ideogram V2 Turbo (via Replicate)
+Cost: $0.004 per image × 4 images = $0.016 per article
+Quality: Photorealistic with clean text rendering
+Strategy: H2 Overlay System (contextual section images)
 
 Workflow:
   1. Receive approved article from EditorAgent
-  2. Extract image prompt from article title + excerpt
-  3. Generate image via Replicate FLUX API
-  4. Upload to Cloudinary (CDN)
-  5. Return image URL to article record
-  6. Mark article as "published"
+  2. Extract H2 section headings from article content
+  3. Detect country/theme from article title
+  4. Load landmark mappings from landmark_mappings.json
+  5. Generate 4 images in parallel:
+     - Hero (3:1): Article title overlay on #1 landmark
+     - Content 1 (16:9): H2 #1 overlay on #2 landmark
+     - Content 2 (16:9): H2 #2 overlay on #3 landmark
+     - Content 3 (16:9): H2 #3 overlay on #4 landmark
+  6. Upload all to Cloudinary (CDN with responsive transforms)
+  7. Return image URLs to article record
+  8. Mark article as "published"
 
-Prompt Engineering:
-  Template: "Professional photograph of {topic}, {style}, high quality, editorial style"
-  Example: "Professional photograph of Lisbon Portugal digital nomad workspace, modern aesthetic, high quality, editorial style"
+Prompt Engineering (with Magic Prompt):
+  Template: "{landmark} at {time_of_day} with neon overlay text: '{text}'. Do not include any other text."
+  Example: "Colosseum in Rome at golden hour with neon overlay text: 'Italy Digital Nomad Visa Complete Guide 2025'"
+  Magic Prompt: Enhances simple prompts 6x with atmospheric details
 ```
 
 **Implementation:**
