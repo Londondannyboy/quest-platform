@@ -253,13 +253,29 @@ class ArticleOrchestrator:
                 from_cache=template_guidance.get("from_cache", False)
             )
 
-            # STEP 1: Research (30-60s)
+            # STEP 1: Research (30-60s) + Authority Discovery
             await self._update_job_status(
                 job_id, "processing", 15, "research"
             )
 
-            research_result = await self.research_agent.run(topic)
+            # Pass keyword to enable DA discovery
+            research_result = await self.research_agent.run(
+                topic,
+                keyword=seo_data["primary_keyword"],
+                target_site=target_site
+            )
             costs["research"] = research_result["cost"]
+
+            # Log authority discovery results if available
+            if research_result.get("authorities"):
+                authorities = research_result["authorities"]
+                logger.info(
+                    "orchestrator.authorities_discovered",
+                    job_id=job_id,
+                    niche_authorities=len(authorities.get("niche_authorities", [])),
+                    tier1_authorities=len(authorities.get("tier1_authorities", [])),
+                    da_cost=float(research_result.get("cost_breakdown", {}).get("authority_discovery", 0))
+                )
 
             # STEP 1.25: Gemini Research Compression (NEW - 5-10s)
             # Compress massive research data into high-signal summary

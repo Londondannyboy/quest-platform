@@ -18,6 +18,7 @@ from app.core.database import get_db
 from app.core.research_queue import ResearchGovernance
 from app.core.research_apis import MultiAPIResearch
 from app.core.research_cache import ClusterResearchCache
+from app.core.authority_discovery import AuthorityDiscovery
 
 logger = structlog.get_logger(__name__)
 
@@ -42,18 +43,21 @@ class ResearchAgent:
         self.governance = ResearchGovernance()
         self.multi_api = MultiAPIResearch()
         self.cluster_cache = ClusterResearchCache()
+        self.authority_discovery = AuthorityDiscovery()  # NEW: DA discovery system
 
-    async def run(self, topic: str) -> Dict:
+    async def run(self, topic: str, keyword: Optional[str] = None, target_site: str = "relocation") -> Dict:
         """
-        Main research workflow with governance and caching
+        Main research workflow with governance, caching, and authority discovery
 
         Args:
             topic: Research topic/query
+            keyword: Primary keyword from KeywordResearcher (for DA discovery)
+            target_site: Target site (relocation/placement/rainmaker)
 
         Returns:
-            Dict with research data and cost
+            Dict with research data, sources, and discovered authorities
         """
-        logger.info("research_agent.start", topic=topic)
+        logger.info("research_agent.start", topic=topic, keyword=keyword)
 
         # Step 0: Research Governance Check (TIER 0 Priority)
         await self.governance.load_completed_topics()  # Refresh completed list
@@ -161,6 +165,40 @@ class ResearchAgent:
         # Add quality score to research data
         research_data["quality_score"] = quality_score
 
+        # Step 4.5: Authority Discovery (NEW - DA integration)
+        # Discover high-authority linkable sources in this niche
+        authorities = None
+        authority_cost = Decimal("0.00")
+
+        if keyword:  # Only run if keyword provided (from orchestrator)
+            try:
+                authorities = await self.authority_discovery.discover_authorities(
+                    keyword=keyword,
+                    topic=topic,
+                    target_site=target_site
+                )
+                authority_cost = Decimal(str(authorities.get("cost", 0.0)))
+
+                logger.info(
+                    "research_agent.authorities_discovered",
+                    topic=topic,
+                    niche_count=len(authorities.get("niche_authorities", [])),
+                    tier1_count=len(authorities.get("tier1_authorities", [])),
+                    cost=float(authority_cost)
+                )
+
+                # Add authorities to research data
+                research_data["authorities"] = authorities
+
+            except Exception as e:
+                logger.warning(
+                    "research_agent.authority_discovery_failed",
+                    topic=topic,
+                    error=str(e)
+                )
+                # Don't fail research if authority discovery fails
+                authorities = None
+
         # Step 5: Store in BOTH caches (only if quality is sufficient)
         if self.cache_enabled and research_data.get("content") and quality_score["is_sufficient"]:
             # Store in topic cache (legacy)
@@ -185,12 +223,20 @@ class ResearchAgent:
                 elif isinstance(source, dict) and "url" in source:
                     sources.append(source["url"])
 
+        # Calculate total cost (research + authority discovery)
+        total_cost = research_result.get("total_cost", Decimal("0.20")) + authority_cost
+
         return {
             "topic": topic,
             "research": research_data,
             "sources": sources,  # Pass sources explicitly for link validation
+            "authorities": authorities,  # NEW: High-DA linkable authorities
             "cache_hit": False,
-            "cost": research_result.get("total_cost", Decimal("0.20")),
+            "cost": total_cost,
+            "cost_breakdown": {
+                "research_apis": research_result.get("total_cost", Decimal("0.20")),
+                "authority_discovery": authority_cost
+            },
             "quality_score": quality_score
         }
 
