@@ -605,11 +605,11 @@ Start with the appropriate H2 header for this section and write naturally."""
 
         Tasks:
         1. Merge 3 chunks into cohesive article
-        2. Add citations [1], [2], [3] throughout
+        2. Add inline hyperlinks [text](url) throughout (15-25 required)
         3. Enhance transitions between sections
         4. Expand thin areas to ensure 3000+ words
         5. Add TL;DR, Key Takeaways, FAQ sections
-        6. Add References section with all citations
+        6. Add "Further Reading & Sources" section at end
         """
         logger.info("chunked_content.refining_with_sonnet")
 
@@ -675,12 +675,12 @@ Start with the appropriate H2 header for this section and write naturally."""
             for i, chunk in enumerate(chunks)
         ])
 
-        # Build link instructions with ACTUAL URLs for hyperlinks
+        # Build link instructions for inline hyperlinks
         link_instructions = ""
         if link_context:
-            # Format external links with clear URL formatting
+            # Format external links as examples for inline hyperlinks
             external_links = "\n".join([
-                f"   [{i+1}] {link['url']}"
+                f"   - {link['url']}"
                 for i, link in enumerate(link_context.get('external_links', [])[:25])
             ])
 
@@ -692,24 +692,35 @@ Start with the appropriate H2 header for this section and write naturally."""
 
             link_instructions = f"""
 
-VALIDATED EXTERNAL URLS (MUST use in References section):
+VALIDATED EXTERNAL URLS (use as inline hyperlinks):
 {external_links}
 
 INTERNAL LINKS TO USE (add 3-5 contextual links in article body):
 {internal_links}
 
-**CRITICAL INSTRUCTIONS FOR LINKS:**
-1. **In-text citations**: Use simple brackets like [1], [2], [3] throughout the article
-2. **References section**: MUST create actual HYPERLINKS like this:
+**CRITICAL INSTRUCTIONS FOR INLINE HYPERLINKS:**
+1. **Inline hyperlinks throughout article**: Use natural anchor text with markdown links
 
-   ## References
+   ✅ CORRECT FORMAT:
+   "The [Portugal D7 Visa](https://imigrante.sef.pt) requires passive income..."
+   "According to [Portuguese Immigration Law](https://dre.pt/law), applicants must..."
+   "The [Malta Gaming Authority](https://mga.org.mt) regulates all gaming licenses..."
 
-   [1] [Source Title](https://actual-url.com/page)
-   [2] [Another Source](https://example.gov/source)
-   [3] [Research Paper](https://academic.edu/paper)
+   ❌ WRONG FORMAT (numbered citations):
+   "Portugal's D7 Visa [1] requires passive income..."
+   "According to Portuguese Immigration Law [2], applicants must..."
+
+2. **Further Reading & Sources section**: MUST be the FINAL section with descriptive hyperlinks:
+
+   ## Further Reading & Sources
+
+   Additional authoritative resources for deeper research:
+   - [Portuguese Immigration Service (SEF)](https://imigrante.sef.pt) - Official visa applications and requirements
+   - [Portugal Tax Authority](https://portaldasfinancas.gov.pt) - NHR tax program and tax residency
+   - [Camões Institute](https://instituto-camoes.pt) - Portuguese language requirements
 
 3. **Internal links**: Naturally weave 3-5 internal links into the article body using markdown: [anchor text](/internal/path)
-4. **NEVER use bare URLs** - always format as markdown links: [Text](URL)"""
+4. **NEVER use numbered citations** - always use inline hyperlinks with descriptive anchor text"""
 
         return f"""You are refining a comprehensive article about: {topic}
 
@@ -883,74 +894,66 @@ CRITICAL: Every factual claim needs an inline hyperlink to authoritative sources
 
     def _ensure_references_section(self, content: str, link_context: Optional[Dict]) -> str:
         """
-        Safety net: Add References section if Sonnet didn't create one
+        Safety net: Add Further Reading & Sources section if Sonnet didn't create one
 
-        This is Codex Fix #2 - guarantees References section even if Sonnet hits token limit
+        This guarantees "Further Reading & Sources" section even if Sonnet hits token limit
 
         Args:
             content: Article content from Sonnet
             link_context: Validated URLs from LinkValidator
 
         Returns:
-            Content with References section guaranteed
+            Content with Further Reading section guaranteed
         """
-        import re
-
-        # Check if References section already exists
-        if "## References" in content or "## Sources" in content:
-            logger.info("references.already_present", message="Sonnet created References section")
+        # Check if Further Reading section already exists
+        if "## Further Reading" in content or "## Sources" in content or "## References" in content:
+            logger.info("further_reading.already_present", message="Sonnet created Further Reading section")
             return content
 
-        logger.warning("references.missing", message="Sonnet did not create References - adding programmatically")
+        logger.warning("further_reading.missing", message="Sonnet did not create Further Reading - adding programmatically")
 
-        # Extract citation numbers from content
-        citations = sorted(set(int(c) for c in re.findall(r'\[(\d+)\]', content)))
-
-        if not citations:
-            logger.warning("references.no_citations", message="No citations found in article")
-            return content
-
-        # Build References section from validated URLs
-        references = ["\n\n## References\n"]
+        # Build Further Reading section from validated URLs
+        further_reading = ["\n\n## Further Reading & Sources\n\nAdditional authoritative resources for deeper research:\n"]
 
         if link_context and link_context.get('external_links'):
-            external_links = link_context['external_links']
+            external_links = link_context['external_links'][:15]  # Max 15 sources
 
-            for idx, citation_num in enumerate(citations):
-                if idx < len(external_links):
-                    link_data = external_links[idx]
-                    url = link_data.get('final_url') or link_data.get('url', '')
+            for link_data in external_links:
+                url = link_data.get('final_url') or link_data.get('url', '')
 
-                    # Extract title from URL domain if not provided
-                    try:
-                        from urllib.parse import urlparse
-                        parsed = urlparse(url)
-                        domain = parsed.netloc.replace('www.', '').replace('.com', '').replace('.org', '').replace('.gov', '')
-                        title = domain.title() + " - " + parsed.path.strip('/').split('/')[-1].replace('-', ' ').title()
+                # Extract title from URL domain if not provided
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(url)
+                    domain = parsed.netloc.replace('www.', '').replace('.com', '').replace('.org', '').replace('.gov', '')
+                    title = domain.title()
 
-                        if len(title) > 60:
-                            title = domain.title()
-                    except:
-                        title = f"Source {citation_num}"
+                    # Generate brief description based on URL path
+                    path_parts = parsed.path.strip('/').split('/')
+                    if path_parts and path_parts[0]:
+                        topic_hint = path_parts[-1].replace('-', ' ').title()
+                        description = f"Information about {topic_hint}"
+                    else:
+                        description = "Official resource"
 
-                    references.append(f"[{citation_num}] [{title}]({url})")
-                else:
-                    # Fallback if we run out of URLs
-                    references.append(f"[{citation_num}] Source {citation_num} (citation needs manual verification)")
+                except:
+                    title = "Authoritative Source"
+                    description = "Additional information"
+
+                further_reading.append(f"- [{title}]({url}) - {description}")
         else:
-            # No link context - create placeholder references
-            for citation_num in citations:
-                references.append(f"[{citation_num}] Source {citation_num} (citation needs manual verification)")
+            # No link context - add generic message
+            further_reading.append("- Consult official government websites for the most up-to-date requirements")
+            further_reading.append("- Verify all information with relevant authorities before making decisions")
 
-        references_section = "\n".join(references)
+        further_reading_section = "\n".join(further_reading)
 
         logger.info(
-            "references.added_programmatically",
-            citation_count=len(citations),
-            url_count=len(link_context.get('external_links', []))  if link_context else 0
+            "further_reading.added_programmatically",
+            url_count=len(link_context.get('external_links', [])[:15]) if link_context else 0
         )
 
-        return content + references_section
+        return content + further_reading_section
 
     def _extract_article_data(self, content: str, topic: str) -> Dict:
         """Extract metadata from refined markdown content"""
