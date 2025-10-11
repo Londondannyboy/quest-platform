@@ -119,7 +119,7 @@ class Settings(BaseSettings):
         default=Decimal("30.00"), description="Daily cost cap in USD"
     )
     PER_JOB_COST_CAP: Decimal = Field(
-        default=Decimal("0.75"), description="Per-job cost cap in USD"
+        default=Decimal("1.50"), description="Per-job cost cap in USD (raised for cluster-building articles with full research)"
     )
     ENABLE_COST_CIRCUIT_BREAKER: bool = Field(
         default=True, description="Enable cost circuit breaker"
