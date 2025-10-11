@@ -747,12 +747,12 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - **RESERVE ROOM:** You MUST leave space for the full References section (minimum 25 entries)
 
 2. **Add Structure** (MUST include all):
-   - # {topic} (H1 title)
-   - TL;DR section (150 words, right after title)
-   - Key Takeaways (5 bullet points)
+   - DO NOT include H1 title (frontend already displays it)
+   - ## What You Need to Know (150-200 words summary, first section)
+   - **Key Takeaways** (5 bullet points)
    - All chunk content with H2/H3 headers
    - FAQ section (8-10 Q&A pairs, COMPLETE all questions fully)
-   - **ABSOLUTELY MANDATORY:** ## References section (MUST be the FINAL section)
+   - **ABSOLUTELY MANDATORY:** ## Further Reading & Sources (MUST be the FINAL section)
 
 3. **Add Inline Hyperlinks** (MINIMUM 15-25 required for high authority):
    - Hyperlink key terms directly to authoritative sources throughout article
@@ -790,14 +790,18 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - List 10-15 key resources with brief descriptions
    - Each link must be clickable: [Text](URL)
 
-4. **Enhance Quality**:
+4. **Enhance Quality & Readability**:
    - Add specific data points and statistics
    - Include real examples and case studies
    - Use tables or comparison charts where helpful
-   - Break up long paragraphs
-   - Use bullet points for lists
+   - **CRITICAL READABILITY RULES:**
+     * Break paragraphs after 3-4 sentences (max 150 words per paragraph)
+     * Add blank lines between ALL paragraphs
+     * Use bullet points for any list of 3+ items
+     * Use numbered steps for processes
+     * Add H3 subheadings every 300-400 words
    - Add image placeholders:
-     * ![Hero Image](IMAGE_PLACEHOLDER_HERO) after TL;DR
+     * ![Hero Image](IMAGE_PLACEHOLDER_HERO) after "What You Need to Know" section
      * ![Content Image 1](IMAGE_PLACEHOLDER_1) after first major section
      * ![Content Image 2](IMAGE_PLACEHOLDER_2) in middle
      * ![Content Image 3](IMAGE_PLACEHOLDER_3) before FAQ
@@ -810,7 +814,8 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
 
 **OUTPUT FORMAT:**
 Return ONLY the complete refined article in pure markdown format.
-Start with # {topic} and include ALL required sections.
+Start with ## What You Need to Know (NO H1 - frontend displays title separately).
+Include ALL required sections.
 NO JSON, NO code fences, just pure markdown.
 
 CRITICAL WARNINGS - READ CAREFULLY:
