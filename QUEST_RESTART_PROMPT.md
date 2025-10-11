@@ -1,28 +1,32 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `67a724f` - "fix: Add missing closing quotes in system prompt return statement"
-**Status:** ✅ **CITATION HYPERLINK FORMAT FIXED + TESTING IN PROGRESS**
-**Date:** October 11, 2025 (Citation Format Fixes)
+**Last Commit:** `00f1adb` (quest-relocation) - "fix: Simplify frontmatter to match working examples"
+**Status:** 🎉 **MILESTONE: FULL ARTICLE LIVE ON ASTROWIND WITH INLINE HYPERLINKS**
+**Date:** October 11, 2025 (Citation Format + AstroWind Deployment)
 
 ---
 
-## 🎉 LATEST UPDATE: Citation Hyperlink Format Fixed
+## 🎉 MAJOR MILESTONE ACHIEVED: End-to-End Citation Format Working
 
-**Problem Found (Phase 1.1):**
-- Malta Gaming License article had **49 numbered citations** `[1], [2], [3]` but NO clickable inline hyperlinks
-- Sonnet refinement prompt still had old citation format (only Gemini chunks were fixed)
-- No "Further Reading & Sources" section at the end
+**Achievement:** First complete article deployed to AstroWind with inline hyperlink citations!
 
-**Fixes Implemented (Commits 8bda6ec → 67a724f):**
-1. ✅ Updated Sonnet refinement prompts with inline hyperlink examples `[text](url)`
-2. ✅ Changed References section → "Further Reading & Sources" with bullet list format
-3. ✅ Fixed 3 syntax errors (unclosed f-strings)
-4. ✅ Updated docstrings to match new citation format
+**Live URL:** https://relocation.quest/iceland-digital-nomad-visa-2025
 
-**Testing Status:**
-- ⏳ Spain Digital Nomad Visa article generating (first test with fixed prompts)
-- ⏳ Multiple background generations running to validate fix
-- ⏳ Will deploy to AstroWind frontend (`quest-relocation/src/data/post/`) after validation
+**What Works:**
+- ✅ **5,164 words** (full article, not summary)
+- ✅ **77 inline hyperlinks** using `[anchor text](url)` format throughout content
+- ✅ **4 Cloudinary images** (1 hero + 3 content images)
+- ✅ **"Further Reading & Sources" section** at end with bullet list format
+- ✅ **Mobile-friendly 1-click citations** (no numbered references)
+- ✅ **AstroWind frontmatter** properly formatted for deployment
+
+**Technical Fixes (Commits 8bda6ec → 00f1adb):**
+1. ✅ Backend: Updated Sonnet refinement prompts with inline hyperlink format
+2. ✅ Backend: Changed References → "Further Reading & Sources" with bullets
+3. ✅ Backend: Fixed 3 syntax errors (unclosed f-strings)
+4. ✅ Frontend: Fixed YAML frontmatter parsing (removed special chars, quoted excerpt)
+5. ✅ Frontend: Simplified tags (digital-nomad vs digital nomad)
+6. ✅ Deployment: Vercel build successful, article live at relocation.quest
 
 ---
 
