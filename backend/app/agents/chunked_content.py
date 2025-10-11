@@ -621,7 +621,7 @@ Start with the appropriate H2 header for this section and write naturally."""
         try:
             response = await self.claude_client.messages.create(
                 model=self.sonnet_model,
-                max_tokens=16384,  # Maximum for Sonnet - ensures References section completes
+                max_tokens=32000,  # Sonnet 4.5 supports up to 64K - use 32K to fully utilize capabilities (Claude Desktop recommendation)
                 temperature=0.7,
                 system=self._build_sonnet_system_prompt(style),
                 messages=[{"role": "user", "content": prompt}],
