@@ -59,6 +59,35 @@ class ImageAgent:
     # Time of day variations for visual diversity
     TIMES_OF_DAY = ["golden hour", "dusk", "sunset", "twilight"]
 
+    # Text overlay styles by article type (for CTR optimization)
+    TEXT_OVERLAY_STYLES = {
+        "guide": {
+            "placement": "center",
+            "style": "bold blocky neon text, large font, centered, authoritative",
+            "description": "Central, bold, authoritative (default for guides)"
+        },
+        "listicle": {
+            "placement": "top-left",
+            "style": "edgy clickbait neon text, smaller font, corner placement, provocative",
+            "description": "Corner, edgy, clickbait-style"
+        },
+        "how_to": {
+            "placement": "top",
+            "style": "clean instructional neon text, medium font, top banner, professional",
+            "description": "Top banner, clean, instructional"
+        },
+        "comparison": {
+            "placement": "center-split",
+            "style": "versus-style neon text, bold, centered with divider, competitive",
+            "description": "Center split, competitive vs-style"
+        },
+        "news": {
+            "placement": "bottom-banner",
+            "style": "breaking news ticker neon text, urgent font, bottom banner, dynamic",
+            "description": "Bottom banner, urgent, breaking news"
+        }
+    }
+
     def __init__(self):
         # Configure Replicate with token
         import os
@@ -81,6 +110,32 @@ class ImageAgent:
 
         # Neon aesthetic guidance (applied to all images)
         self.neon_aesthetic = "subtle neon outline glow on key subjects, glowing edges, cyberpunk-inspired lighting accents, modern futuristic aesthetic, vibrant rim lighting"
+
+    def _detect_article_type(self, title: str) -> str:
+        """
+        Detect article type from title for text overlay styling
+
+        Simple keyword-based detection for CTR optimization
+
+        Args:
+            title: Article title
+
+        Returns:
+            Article type: "guide", "listicle", "how_to", "comparison", "news"
+        """
+        title_lower = title.lower()
+
+        # Priority order matters
+        if "vs" in title_lower or "versus" in title_lower or " v " in title_lower:
+            return "comparison"
+        elif any(word in title_lower for word in ["top ", "best ", "worst ", "cheapest ", "most expensive"]):
+            return "listicle"
+        elif title_lower.startswith("how to") or "step by step" in title_lower:
+            return "how_to"
+        elif "breaking" in title_lower or "news" in title_lower or "update" in title_lower:
+            return "news"
+        else:
+            return "guide"  # Default
 
     def _extract_h2_sections(self, content: str) -> List[str]:
         """
@@ -274,12 +329,18 @@ Mood: Inspirational and informative"""
         # TODO Phase 2: Replace with actual landmark detection via Perplexity
         topic = title.replace("Complete Guide", "").replace("2025", "").strip()
 
+        # Detect article type for text overlay styling
+        article_type = self._detect_article_type(title)
+        text_style = self.TEXT_OVERLAY_STYLES[article_type]
+
         # Extract H2 sections for content image overlays
         h2_sections = self._extract_h2_sections(content)
 
-        # Hero prompt: Ultra-wide banner with title overlay
-        hero_prompt = f"""Scenic location related to {topic} at {self.TIMES_OF_DAY[0]} with neon overlay text: "{title}".
+        # Hero prompt: Ultra-wide banner with styled title overlay
+        hero_prompt = f"""Scenic location related to {topic} at {self.TIMES_OF_DAY[0]} with {text_style['style']}: "{title}".
 
+Text placement: {text_style['placement']}
+Text should be clearly readable on both mobile and desktop.
 Do not include any other text in the image."""
 
         # Content images: H2 overlays on sequential images
@@ -300,6 +361,8 @@ Do not include any other text in the image."""
 
         logger.info(
             "image_agent.prompts_created",
+            article_type=article_type,
+            text_placement=text_style['placement'],
             hero_overlay=title[:50],
             content_overlays=[h2_sections[i][:30] if i < len(h2_sections) else f"Section {i+1}" for i in range(3)]
         )
