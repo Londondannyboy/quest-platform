@@ -1,8 +1,218 @@
 # Quest Platform - Peer Review Guide
 
 **Purpose:** Track milestones and guide external reviews
-**Updated:** October 11, 2025
-**Status:** 🎉 **MILESTONE ACHIEVED** - Citation Format + AstroWind Deployment Complete
+**Updated:** October 11, 2025 (Evening)
+**Status:** 🔧 **PEER REVIEW REQUESTED** - Image System Testing + Link Validation Enhancement
+
+---
+
+## 🔧 CURRENT ISSUES (Peer Review Requested - Oct 11, 2025 Evening)
+
+### Issue #1: Image System Testing - Ideogram V2 Turbo with H2 Overlays
+
+**Status:** Code complete, testing in progress
+
+**What We Built:**
+- Switched from FLUX Schnell → Ideogram V2 Turbo
+- H2 overlay system (content images show section headings)
+- Text styling by article type (guide=center, listicle=top-left, etc.)
+- Hardcoded landmark mappings (12 European countries)
+- Cost: $0.016/article (4 images × $0.004)
+
+**Documentation:**
+- `QUEST_IMAGE_GUIDELINES.md` - 600+ lines of image strategy
+- `backend/app/agents/image.py` - Implementation complete
+- `backend/app/core/landmark_mappings.json` - 12 countries with landmarks
+
+**Testing Status:**
+- ✅ Code verified: Uses `ideogram-ai/ideogram-v2-turbo`
+- ✅ H2 extraction logic implemented
+- ⏳ **PENDING:** Actual generation test (Malta article crashed on unrelated `re` import bug)
+- ⏳ **NEEDED:** Verify H2 overlays appear on generated images
+- ⏳ **NEEDED:** Verify text placement matches article type
+
+**Commits:** `97526fa`, `39a966a`, `c663a0a`
+
+**Questions for Peer Review:**
+1. Is the H2 overlay approach sound for contextual images?
+2. Should we expand landmark mappings before scaling? (currently 12 countries)
+3. Alternative approaches to text overlays?
+4. How to validate image quality automatically?
+
+---
+
+### Issue #2: Link Validation Enhancement - 404 Prevention Strategy
+
+**Status:** Just implemented, needs testing
+
+**Problem Identified:**
+- User reported: "Half the articles went to 404 pages, but were technically on the correct site regarding Italian visas"
+- Italian government visa sites restructure URLs frequently
+- Current validation: HEAD request only, 5s timeout
+- Result: Legitimate sources marked invalid, 404s slip through
+
+**Solution Implemented (3-Tier Fallback):**
+```python
+# Tier 1: HEAD request (fast, low bandwidth)
+# Tier 2: GET request (fallback if HEAD blocked)  ← NEW
+# Tier 3: Archive.org (last resort for 404s)      ← NEW
+```
+
+**Changes:**
+- `backend/app/core/link_validator.py` - Enhanced validation
+- Timeout: 5s → 10s (for slow government sites)
+- Added GET fallback when HEAD blocked
+- Added archive.org fallback for 404s
+- Enhanced logging shows which method succeeded
+
+**Commit:** `cea7098`
+
+**Evidence of Problem:**
+From Malta article logs:
+```
+citation_verifier.url_verification fake=0 unverified=15 verified=0
+```
+- 15 URLs couldn't be verified (likely HEAD requests blocked)
+- 0 URLs verified successfully
+- All legitimate Italian visa authority sites
+
+**Questions for Peer Review:**
+1. **Is 3-tier fallback the right approach?**
+   - Are there better alternatives?
+   - Should we add more tiers (e.g., Google Cache)?
+
+2. **Archive.org usage - acceptable?**
+   - Is using archived versions of 404'd pages acceptable for citations?
+   - Should we mark them differently in the article?
+   - SEO implications?
+
+3. **Timeout duration:**
+   - Is 10s reasonable for government sites?
+   - Should we make it configurable per domain (.gov = 15s, .com = 5s)?
+
+4. **Link quality scoring:**
+   - Should we prefer recent sources (<6 months)?
+   - Should we weight official sites (.gov, .edu) higher?
+   - How to handle redirects (301 vs 302)?
+
+5. **Post-publication monitoring:**
+   - Should we run weekly broken link checks?
+   - Auto-suggest replacements from research cache?
+   - Flag articles with >20% broken links?
+
+**Testing Plan:**
+1. Regenerate Malta article with enhanced validation
+2. Check logs for validation method used (HEAD/GET/ARCHIVE)
+3. Verify 404s are caught and replaced with archives
+4. Compare validation success rate before/after
+
+---
+
+### Issue #3: Missing `re` Import Bug (FIXED)
+
+**Problem:** `NameError: name 're' is not defined` at orchestrator.py:55
+**Cause:** `re` module used but not imported at top of file
+**Impact:** Malta article crashed after generating 7,110 words with 77 citations
+**Fix:** Added `import re` at line 8
+**Commit:** `4f4794b`
+**Status:** ✅ RESOLVED
+
+---
+
+### Issue #4: Cost Cap Raised to $1.50 (COMPLETED)
+
+**Problem:** $0.75 cap blocked cluster-building articles ($0.95 cost)
+**Solution:** Raised PER_JOB_COST_CAP to $1.50
+**Rationale:**
+- Cluster-building: $0.95 (one-time research cost)
+- Cluster-reuse: $0.40 (cached research)
+- ROI: Break-even after 2 reuses
+- Portugal cluster: Reused 8× already, saved $3.60
+
+**Commit:** `9fa3ae1`
+**Status:** ✅ COMPLETED
+
+---
+
+## 🧪 Testing Protocol for Peer Reviewers
+
+### Test 1: Image System Validation
+```bash
+cd ~/quest-platform/backend
+
+# Generate article (will use new image system)
+python3 generate_article.py --topic "Test: Spain Digital Nomad Visa Guide" --site relocation
+
+# Check logs for:
+# - "image_agent.ideogram_generated" (not "flux_generated")
+# - H2 sections extracted
+# - Text placement matches article type
+# - 4 images generated: 1 hero (3:1) + 3 content (16:9)
+
+# Verify images visually:
+# - Open Cloudinary URLs from logs
+# - Check for H2 text overlays
+# - Verify text placement (guide = center)
+```
+
+### Test 2: Link Validation
+```bash
+# Generate article with Italian visa sources
+python3 generate_article.py --topic "Italy Digital Nomad Visa Requirements 2025" --site relocation
+
+# Check logs for:
+# - "link_validator.head_success" or "link_validator.get_success"
+# - "link_validator.archive_found" (if any 404s caught)
+# - Validation success rate >50%
+
+# Check article content:
+# - All external links resolve (no 404s)
+# - Archive.org links marked clearly (if used)
+```
+
+---
+
+## 💡 Questions for Peer Review
+
+### Strategic
+1. **Image System:**
+   - Is H2 overlay approach production-ready?
+   - Should we A/B test with FLUX vs Ideogram?
+   - How to measure image quality impact on SEO/CTR?
+
+2. **Link Validation:**
+   - Is 3-tier fallback over-engineered or necessary?
+   - Better alternatives to archive.org for dead links?
+   - Should we implement post-publication link monitoring?
+
+### Tactical
+3. **Cost Optimization:**
+   - $1.50 cap reasonable for cluster-building?
+   - Should we implement dynamic caps based on priority?
+   - Break-even analysis correct?
+
+4. **Testing:**
+   - What additional tests should we run?
+   - How to validate at scale (100+ articles)?
+   - Automated quality checks for images/links?
+
+---
+
+## 📊 Success Metrics
+
+**Image System:**
+- ✅ 100% generation success rate
+- ✅ H2 overlays present on all content images
+- ✅ Text readable on mobile (>14px font)
+- ✅ Correct aspect ratios (3:1 hero, 16:9 content)
+- ✅ Cost ≤$0.02/article
+
+**Link Validation:**
+- ✅ Validation success rate >80% (up from current <20%)
+- ✅ Zero 404s in published articles
+- ✅ Archive.org fallback <10% of links
+- ✅ Validation time <30s per article
+- ✅ Government sites (.gov, .edu) validated successfully
 
 ---
 
