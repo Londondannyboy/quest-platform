@@ -774,11 +774,13 @@ class ArticleOrchestrator:
     async def _update_article_images(self, article_id: str, image_result: Dict):
         """
         Update article with all image URLs (hero + 3 content images)
+        AND replace IMAGE_PLACEHOLDER strings in content with actual Cloudinary URLs
         """
         pool = get_db()
 
         try:
             async with pool.acquire() as conn:
+                # First, update image URL columns
                 await conn.execute(
                     """
                     UPDATE articles
@@ -795,6 +797,63 @@ class ArticleOrchestrator:
                     article_id,
                 )
 
+                # Second, fetch current content to replace IMAGE_PLACEHOLDER strings
+                article_content = await conn.fetchval(
+                    """
+                    SELECT content
+                    FROM articles
+                    WHERE id = $1
+                    """,
+                    article_id
+                )
+
+                # Replace IMAGE_PLACEHOLDER strings with actual Cloudinary URLs
+                if article_content:
+                    import re
+
+                    # Replace IMAGE_PLACEHOLDER_HERO with hero_image_url
+                    if image_result.get("hero_image_url"):
+                        article_content = re.sub(
+                            r'!\[([^\]]*)\]\(IMAGE_PLACEHOLDER_HERO\)',
+                            f'![\\1]({image_result["hero_image_url"]})',
+                            article_content
+                        )
+
+                    # Replace IMAGE_PLACEHOLDER_1 with content_image_1_url
+                    if image_result.get("content_image_1_url"):
+                        article_content = re.sub(
+                            r'!\[([^\]]*)\]\(IMAGE_PLACEHOLDER_1\)',
+                            f'![\\1]({image_result["content_image_1_url"]})',
+                            article_content
+                        )
+
+                    # Replace IMAGE_PLACEHOLDER_2 with content_image_2_url
+                    if image_result.get("content_image_2_url"):
+                        article_content = re.sub(
+                            r'!\[([^\]]*)\]\(IMAGE_PLACEHOLDER_2\)',
+                            f'![\\1]({image_result["content_image_2_url"]})',
+                            article_content
+                        )
+
+                    # Replace IMAGE_PLACEHOLDER_3 with content_image_3_url
+                    if image_result.get("content_image_3_url"):
+                        article_content = re.sub(
+                            r'!\[([^\]]*)\]\(IMAGE_PLACEHOLDER_3\)',
+                            f'![\\1]({image_result["content_image_3_url"]})',
+                            article_content
+                        )
+
+                    # Update content field with replaced placeholders
+                    await conn.execute(
+                        """
+                        UPDATE articles
+                        SET content = $1
+                        WHERE id = $2
+                        """,
+                        article_content,
+                        article_id
+                    )
+
             logger.info(
                 "orchestrator.images_updated",
                 article_id=article_id,
@@ -803,7 +862,8 @@ class ArticleOrchestrator:
                     bool(image_result.get("content_image_1_url")),
                     bool(image_result.get("content_image_2_url")),
                     bool(image_result.get("content_image_3_url")),
-                ])
+                ]),
+                placeholders_replaced=True
             )
 
         except Exception as e:
