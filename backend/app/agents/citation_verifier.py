@@ -121,46 +121,58 @@ class CitationVerifierAgent:
 
     def _extract_citations_and_references(self, content: str) -> Dict:
         """
-        Extract inline citations [1], [2] and References section
+        Extract inline markdown links [text](url) and Further Reading & Sources section
 
         Returns:
             {
-                "inline_citations": ["[1]", "[2]", ...],
+                "inline_citations": [{"text": "...", "url": "https://..."}, ...],
                 "references": [
-                    {"number": 1, "text": "Source Name", "url": "https://..."},
+                    {"text": "Source Name", "url": "https://..."},
                     ...
                 ]
             }
         """
-        # Extract inline citations
-        inline_citations = re.findall(r'\[(\d+)\]', content)
-        unique_citations = sorted(set(inline_citations), key=int)
+        # Extract inline markdown links [text](url)
+        inline_citations = []
+        # Match markdown links: [text](url)
+        markdown_link_pattern = r'\[([^\]]+)\]\((https?://[^\)]+)\)'
+        matches = re.findall(markdown_link_pattern, content)
 
-        # Extract References section
+        for text, url in matches:
+            inline_citations.append({
+                "text": text.strip(),
+                "url": url.strip()
+            })
+
+        # Extract References/Further Reading section
         references = []
-        refs_match = re.search(r'##\s*References?\s*\n(.*?)(?:\n##|\Z)', content, re.DOTALL | re.IGNORECASE)
+        # Look for "References", "Further Reading", "Sources", or "Further Reading & Sources"
+        refs_match = re.search(
+            r'##\s*(?:References?|Further\s+Reading(?:\s+&?\s+Sources?)?|Sources?)\s*\n(.*?)(?:\n##|\Z)',
+            content,
+            re.DOTALL | re.IGNORECASE
+        )
 
         if refs_match:
             refs_text = refs_match.group(1)
-            # Match format: [1] Source Name - URL or [1] Source Name (URL)
-            ref_pattern = r'\[(\d+)\]\s*([^\n\-\(]+?)(?:\s*[-\(]\s*|\s+)(https?://[^\s\)]+)'
+            # Match bullet list format: - [Title](URL) or - [Title](URL) - Description
+            ref_pattern = r'-\s*\[([^\]]+)\]\((https?://[^\)]+)\)'
             matches = re.findall(ref_pattern, refs_text)
 
-            for num, title, url in matches:
+            for title, url in matches:
                 references.append({
-                    "number": int(num),
                     "text": title.strip(),
                     "url": url.strip()
                 })
 
         logger.info(
             "citation_verifier.extraction",
-            inline_count=len(unique_citations),
+            inline_count=len(inline_citations),
             references_count=len(references)
         )
 
         return {
-            "inline_citations": unique_citations,
+            "inline_citations": inline_citations,
             "references": references
         }
 
@@ -287,9 +299,9 @@ class CitationVerifierAgent:
                 verified_claims = list(range(min(verified_count, len(citations_to_verify))))
 
             if "SUSPICIOUS" in response_text.upper() or "UNVERIFIED" in response_text.upper():
-                # Extract suspicious citation numbers
-                suspicious_matches = re.findall(r'\[(\d+)\].*?(?:suspicious|unverified)', response_text, re.IGNORECASE)
-                suspicious_claims = [int(n) for n in suspicious_matches]
+                # For markdown links, just count suspicious mentions
+                suspicious_count = response_text.upper().count("SUSPICIOUS") + response_text.upper().count("UNVERIFIED")
+                suspicious_claims = list(range(suspicious_count))
 
             logger.info(
                 "citation_verifier.claim_verification",
@@ -314,50 +326,59 @@ class CitationVerifierAgent:
     def _build_verification_prompt(
         self,
         content: str,
-        citations_to_verify: List[str],
+        citations_to_verify: List[Dict],
         references: List[Dict]
     ) -> str:
-        """Build prompt for claim verification"""
+        """Build prompt for claim verification with markdown links"""
 
         # Extract context around each citation
         citation_contexts = []
-        for cit_num in citations_to_verify:
-            pattern = rf'([^.!?]*\[{cit_num}\][^.!?]*[.!?])'
+        for idx, citation in enumerate(citations_to_verify):
+            text = citation.get("text", "")
+            url = citation.get("url", "")
+
+            # Find context around this markdown link
+            escaped_text = re.escape(text)
+            pattern = rf'([^.!?]*\[{escaped_text}\]\([^)]+\)[^.!?]*[.!?])'
             matches = re.findall(pattern, content)
+
             if matches:
                 citation_contexts.append({
-                    "citation": f"[{cit_num}]",
+                    "index": idx + 1,
+                    "link_text": text,
+                    "url": url,
                     "context": matches[0].strip()
                 })
 
-        # Build reference list
+        # Build reference list from Further Reading section
         ref_list = "\n".join([
-            f"[{ref['number']}] {ref['text']} - {ref['url']}"
+            f"- [{ref['text']}]({ref['url']})"
             for ref in references
-            if ref['number'] in [int(c) for c in citations_to_verify]
-        ])
+        ]) if references else "No reference section found"
 
         # Build context list
         context_list = "\n\n".join([
-            f"Citation {ctx['citation']}:\n\"{ctx['context']}\""
+            f"Citation #{ctx['index']}: [{ctx['link_text']}]({ctx['url']})\nContext: \"{ctx['context']}\""
             for ctx in citation_contexts
         ])
 
-        return f"""You are a fact-checker. Verify if citations properly support their claims.
+        return f"""You are a fact-checker. Verify if inline citations properly support their claims.
 
-REFERENCES:
+The article uses inline markdown links [text](url) throughout the content.
+
+FURTHER READING & SOURCES SECTION:
 {ref_list}
 
-CLAIMS TO VERIFY:
+INLINE CITATIONS TO VERIFY:
 {context_list}
 
-For each citation, determine:
+For each inline citation, determine:
 1. Does the claim require a citation? (factual claims need citations, opinions don't)
-2. Is the reference source likely to contain this information?
+2. Is the URL source likely to contain this information?
 3. Is there any red flag (claim too specific, source seems irrelevant, suspicious URL)?
 
 Respond with:
-- "VERIFIED [N]" if citation seems appropriate
-- "SUSPICIOUS [N]" if there are red flags
+- "VERIFIED #N" if citation seems appropriate
+- "SUSPICIOUS #N" if there are red flags
 
 Focus on detecting obviously fake or mismatched citations. Be generous with VERIFIED if plausible."""
