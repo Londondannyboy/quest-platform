@@ -487,18 +487,174 @@ More details
 4. Citations (authority signal)
 5. Complete metadata
 
-### Link Building Requirements
+### Link Building Requirements & Domain Authority Strategy
 
-**External Links:**
-- Minimum 3-5 authoritative sources per article
-- Prefer .gov, .edu, official organization sites
-- All links must be validated (no hallucinated URLs)
+**CRITICAL INSIGHT:** We're new → Link to high-DA competitors in our niche!
+
+**Why This Works:**
+- Google rewards linking to authority sites (trust signal)
+- Competitors already ranking = authority in our domain
+- Sending them traffic doesn't hurt them (they're already winning)
+- We gain authority by association
+- DataForSEO/Serper tells us WHO is ranking high
+
+**External Link Strategy:**
+
+1. **Tier 1: Ultra-High Authority (DA 90+)** - FIRST PARAGRAPH
+   - Wikipedia, BBC, Reuters, .gov sites
+   - Purpose: Initial trust signal for Google's crawler
+   - Placement: First 500 words, even if just "setting the scene"
+
+2. **Tier 2: Niche Authority (DA 60-89)** - THROUGHOUT ARTICLE
+   - **HIGH PRIORITY:** Sites ranking on page 1 for our target keyword
+   - Nomad List, Expatica, InterNations (for relocation niche)
+   - WHY: Google sees them as authorities in THIS specific domain
+   - Strategy: Link to their deep content (not homepage)
+   - Example: Link to Nomad List's Lisbon guide from our Portugal article
+
+3. **Tier 3: Official Sources (DA varies)** - DETAILS SECTIONS
+   - Country-specific government sites
+   - Embassy pages, consulate portals
+   - Official visa application sites
+
+**DataForSEO/Serper Integration:**
+
+```python
+# During keyword research, get SERP rankings
+serp_results = await serper.search(keyword)
+
+# Extract DA from top 10 results
+for result in serp_results["organic"][:10]:
+    domain = extract_domain(result["link"])
+    da_score = await dataforseo.get_domain_authority(domain)
+
+    # If DA 60+, ADD to validated_urls as "niche_authority"
+    if da_score >= 60:
+        await cache_as_linkable_competitor(result["link"], da_score)
+
+# ContentAgent receives these as "approved niche authority links"
+```
+
+**Link Distribution Requirements:**
+
+| Link Type | Count | DA Range | Placement | Purpose |
+|-----------|-------|----------|-----------|---------|
+| Ultra-High (Wikipedia, BBC) | 1-2 | 90+ | First paragraph | Initial trust |
+| Niche Authority (competitors) | 3-5 | 60-89 | Throughout | Domain relevance |
+| Official Sources (.gov) | 2-3 | Varies | Detail sections | Factual backup |
+| Internal Links | 3-5 | N/A | Throughout | Cluster building |
+
+**Example (Portugal Digital Nomad Visa Article):**
+
+```markdown
+## What You Need to Know
+
+According to [Wikipedia](https://en.wikipedia.org/wiki/Portugal), Portugal has become
+one of Europe's top destinations for remote workers. [Nomad List](https://nomadlist.com/lisbon)
+ranks Lisbon as #3 globally for digital nomads, citing low cost of living and excellent
+infrastructure.
+
+The [Portuguese Immigration Service (SEF)](https://imigrante.sef.pt) officially launched
+the digital nomad visa in October 2022. As [Expatica](https://expatica.com/pt/moving/visas/portugal-digital-nomad-visa)
+reports, over 1,200 applications were approved in the first year.
+```
+
+**Why This Example Works:**
+- ✅ Wikipedia (DA 98) - First sentence
+- ✅ Nomad List (DA 72) - Competitor we're trying to outrank!
+- ✅ SEF.pt (DA 85) - Official government source
+- ✅ Expatica (DA 68) - Established competitor with authority
+
+**Strategic Benefits:**
+1. **Authority Halo:** Linking to DA 60-90 sites = "we know the good sources"
+2. **Topical Relevance:** Google sees we understand the niche landscape
+3. **No Downside:** Competitors already dominate SERPs, our link doesn't change that
+4. **Algorithm Signal:** "This site curates quality info, not just self-promotion"
+
+**Validation Requirements:**
+- All links must be validated (no 404s)
+- Minimum DA 50 for any external link
+- Cache validated URLs with DA scores
 - Use inline hyperlink format: `[anchor text](url)`
 
 **Internal Links:**
 - 3-5 related articles per piece
 - Use descriptive anchor text
-- Build topic clusters through linking
+- Build topic clusters through internal linking
+- Prioritize after external authority links established
+
+### Domain Authority Data Sources
+
+**Primary: DataForSEO Backlinks API** (RECOMMENDED - Already Integrated!)
+
+**Why DataForSEO:**
+- ✅ Already using for keyword validation (cost synergy)
+- ✅ Comprehensive metrics: DA, backlinks, referring domains, traffic
+- ✅ Cost: $0.10/domain query (cheaper than MOZ $0.016/URL)
+- ✅ Cache-friendly: 30-day TTL for stable domains
+- ✅ Batch queries: Check 50 domains in one request
+
+**Alternative: Serper.dev SERP Data**
+- ✅ Already integrated for Template Detection
+- ✅ Provides page 1 rankings (implicit authority signal)
+- ✅ Cost: $0.002/query (extremely cheap)
+- ✅ Use case: "If it ranks page 1 for our keyword → it's authoritative"
+
+**DataForSEO Endpoint:**
+```python
+POST https://api.dataforseo.com/v3/backlinks/domain_metrics
+
+{
+  "targets": [
+    "nomadlist.com",
+    "expatica.com",
+    "internations.org"
+  ]
+}
+
+Response:
+{
+  "tasks": [{
+    "result": [{
+      "target": "nomadlist.com",
+      "rank": 72,  # 0-100 (our DA score)
+      "backlinks": 125000,
+      "referring_domains": 3400,
+      "organic_traffic": 450000,
+      "first_seen": "2014-05-01"
+    }]
+  }]
+}
+```
+
+**Cost Optimization Strategy:**
+
+1. **Cache Aggressively:**
+   - DA 90+ sites: Cache 90 days (they don't change)
+   - DA 60-89 sites: Cache 30 days
+   - DA <60 sites: Cache 7 days (volatile)
+
+2. **Batch Query During Keyword Research:**
+   - Serper returns top 10 results
+   - Extract all domains → Single DataForSEO batch request
+   - Store in `validated_urls` table
+   - Cost: $0.10 per keyword (not per article)
+
+3. **SERP-Only Fallback:**
+   - If domain not in cache AND budget tight
+   - Use Serper ranking as proxy: Page 1 = assumed DA 60+
+   - Cost: $0.002 vs $0.10
+
+**Implementation Priority:**
+1. **Phase 1:** Integrate DataForSEO domain metrics (1 hour)
+2. **Phase 2:** Build validated_urls cache table (30 min)
+3. **Phase 3:** Update ContentAgent prompts with DA requirements (1 hour)
+4. **Phase 4:** Add authority scoring to EditorAgent (1 hour)
+
+**Expected ROI:**
+- DA data cost: $0.10/keyword × 1 keyword/article = $0.10/article
+- Authority signal boost: Estimated +15-25% organic traffic
+- Break-even: If 1 extra conversion per 50 articles → ROI positive
 
 ---
 
