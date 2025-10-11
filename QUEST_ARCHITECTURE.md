@@ -1,10 +1,28 @@
 # Quest Architecture v2.6
 ## Multi-Site Content Intelligence Platform with AI-Assisted Production + Template Intelligence + Conversational SEO
 
-**Version:** 2.6.0 (Chunked Content + Safety-First Publishing)
-**Date:** October 10, 2025 (Evening - Chunked Content Breakthrough)
-**Status:** ✅ PRODUCTION (Chunked Gemini+Sonnet, 5K+ words, Google-Safe Publishing)
+**Version:** 2.6.1 (Citation Hyperlinks + AstroWind Deployment COMPLETE)
+**Date:** October 11, 2025 (Citation Format Milestone)
+**Status:** 🎉 **MILESTONE: Full Article Live with Inline Hyperlinks on AstroWind**
+**Live Example:** https://relocation.quest/iceland-digital-nomad-visa-2025
 **Peer Reviews:** ChatGPT 4.0 (A-), Gemini 2.0 Flash (A-), Claude Desktop (Astro+Vercel), **Codex (Oct 9, 2025: 7/10)**
+
+**🎉 MAJOR MILESTONE v2.6.1 (Oct 11, 2025 - Citation Format + AstroWind):**
+- ✅ **First Complete Article Deployed End-to-End** - Database → AstroWind → Live URL
+  - Live URL: https://relocation.quest/iceland-digital-nomad-visa-2025
+  - 5,164 words with 77 inline hyperlinks `[anchor text](url)`
+  - 4 Cloudinary images rendering correctly
+  - "Further Reading & Sources" section (not numbered references)
+  - Mobile-friendly 1-click citations (no `[1], [2], [3]` format)
+- ✅ **Citation Format Fixed** - Backend prompts updated for inline hyperlinks
+  - Sonnet refinement prompt: `[anchor text](url)` examples
+  - References section changed to "Further Reading & Sources"
+  - Bullet list format with descriptions
+- ✅ **AstroWind Integration Complete** - Frontend deployment validated
+  - YAML frontmatter properly formatted (quoted excerpt, simplified tags)
+  - Vercel deployment successful
+  - Static markdown files in `src/data/post/`
+  - Production-ready workflow established
 
 **🎉 BREAKTHROUGH v2.6.0 (Oct 10, 2025 - Evening):**
 - ✅ **Chunked Content System WORKING** - Gemini 2.5 Pro (chunks) + Sonnet 4.5 (refinement)

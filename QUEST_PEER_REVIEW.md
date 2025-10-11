@@ -1,12 +1,37 @@
 # Quest Platform - Peer Review Guide
 
-**Purpose:** Focus on critical production-blocking issue
-**Updated:** October 10, 2025
-**Status:** 🔴 **BLOCKED** - References Section Missing + Zero Hyperlinks
+**Purpose:** Track milestones and guide external reviews
+**Updated:** October 11, 2025
+**Status:** 🎉 **MILESTONE ACHIEVED** - Citation Format + AstroWind Deployment Complete
 
 ---
 
-## 🎯 CRITICAL ISSUE: References Section Not Appearing
+## 🎉 MILESTONE: Citation Hyperlinks + AstroWind Integration (Oct 11, 2025)
+
+**Achievement:** First complete article deployed with inline hyperlink citations!
+
+**Live Example:** https://relocation.quest/iceland-digital-nomad-visa-2025
+
+**What Works:**
+- ✅ 5,164 words (full article, not summary)
+- ✅ 77 inline hyperlinks using `[anchor text](url)` format
+- ✅ 4 Cloudinary images rendering correctly
+- ✅ "Further Reading & Sources" section at end
+- ✅ Mobile-friendly 1-click citations (no numbered references)
+- ✅ AstroWind theme rendering perfectly
+- ✅ Vercel deployment successful
+
+**Technical Fixes:**
+1. Backend: Updated Sonnet refinement prompts for inline hyperlinks
+2. Backend: Changed References → "Further Reading & Sources" with bullets
+3. Frontend: Fixed YAML frontmatter (quoted excerpt, simplified tags)
+4. Frontend: Vercel build successful
+
+**Status:** ✅ RESOLVED - Production workflow validated end-to-end
+
+---
+
+## 🔍 PREVIOUS ISSUE (Now Resolved): References Section Not Appearing
 
 ### Problem Summary
 
