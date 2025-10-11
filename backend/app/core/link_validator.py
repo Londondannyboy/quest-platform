@@ -57,41 +57,136 @@ class LinkValidator:
 
     async def validate_external_url(self, url: str) -> Dict:
         """
-        Check if an external URL is accessible
+        Check if an external URL is accessible with enhanced validation
+
+        Strategy:
+        1. Try HEAD request first (fast, low bandwidth)
+        2. If HEAD fails/blocked → Try GET request (slower but works on more sites)
+        3. If GET returns 404 → Try archive.org (last resort)
+
+        Increased timeout to 10s for slow government sites
 
         Args:
             url: URL to check
 
         Returns:
-            Dict with validation result
+            Dict with validation result including method used
         """
-        try:
-            async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient() as client:
+            # Attempt 1: HEAD request (fast)
+            try:
                 response = await client.head(
                     url,
-                    timeout=self.timeout,
+                    timeout=10.0,  # Increased from 5s → 10s for slow .gov sites
                     follow_redirects=True
                 )
 
-                is_valid = response.status_code < 400
+                if response.status_code < 400:
+                    logger.debug(
+                        "link_validator.head_success",
+                        url=url,
+                        status=response.status_code
+                    )
+                    return {
+                        'url': url,
+                        'valid': True,
+                        'status_code': response.status_code,
+                        'final_url': str(response.url) if response.url != url else url,
+                        'method': 'HEAD'
+                    }
+            except Exception as e:
+                logger.debug(
+                    "link_validator.head_failed",
+                    url=url,
+                    error=str(e),
+                    message="Trying GET fallback"
+                )
 
+            # Attempt 2: GET request (fallback for servers that block HEAD)
+            try:
+                response = await client.get(
+                    url,
+                    timeout=10.0,
+                    follow_redirects=True
+                )
+
+                if response.status_code < 400:
+                    logger.info(
+                        "link_validator.get_success",
+                        url=url,
+                        status=response.status_code,
+                        note="HEAD failed but GET succeeded"
+                    )
+                    return {
+                        'url': url,
+                        'valid': True,
+                        'status_code': response.status_code,
+                        'final_url': str(response.url) if response.url != url else url,
+                        'method': 'GET'
+                    }
+                elif response.status_code == 404:
+                    # Attempt 3: Check archive.org (last resort for 404s)
+                    logger.info(
+                        "link_validator.404_detected",
+                        url=url,
+                        message="Checking archive.org"
+                    )
+
+                    archive_url = f"https://web.archive.org/web/{url}"
+                    try:
+                        archive_response = await client.head(
+                            archive_url,
+                            timeout=10.0,
+                            follow_redirects=True
+                        )
+
+                        if archive_response.status_code < 400:
+                            logger.info(
+                                "link_validator.archive_found",
+                                original_url=url,
+                                archive_url=archive_url,
+                                note="Using archived version"
+                            )
+                            return {
+                                'url': archive_url,
+                                'valid': True,
+                                'status_code': 200,
+                                'final_url': archive_url,
+                                'method': 'ARCHIVE',
+                                'note': 'Original URL returned 404, using archived version'
+                            }
+                    except Exception as archive_error:
+                        logger.debug(
+                            "link_validator.archive_failed",
+                            url=url,
+                            error=str(archive_error)
+                        )
+
+                # If we get here, URL is invalid
+                logger.warning(
+                    "link_validator.url_invalid",
+                    url=url,
+                    status_code=response.status_code
+                )
                 return {
                     'url': url,
-                    'valid': is_valid,
+                    'valid': False,
                     'status_code': response.status_code,
-                    'final_url': str(response.url) if response.url != url else url
+                    'method': 'GET'
                 }
-        except Exception as e:
-            logger.warning(
-                "link_validator.external_check_failed",
-                url=url,
-                error=str(e)
-            )
-            return {
-                'url': url,
-                'valid': False,
-                'error': str(e)
-            }
+
+            except Exception as e:
+                logger.warning(
+                    "link_validator.all_methods_failed",
+                    url=url,
+                    error=str(e)
+                )
+                return {
+                    'url': url,
+                    'valid': False,
+                    'error': str(e),
+                    'method': 'ALL_FAILED'
+                }
 
     async def validate_external_urls(self, urls: List[str]) -> List[Dict]:
         """
