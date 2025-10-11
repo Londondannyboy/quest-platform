@@ -890,7 +890,7 @@ CRITICAL: Every factual claim needs an inline hyperlink to authoritative sources
 - Use natural anchor text: [term](url)
 - NO numbered citations like [1], [2]
 - Minimum 15-25 inline hyperlinks distributed throughout article
-- Mobile-friendly (readers can click highlighted terms directly)
+- Mobile-friendly (readers can click highlighted terms directly)"""
 
     def _ensure_references_section(self, content: str, link_context: Optional[Dict]) -> str:
         """
