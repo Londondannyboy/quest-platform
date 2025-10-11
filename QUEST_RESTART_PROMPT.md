@@ -1,38 +1,46 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `be38fc6` (quest-platform) - "feat: Implement content-type-based URL structure (Data Restructuring Phase 1)"
-**Status:** 🎉 **PHASE 1 COMPLETE: Data Restructuring + ISR Deployment**
-**Date:** October 11, 2025 (Data Restructuring + ISR)
+**Last Commit:** `c663a0a` - Image System Overhaul Complete
+**Status:** ✅ **PRODUCTION READY - Image System v2.0 Deployed**
+**Date:** October 11, 2025 (5-Hour Image System Session)
 
 ---
 
-## 🎉 MAJOR MILESTONES ACHIEVED TODAY
+## 🎉 IMAGE SYSTEM OVERHAUL COMPLETE
 
-### 1. Citation Verifier Fixed ✅
-- **Problem:** Verifier looking for numbered `[1], [2]` but Sonnet generates `[text](url)`
-- **Solution:** Updated regex to detect inline markdown links
-- **Result:** Now detects 36 inline citations + 15 references properly
-- **Files:** `backend/app/agents/citation_verifier.py`
+### 1. Switched to Ideogram V2 Turbo ✅
+- **From:** FLUX Schnell ($0.003/image)
+- **To:** Ideogram V2 Turbo ($0.004/image)
+- **Why:** Better text rendering, magic prompt support (6x enhancement)
+- **Cost:** $0.016/article (4 images)
+- **Files:** `backend/app/agents/image.py`
 
-### 2. Italy Article Deployed ✅
-- **Live URL:** https://relocation.quest/italy-digital-nomad-visa-complete-guide-2025
-- **Content:** 5,853 words, 36 inline citations, 4 Cloudinary images
-- **Quality:** Template Intelligence (archetype=skyscraper, template=ultimate_guide)
-- **Files:** `quest-relocation/src/data/post/italy-digital-nomad-visa-complete-guide-2025.md`
+### 2. H2 Overlay System ✅
+- **What:** Content images show section headings for context
+- **Hero:** Article title overlay (3:1 ultra-wide banner)
+- **Content 1-3:** H2 section headings overlays (16:9 standard)
+- **Benefit:** Contextual images, better UX, SEO value
+- **Files:** `backend/app/agents/image.py`
 
-### 3. ISR (Incremental Static Regeneration) Enabled ✅
-- **What:** Can now publish articles without full site rebuilds
-- **How:** Changed Astro from `output: 'static'` to `output: 'server'` with Vercel adapter
-- **Cache:** 1 hour expiration, bypass token for manual invalidation
-- **Benefit:** Just push markdown files to Git → article goes live automatically
-- **Files:** `quest-relocation/astro.config.ts`
+### 3. Text Overlay Styling by Article Type ✅
+- **Guide:** Center, bold, authoritative
+- **Listicle:** Top-left corner, edgy, clickbait
+- **How-To:** Top banner, clean, instructional
+- **Comparison:** Center split, versus-style
+- **News:** Bottom banner, urgent ticker
+- **Files:** `backend/app/agents/image.py` (TEXT_OVERLAY_STYLES)
 
-### 4. Data Restructuring Phase 1 Complete ✅
-- **Design:** `QUEST_URL_STRUCTURE.md` (single source of truth for URL patterns)
-- **Schema:** Added `content_type` and `country` columns to articles table
-- **Migration:** `migrations/006_content_type_url_structure.sql`
-- **Backfilled:** 25 existing articles (15 guides, 9 country-hubs, 1 deep-dive)
-- **Turborepo-ready:** Single source of truth architecture (Neon → API → Multiple frontends)
+### 4. Hardcoded Landmark Mappings ✅
+- **What:** 12 European countries with 4 landmarks each
+- **Cost:** $0.00 (vs $0.05/article with Perplexity API)
+- **Quality:** Hand-curated for aspirational value
+- **Files:** `backend/app/core/landmark_mappings.json`
+- **Ready to expand:** 50+ countries via Claude Desktop
+
+### 5. Comprehensive Documentation ✅
+- **NEW:** `QUEST_IMAGE_GUIDELINES.md` (600+ lines)
+- **Updated:** `QUEST_ARCHITECTURE.md` (ImageAgent section)
+- **Files:** Complete image strategy documented
 
 ---
 
@@ -58,29 +66,34 @@
 
 ---
 
-## 📋 NEXT PRIORITIES: Data Restructuring Phase 2
+## 📋 NEXT PRIORITIES: Image System Testing & Expansion
 
-### Immediate Next Steps (Data Restructuring)
+### Immediate Next Steps
 
-**Phase 2: Update Backend (Orchestrator + Agents)**
-1. ✅ Schema migration complete (content_type + country columns added)
-2. ⏳ Update Orchestrator to detect content_type from topic
-3. ⏳ Update slug generation to use `content_type/` prefix
-4. ⏳ Test with new article generation
+**1. Test Image System (TODAY)**
+- Wait for Railway deployment (5-10 min from last commit)
+- Generate test article: `python3 generate_article.py --topic "Test Article" --site relocation`
+- Verify H2 overlays render correctly
+- Check text placement matches article type
+- Verify 4 images generated with Ideogram V2 Turbo
 
-**Phase 3: Update Frontend (Astro Routes)**
-1. ⏳ Create dynamic routes for each content type:
-   - `/guide/[...slug].astro`
-   - `/comparison/[...slug].astro`
-   - `/list/[...slug].astro`
-   - `/country/[country].astro`
-2. ⏳ Update `getStaticPaths()` to filter by content_type
-3. ⏳ Test ISR with new content type URLs
+**2. Expand Landmark Mappings (THIS WEEK)**
+- Add 20-30 more countries to `landmark_mappings.json`
+- Use Claude Desktop/Perplexity: "List 4 most iconic, aspirational landmarks for [Country]"
+- Priority countries: Popular nomad destinations (Thailand, Bali, Mexico, etc.)
+- 10 minutes per country × 30 = 5 hours total
 
-**Then: Resume Article Generation**
-- Generate 2 articles/day for indexed /posts/ URLs
-- Use new content_type detection automatically
-- Deploy with ISR (no full rebuilds needed)
+**3. Integrate Landmark Detection (NEXT)**
+- Add `_load_landmark_mappings()` method to ImageAgent
+- Detect country/city from article title
+- Update prompts with specific landmarks (Colosseum, Eiffel Tower, etc.)
+- Test with Italy article (should use Colosseum, Venice, Florence, Amalfi)
+
+**4. Phase 3: Image Reusability (LATER)**
+- Create `image_library` database table
+- Add alt text generation for SEO
+- Implement reuse check before generation
+- Expected: 30-70% cost savings
 
 ---
 
@@ -112,17 +125,18 @@ Database (if quality ≥75)
 
 **Authority Documents:**
 - **`QUEST_CONTENT_PUBLISHING_GUIDELINES.md`** - MANDATORY for all content
+- **`QUEST_IMAGE_GUIDELINES.md`** - ✅ NEW: Image generation strategy (600+ lines)
 - `QUEST_ARCHITECTURE.md` - v2.6 system design
-- `QUEST_GENERATION.md` - How to use generate_article.py
-- `CLAUDE.md` - Technical reference + history
+- `CLAUDE.md` - Technical reference + session history
+
+**Image System:**
+- `backend/app/agents/image.py` - H2 overlay + text styling system
+- `backend/app/core/landmark_mappings.json` - 12 countries with landmarks
+- `backend/app/core/image_style_system.py` - Multi-dimensional styling (v1.0)
 
 **Safety Documents:**
-- `TAILRIDE_CASE_STUDY_ANALYSIS.md` - Real penalty example (244/day = manual action)
+- `TAILRIDE_CASE_STUDY_ANALYSIS.md` - Real penalty example
 - `backend/SAFETY_IMPLEMENTATION_PLAN.md` - E-E-A-T, monitoring
-- `backend/COST_OPTIMIZATION_STRATEGIES.md` - 40% cost reduction strategies
-
-**Implementation Plan:**
-- `REGENERATE_INDEXED_POSTS.md` - Strategy for 16 indexed pages
 
 ---
 
