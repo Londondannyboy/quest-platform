@@ -97,6 +97,68 @@
 
 ---
 
+## ✅ ACTIONABLE TODO LIST (Start Here!)
+
+### 1. Test Image System with Full Article Generation
+```bash
+cd ~/quest-platform/backend
+python3 generate_article.py --topic "Cyprus Digital Nomad Visa 2025" --site relocation
+```
+**Verify:**
+- H2 overlays appear on content images
+- Text placement matches article type (guide = center, listicle = top-left, etc.)
+- 4 images generated: 1 hero (3:1) + 3 content (16:9)
+- Ideogram V2 Turbo used (not FLUX)
+- Magic prompt enhancements logged
+- Article type detected correctly
+
+### 2. Generate & Publish 12 Production Articles
+**Target:** 2 articles/day for 6 days (rate limit compliant)
+
+**Topics (Mix of types):**
+1. Portugal D7 Visa Guide 2025 (guide)
+2. Spain vs Portugal Digital Nomad Visa (comparison)
+3. Top 10 Cheapest European Cities (listicle)
+4. How to Apply for Greece Digital Nomad Visa (how-to)
+5. Croatia Digital Nomad Visa 2025 (guide)
+6. Malta vs Cyprus Tax Comparison (comparison)
+7. Best Cities in Italy for Remote Work (listicle)
+8. Netherlands DAFT Visa Complete Guide (guide)
+9. Germany Freelance Visa Application Process (how-to)
+10. Top 5 Digital Nomad Visas in Europe (listicle)
+11. Ireland vs UK: Digital Nomad Comparison (comparison)
+12. France Talent Passport Visa Guide (guide)
+
+**Expected Results:**
+- Different text placements per article type
+- H2 overlays contextual to content
+- Mix of landmarks from landmark_mappings.json
+- Total cost: 12 × $0.57 = $6.84
+
+### 3. Frontend Work on Relocation.Quest
+**Current Issue:** Still using template structure
+
+**Tasks:**
+- [ ] Review current Astro routes
+- [ ] Implement content-type-specific templates (if needed)
+- [ ] Test ISR with new image system
+- [ ] Verify responsive image loading (800px/1200px/1920px)
+- [ ] Check hero image 3:1 ratio displays correctly
+- [ ] Mobile testing for text overlay readability
+
+### 4. Directus Integration & Testing
+**Purpose:** CMS for article management
+
+**Tasks:**
+- [ ] Deploy Directus to Railway
+- [ ] Connect to Neon database
+- [ ] Configure article schema
+- [ ] Test MCP server integration
+- [ ] Create admin workflow
+- [ ] Test publishing from Directus → Frontend
+
+---
+
 ## 🔧 System Architecture (v2.6)
 
 ```
