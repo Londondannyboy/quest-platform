@@ -1,32 +1,38 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `00f1adb` (quest-relocation) - "fix: Simplify frontmatter to match working examples"
-**Status:** 🎉 **MILESTONE: FULL ARTICLE LIVE ON ASTROWIND WITH INLINE HYPERLINKS**
-**Date:** October 11, 2025 (Citation Format + AstroWind Deployment)
+**Last Commit:** `be38fc6` (quest-platform) - "feat: Implement content-type-based URL structure (Data Restructuring Phase 1)"
+**Status:** 🎉 **PHASE 1 COMPLETE: Data Restructuring + ISR Deployment**
+**Date:** October 11, 2025 (Data Restructuring + ISR)
 
 ---
 
-## 🎉 MAJOR MILESTONE ACHIEVED: End-to-End Citation Format Working
+## 🎉 MAJOR MILESTONES ACHIEVED TODAY
 
-**Achievement:** First complete article deployed to AstroWind with inline hyperlink citations!
+### 1. Citation Verifier Fixed ✅
+- **Problem:** Verifier looking for numbered `[1], [2]` but Sonnet generates `[text](url)`
+- **Solution:** Updated regex to detect inline markdown links
+- **Result:** Now detects 36 inline citations + 15 references properly
+- **Files:** `backend/app/agents/citation_verifier.py`
 
-**Live URL:** https://relocation.quest/iceland-digital-nomad-visa-2025
+### 2. Italy Article Deployed ✅
+- **Live URL:** https://relocation.quest/italy-digital-nomad-visa-complete-guide-2025
+- **Content:** 5,853 words, 36 inline citations, 4 Cloudinary images
+- **Quality:** Template Intelligence (archetype=skyscraper, template=ultimate_guide)
+- **Files:** `quest-relocation/src/data/post/italy-digital-nomad-visa-complete-guide-2025.md`
 
-**What Works:**
-- ✅ **5,164 words** (full article, not summary)
-- ✅ **77 inline hyperlinks** using `[anchor text](url)` format throughout content
-- ✅ **4 Cloudinary images** (1 hero + 3 content images)
-- ✅ **"Further Reading & Sources" section** at end with bullet list format
-- ✅ **Mobile-friendly 1-click citations** (no numbered references)
-- ✅ **AstroWind frontmatter** properly formatted for deployment
+### 3. ISR (Incremental Static Regeneration) Enabled ✅
+- **What:** Can now publish articles without full site rebuilds
+- **How:** Changed Astro from `output: 'static'` to `output: 'server'` with Vercel adapter
+- **Cache:** 1 hour expiration, bypass token for manual invalidation
+- **Benefit:** Just push markdown files to Git → article goes live automatically
+- **Files:** `quest-relocation/astro.config.ts`
 
-**Technical Fixes (Commits 8bda6ec → 00f1adb):**
-1. ✅ Backend: Updated Sonnet refinement prompts with inline hyperlink format
-2. ✅ Backend: Changed References → "Further Reading & Sources" with bullets
-3. ✅ Backend: Fixed 3 syntax errors (unclosed f-strings)
-4. ✅ Frontend: Fixed YAML frontmatter parsing (removed special chars, quoted excerpt)
-5. ✅ Frontend: Simplified tags (digital-nomad vs digital nomad)
-6. ✅ Deployment: Vercel build successful, article live at relocation.quest
+### 4. Data Restructuring Phase 1 Complete ✅
+- **Design:** `QUEST_URL_STRUCTURE.md` (single source of truth for URL patterns)
+- **Schema:** Added `content_type` and `country` columns to articles table
+- **Migration:** `migrations/006_content_type_url_structure.sql`
+- **Backfilled:** 25 existing articles (15 guides, 9 country-hubs, 1 deep-dive)
+- **Turborepo-ready:** Single source of truth architecture (Neon → API → Multiple frontends)
 
 ---
 
@@ -52,21 +58,29 @@
 
 ---
 
-## 📋 Current Priority: Regenerate 16 Indexed /posts/ Pages
+## 📋 NEXT PRIORITIES: Data Restructuring Phase 2
 
-**Opportunity:** Google already indexed 16 `/posts/` URLs (crawled Sept 30, 2025)
-**Problem:** Currently returning 404
-**Solution:** Generate new articles + 301 redirects
+### Immediate Next Steps (Data Restructuring)
 
-**Topics File:** `indexed_posts_topics.txt` (10 high-value topics)
-**Strategy:** Generate 2/day over 5 days, add Astro redirects
-**SEO Value:** Massive (already indexed, just need better content)
+**Phase 2: Update Backend (Orchestrator + Agents)**
+1. ✅ Schema migration complete (content_type + country columns added)
+2. ⏳ Update Orchestrator to detect content_type from topic
+3. ⏳ Update slug generation to use `content_type/` prefix
+4. ⏳ Test with new article generation
 
-**Next Action:**
-```bash
-cd ~/quest-platform/backend
-python3 generate_article.py --batch ../indexed_posts_topics.txt --site relocation
-```
+**Phase 3: Update Frontend (Astro Routes)**
+1. ⏳ Create dynamic routes for each content type:
+   - `/guide/[...slug].astro`
+   - `/comparison/[...slug].astro`
+   - `/list/[...slug].astro`
+   - `/country/[country].astro`
+2. ⏳ Update `getStaticPaths()` to filter by content_type
+3. ⏳ Test ISR with new content type URLs
+
+**Then: Resume Article Generation**
+- Generate 2 articles/day for indexed /posts/ URLs
+- Use new content_type detection automatically
+- Deploy with ISR (no full rebuilds needed)
 
 ---
 
@@ -145,21 +159,31 @@ Database (if quality ≥75)
 
 ## 🔧 Quick Commands
 
-### Generate Single Article (Test)
+### View Content Type Distribution
 ```bash
 cd ~/quest-platform/backend
-python3 generate_article.py --topic "Test Weaving - Portugal D7 Visa 2025" --site relocation
+python3 -c "
+import asyncio, asyncpg
+async def check():
+    conn = await asyncpg.connect('postgresql://neondb_owner:npg_Q9VMTIX2eHws@ep-steep-wildflower-abrkgyqu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require')
+    rows = await conn.fetch('SELECT * FROM content_type_summary')
+    for r in rows: print(f\"{r['target_site']}/{r['content_type']}: {r['article_count']} articles, avg quality {r['avg_quality']}\")
+    await conn.close()
+asyncio.run(check())
+"
 ```
 
-### Generate Batch (Indexed Posts)
+### Generate Article (Will use content_type detection once Phase 2 complete)
 ```bash
 cd ~/quest-platform/backend
-python3 generate_article.py --batch ../indexed_posts_topics.txt --site relocation
+python3 generate_article.py --topic "Spain vs Portugal Digital Nomad Visa" --site relocation
 ```
 
-### Check Railway Health
+### Deploy Article to Frontend (ISR enabled - no rebuild needed)
 ```bash
-curl https://quest-platform-production-9ee0.up.railway.app/api/health
+cd ~/quest-relocation
+# Just push markdown file to Git - Vercel handles the rest
+git add src/data/post/new-article.md && git commit -m "Add article" && git push
 ```
 
 ---
@@ -182,17 +206,26 @@ GEMINI_API_KEY="AIzaSyDiqYrl4xBj1H9HtRZw_Skzw8q-DuKeXAc"
 
 ## 🚀 Next Steps
 
-### This Week
-1. ✅ Test single article (verify weaving + citations working)
-2. Generate 4 indexed posts articles (2/day)
-3. Implement Firecrawl URL caching
-4. Add Astro 301 redirects for /posts/
+### TODAY'S ACHIEVEMENTS ✅
+1. ✅ Fixed citation verifier (detects inline markdown links)
+2. ✅ Deployed Italy article with ISR
+3. ✅ Implemented content-type URL structure (Phase 1)
+4. ✅ Migrated database schema (content_type + country columns)
+5. ✅ Backfilled 25 existing articles with content types
 
-### Next Week
-5. Complete remaining 6 indexed posts
-6. Deploy redirects to Vercel
-7. Implement cluster research caching
-8. Submit updated sitemap to Google
+### NEXT SESSION (Phase 2: Backend Updates)
+1. Update Orchestrator to auto-detect content_type from topic
+   - Comparison detection: "X vs Y" → content_type='comparison'
+   - Listicle detection: "Top 10" → content_type='listicle'
+   - Guide detection: Default → content_type='guide'
+2. Update slug generation to include content_type prefix
+   - New slugs: `guide/italy-digital-nomad-visa` (not just `italy-digital-nomad-visa`)
+3. Test with new article generation
+
+### AFTER THAT (Phase 3: Frontend Updates)
+1. Create Astro dynamic routes for content types
+2. Update getStaticPaths() to filter by content_type
+3. Generate 2 articles/day for indexed /posts/ URLs
 
 ---
 
