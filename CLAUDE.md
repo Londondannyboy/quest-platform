@@ -1147,8 +1147,106 @@ quest-platform/
 
 ---
 
-**Last Updated:** October 10, 2025 (Late Evening)
-**Version:** 3.1 (Production - Haiku Model, Pure Markdown Output, Syntax Fixes)
+**Last Updated:** October 11, 2025 (Citation Format Fixes)
+**Version:** 3.2 (Citation Hyperlinks Fixed, AstroWind Integration Pending)
+
+---
+
+## 📝 SESSION SUMMARY: October 11, 2025 - Citation Format Fixes (Sonnet 4.5)
+
+**Duration:** 1 hour
+**Commits:** 3 commits (`8bda6ec` → `67a724f`)
+**Status:** ✅ Citation hyperlink prompts fixed, syntax errors resolved
+**Next:** Deploy to AstroWind and validate inline hyperlinks working
+
+### Problem Identified
+
+**Malta Gaming License Article Analysis:**
+- Generated 5,344 words with 49 citations
+- ALL citations were numbered format: `[1], [2], [3]`
+- NO clickable inline hyperlinks like `[anchor text](url)`
+- Missing "Further Reading & Sources" section at end
+- User expectation: Mobile-friendly inline hyperlinks for 1-click access
+
+**Root Cause:**
+- Commit e09bc88 only updated Gemini chunk prompts (lines 746-882)
+- Sonnet refinement prompt (lines 660-856) still had OLD numbered citation format
+- `_ensure_references_section()` used numbered list format
+- Docstrings referenced old citation style
+
+### Fixes Implemented
+
+**Commit 8bda6ec: Update citation format to inline hyperlinks**
+
+1. **link_instructions updated** (`chunked_content.py:678-723`)
+   - Removed: `[1] [Source](url)` examples
+   - Added: `[anchor text](url)` inline format examples
+   - Emphasized: Mobile-friendly 1-click access
+
+2. **Refinement prompt updated** (`chunked_content.py:746-770`)
+   - CORRECT format: `[Portugal D7 Visa](https://imigrante.sef.pt)`
+   - WRONG format: `Portugal's D7 Visa [1]`
+   - Minimum 15-25 inline hyperlinks required
+
+3. **_ensure_references_section() updated** (`chunked_content.py:895-956`)
+   - Changed from numbered "References" → descriptive "Further Reading & Sources"
+   - Bullet list format: `- [Title](URL) - Description`
+   - No more `[1], [2], [3]` fallback citations
+
+4. **Docstring updated** (`chunked_content.py:603-612`)
+   - Changed from "Add citations [1], [2], [3]" → "Add inline hyperlinks [text](url)"
+   - Changed from "Add References section" → "Add 'Further Reading & Sources' section"
+
+**Commit a31f1e2: Fix missing closing triple quotes**
+- Fixed unclosed f-string at line 856 (Sonnet refinement prompt)
+- Added missing `"""` delimiter
+
+**Commit 67a724f: Fix missing closing quotes in system prompt**
+- Fixed unclosed f-string at line 893 (system prompt return)
+- Added missing `"""` delimiter
+
+### Testing Status
+
+**Background Generations Running:**
+- Spain Digital Nomad Visa Requirements 2025 (first test with fixed prompts)
+- Multiple other topics generating to validate fix
+
+**Expected Results:**
+- Inline hyperlinks throughout article: `[anchor text](url)`
+- "Further Reading & Sources" section at end with bullet list
+- Minimum 15-25 inline hyperlinks distributed throughout
+- No numbered citations like `[1], [2], [3]`
+
+### Next Steps
+
+1. Check Spain article generation output
+2. Verify inline hyperlinks present in content
+3. Verify "Further Reading & Sources" section exists
+4. Create markdown file in AstroWind (`~/quest-relocation/src/data/post/`)
+5. Deploy to Vercel and test live URL
+
+### AstroWind Integration Plan
+
+**Frontend:** `quest-relocation` (AstroWind theme)
+**Blog Posts Location:** `~/quest-relocation/src/data/post/`
+**Frontmatter Format:**
+```yaml
+---
+publishDate: 2025-10-11T00:00:00Z
+title: "Article Title Here"
+excerpt: "Brief excerpt..."
+image: ~/assets/images/hero.jpg
+category: Category
+tags:
+  - tag1
+  - tag2
+---
+```
+
+**Files Changed:**
+- `backend/app/agents/chunked_content.py` (4 sections updated)
+- `QUEST_RESTART_PROMPT.md` (updated with latest status)
+- `CLAUDE.md` (this file - session summary)
 
 ---
 

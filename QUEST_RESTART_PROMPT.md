@@ -1,25 +1,28 @@
 # Quest Platform Restart Prompt
 
-**Last Commit:** `aaeea58` - "docs: Update QUEST_GENERATION.md with chunked content + publishing guidelines"
-**Status:** ✅ **CHUNKED CONTENT WORKING + SAFETY GUIDELINES COMPLETE**
-**Date:** October 10, 2025 (Late Evening - Major Documentation Update)
+**Last Commit:** `67a724f` - "fix: Add missing closing quotes in system prompt return statement"
+**Status:** ✅ **CITATION HYPERLINK FORMAT FIXED + TESTING IN PROGRESS**
+**Date:** October 11, 2025 (Citation Format Fixes)
 
 ---
 
-## 🎉 BREAKTHROUGH VALIDATED
+## 🎉 LATEST UPDATE: Citation Hyperlink Format Fixed
 
-**Chunked Content System Working:**
-```
-Gemini 2.5 Pro: 3 chunks → 1,293 words
-  ↓
-Gemini 2.5 Flash: Weaving ($0.01)
-  ↓
-Sonnet 4.5: Expand to 5,344 words (310% growth!)
-  ↓
-Cost: $0.75/article | Quality: 15-25 citations, References section
-```
+**Problem Found (Phase 1.1):**
+- Malta Gaming License article had **49 numbered citations** `[1], [2], [3]` but NO clickable inline hyperlinks
+- Sonnet refinement prompt still had old citation format (only Gemini chunks were fixed)
+- No "Further Reading & Sources" section at the end
 
-**Critical Achievement:** Fixed missing `_weave_chunks_with_gemini()` function (was blocking all generation!)
+**Fixes Implemented (Commits 8bda6ec → 67a724f):**
+1. ✅ Updated Sonnet refinement prompts with inline hyperlink examples `[text](url)`
+2. ✅ Changed References section → "Further Reading & Sources" with bullet list format
+3. ✅ Fixed 3 syntax errors (unclosed f-strings)
+4. ✅ Updated docstrings to match new citation format
+
+**Testing Status:**
+- ⏳ Spain Digital Nomad Visa article generating (first test with fixed prompts)
+- ⏳ Multiple background generations running to validate fix
+- ⏳ Will deploy to AstroWind frontend (`quest-relocation/src/data/post/`) after validation
 
 ---
 
