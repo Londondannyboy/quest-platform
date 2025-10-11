@@ -743,24 +743,41 @@ Merge these 3 chunks into a polished, comprehensive article that will rank on Go
    - FAQ section (8-10 Q&A pairs, COMPLETE all questions fully)
    - **ABSOLUTELY MANDATORY:** ## References section (MUST be the FINAL section)
 
-3. **Add Citations** (MINIMUM 15-25 required for high authority):
-   - Add inline citations [1], [2], [3] for ALL factual claims
-   - Use research sources from above
-   - Target: 1 citation per 150-200 words (industry best practice)
+3. **Add Inline Hyperlinks** (MINIMUM 15-25 required for high authority):
+   - Hyperlink key terms directly to authoritative sources throughout article
+   - Format: [Portugal's D7 Visa](https://imigrante.sef.pt/d7-visa)
+   - Use natural anchor text (NO numbered citations like [1], [2])
+   - Target: 1 inline hyperlink per 150-200 words
+   - Distribute evenly across article (introduction, body, conclusion)
    - Diversify sources: government sites, research papers, industry reports, news
-   - **ABSOLUTELY REQUIRED - References Section Format:**
 
-     ## References
+   **EXAMPLES:**
+   ✅ CORRECT: "The [Portugal D7 Visa](https://imigrante.sef.pt) requires passive income..."
+   ✅ CORRECT: "According to [Portuguese Immigration Law](https://dre.pt/law), applicants must..."
+   ✅ CORRECT: "The [NHR tax program](https://portaldasfinancas.gov.pt/nhr) offers significant benefits..."
+   ❌ WRONG: "Portugal's D7 Visa [1] requires passive income..."
+   ❌ WRONG: "According to Portuguese Immigration Law [2], applicants must..."
 
-     [1] Source Name - https://example.com/source1
-     [2] Source Name - https://example.com/source2
-     [3] Source Name - https://example.com/source3
-     ...
-     [20] Source Name - https://example.com/source20
+   **MOBILE-FRIENDLY REQUIREMENT:**
+   - Users should click highlighted terms → opens source directly (1 click)
+   - NOT: Click [1] → jump to References → click link (2 clicks)
+   - Better UX, better SEO (contextual anchor text)
 
-   - The ## References section is THE MOST CRITICAL requirement
-   - EVERY article MUST end with a complete References section
-   - List ALL citations used in the article (minimum 15-25 sources for 3500+ words)
+   **ABSOLUTELY REQUIRED - Further Reading Section Format:**
+
+     ## Further Reading & Sources
+
+     Additional authoritative resources for deeper research:
+     - [Portuguese Immigration Service (SEF)](https://imigrante.sef.pt) - Official visa applications and requirements
+     - [Portugal Tax Authority](https://portaldasfinancas.gov.pt) - NHR tax program and tax residency details
+     - [Camões Institute](https://instituto-camoes.pt) - Portuguese language requirements and cultural integration
+     - [Portuguese Consular Network](https://portaldascomunidades.mne.gov.pt) - Consular services and document apostille
+     - [Expatica Portugal](https://www.expatica.com/pt) - Comprehensive expat guides and community resources
+
+   - This section provides CONTEXT and ADDITIONAL SOURCES only
+   - Primary sources should already be hyperlinked throughout the article body
+   - List 10-15 key resources with brief descriptions
+   - Each link must be clickable: [Text](URL)
 
 4. **Enhance Quality**:
    - Add specific data points and statistics
@@ -794,36 +811,38 @@ CRITICAL WARNINGS - READ CAREFULLY:
 - **STOP WRITING MAIN CONTENT** once all sections are well-covered
 - Articles under 3000 words OR without References will be REJECTED
 
-**CITATION DENSITY REQUIREMENT (HIGH AUTHORITY STANDARD):**
-- MINIMUM 15-25 citations required for 3500+ word articles
-- Target: 1 citation per 150-200 words (industry best practice)
+**INLINE HYPERLINK DENSITY REQUIREMENT (HIGH AUTHORITY STANDARD):**
+- MINIMUM 15-25 inline hyperlinks required for 3500+ word articles
+- Target: 1 inline hyperlink per 150-200 words (industry best practice)
 - Diversify sources: .gov sites, research papers, industry reports, news, expert blogs
-- More citations = higher authority = better SEO rankings
-- Every factual claim, statistic, date, or process MUST have a citation
+- More hyperlinks = higher authority = better SEO rankings
+- Every factual claim, statistic, date, or process MUST have an inline hyperlink
 
-**THE #1 CRITICAL REQUIREMENT - REFERENCES SECTION WITH HYPERLINKS:**
-- EVERY article MUST end with ## References as the FINAL section
+**THE #1 CRITICAL REQUIREMENT - FURTHER READING SECTION:**
+- EVERY article MUST end with ## Further Reading & Sources as the FINAL section
 - This is the MOST IMPORTANT part of the article
-- The ## References section is NOT OPTIONAL
-- Format EXACTLY as shown below using MARKDOWN HYPERLINKS:
+- The ## Further Reading & Sources section is NOT OPTIONAL
+- Format EXACTLY as shown below using MARKDOWN HYPERLINKS with descriptions:
 
-## References
+## Further Reading & Sources
 
-[1] [Government Source Title](https://example.gov/source1)
-[2] [Research Paper Title](https://academic.edu/source2)
-[3] [Industry Report Name](https://industry.com/source3)
-[4] [News Article Headline](https://news.com/source4)
-...
-[20] [Expert Blog Title](https://expert.com/source20)
+Additional authoritative resources for deeper research:
+- [Portuguese Immigration Service (SEF)](https://imigrante.sef.pt) - Official visa applications and requirements
+- [Portugal Tax Authority](https://portaldasfinancas.gov.pt) - NHR tax program and tax residency
+- [Camões Institute](https://instituto-camoes.pt) - Portuguese language requirements
+- [Portuguese Consular Network](https://portaldascomunidades.mne.gov.pt) - Consular services
+- [European Commission - Free Movement](https://ec.europa.eu/social/free-movement) - EU residency rights
+- [Expatica Portugal](https://www.expatica.com/pt) - Comprehensive expat guides
 
 **CRITICAL FORMAT REQUIREMENTS:**
-- Each reference MUST be a clickable markdown link: [Title](URL)
+- Each resource MUST be a clickable markdown link: [Title](URL)
+- Include brief description after each link (5-10 words)
 - Use the actual URLs provided in the VALIDATED EXTERNAL URLS section above
-- Match citation numbers [1], [2] in article to reference numbers in this section
-- Include descriptive title for each link (not just URL)
-- Articles without a complete References section with hyperlinks will AUTOMATICALLY FAIL
-- NEVER truncate or skip the References section
-- Reserve ~1500 tokens minimum for the References section to ensure completion"""
+- List 10-15 key resources (NOT every citation - those are inline)
+- Group by type: official government, tax/legal, expat community
+- Articles without a complete Further Reading section will AUTOMATICALLY FAIL
+- NEVER truncate or skip the Further Reading section
+- Reserve ~800 tokens minimum for the Further Reading section to ensure completion
 
     def _build_sonnet_system_prompt(self, style: Dict) -> str:
         """Build system prompt for Sonnet refinement"""
@@ -854,10 +873,13 @@ CRITICAL ACCURACY REQUIREMENTS (YMYL Content):
 - If uncertain about a fact, say "consult official sources" or "verify with authorities"
 - For legal/financial advice: Add disclaimer "This is general information, not legal/financial advice"
 - Cross-reference facts with research data before including them
-- When citing numbers, always include the source: "According to [Source], ..."
+- When citing numbers, always include the source with inline hyperlink: "According to [Portuguese Immigration Law](URL), ..."
 
-CRITICAL: Every factual claim needs a citation [1], [2], etc.
-Minimum 8 citations required throughout the article."""
+CRITICAL: Every factual claim needs an inline hyperlink to authoritative sources.
+- Use natural anchor text: [term](url)
+- NO numbered citations like [1], [2]
+- Minimum 15-25 inline hyperlinks distributed throughout article
+- Mobile-friendly (readers can click highlighted terms directly)
 
     def _ensure_references_section(self, content: str, link_context: Optional[Dict]) -> str:
         """
