@@ -5,6 +5,7 @@ Coordinates 4-agent pipeline with cost tracking and error handling
 
 import asyncio
 import json
+import re
 from decimal import Decimal
 from typing import Dict, Literal
 from uuid import uuid4
