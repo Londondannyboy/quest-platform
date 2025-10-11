@@ -237,6 +237,52 @@ transformation=[
 
 ## 📝 Prompt Engineering
 
+### Text Overlay Styling by Article Type ✅ IMPLEMENTED
+
+**Strategy:** Different article types use different text placement and styling for maximum CTR.
+
+**Article Type Detection:**
+```python
+# Simple keyword-based detection from title
+- "Italy vs Spain" → comparison
+- "Top 10 Cities" → listicle
+- "How to Apply" → how_to
+- "Italy Digital Nomad Visa Complete Guide" → guide (default)
+```
+
+**Text Overlay Styles:**
+
+| Article Type | Placement | Style | Use Case |
+|---|---|---|---|
+| **Guide** | Center | Bold, blocky, authoritative | Country guides, comprehensive content |
+| **Listicle** | Top-left corner | Edgy, clickbait, provocative | Top 10, Best/Worst lists |
+| **How-To** | Top banner | Clean, instructional, professional | Step-by-step guides |
+| **Comparison** | Center split | Versus-style, competitive | Spain vs Portugal, A vs B |
+| **News** | Bottom banner | Urgent, breaking news ticker | Updates, breaking news |
+
+**Visual Examples:**
+
+**Guide (Center, Bold):**
+```
+┌─────────────────────────┐
+│   [Landmark Image]      │
+│  ╔═════════════════╗    │  ← Center, authoritative
+│  ║ ITALY DIGITAL   ║    │
+│  ║ NOMAD VISA      ║    │
+│  ╚═════════════════╝    │
+└─────────────────────────┘
+```
+
+**Listicle (Corner, Edgy):**
+```
+┌─────────────────────────┐
+│ ┏━━━━━━━━━━━━━┓        │  ← Top-left, clickbait
+│ ┃ TOP 10 CITIES┃        │
+│ ┗━━━━━━━━━━━━━┛        │
+│   [Dynamic Scene]       │
+└─────────────────────────┘
+```
+
 ### Hero Image Composition (CTR-Optimized)
 
 **Goal: Maximize click-through rate, not just visual appeal**
