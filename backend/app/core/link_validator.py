@@ -27,12 +27,12 @@ class LinkValidator:
         Load all existing article slugs and titles for internal linking
 
         Returns:
-            Dict mapping slugs to titles
+            Dict mapping slugs to article data
         """
         pool = get_db()
         async with pool.acquire() as conn:
             articles = await conn.fetch("""
-                SELECT slug, title, keywords
+                SELECT slug, title, keywords, target_site, content_type
                 FROM articles
                 WHERE status IN ('published', 'draft')
                 ORDER BY created_at DESC
@@ -42,7 +42,9 @@ class LinkValidator:
             for article in articles:
                 article_map[article['slug']] = {
                     'title': article['title'],
-                    'keywords': article['keywords'] or []
+                    'keywords': article['keywords'] or [],
+                    'target_site': article['target_site'],
+                    'content_type': article['content_type']
                 }
 
             self.internal_link_cache = article_map
@@ -153,11 +155,14 @@ class LinkValidator:
             score = title_overlap * 2 + keyword_overlap
 
             if score > 0:
+                # Generate full URL path (slug already includes site + content_type prefix)
                 suggestions.append({
                     'slug': slug,
                     'title': data['title'],
                     'score': score,
-                    'link': f"/{slug}"
+                    'link': f"/{slug}",  # Slug is already full path (e.g., relocation/guide/italy-visa)
+                    'target_site': data.get('target_site'),
+                    'content_type': data.get('content_type')
                 })
 
         # Sort by relevance and limit

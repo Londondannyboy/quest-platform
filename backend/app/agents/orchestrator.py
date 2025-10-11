@@ -29,6 +29,111 @@ logger = structlog.get_logger(__name__)
 TargetSite = Literal["relocation", "placement", "rainmaker"]
 
 
+def detect_content_type(topic: str) -> str:
+    """
+    Detect content type from topic string.
+
+    Examples:
+        "Italy vs Spain Digital Nomad Visa" → comparison
+        "Top 10 Cities for Remote Work" → listicle
+        "Complete Guide to Portugal D7 Visa" → guide
+        "Tax Implications of NHR Status" → deep-dive
+
+    Args:
+        topic: Article topic string
+
+    Returns:
+        Content type (guide, comparison, listicle, deep-dive, etc.)
+    """
+    topic_lower = topic.lower()
+
+    # Comparison indicators
+    if ' vs ' in topic_lower or ' versus ' in topic_lower:
+        return 'comparison'
+
+    # Listicle indicators
+    if re.match(r'(top|best) \d+', topic_lower):
+        return 'listicle'
+
+    # Deep dive indicators
+    if any(word in topic_lower for word in ['implications', 'analysis', 'breakdown']):
+        return 'deep-dive'
+
+    # Default to guide
+    return 'guide'
+
+
+def extract_country(topic: str, title: str = None) -> str:
+    """
+    Extract country name from topic or title.
+
+    Args:
+        topic: Article topic
+        title: Article title (optional)
+
+    Returns:
+        Country name in lowercase or None
+    """
+    text = (topic + " " + (title or "")).lower()
+
+    # Country detection patterns
+    countries = [
+        'portugal', 'spain', 'italy', 'germany', 'france',
+        'croatia', 'greece', 'iceland', 'netherlands', 'estonia',
+        'czech republic', 'poland', 'malta', 'cyprus', 'ireland'
+    ]
+
+    for country in countries:
+        if country in text:
+            return country
+
+    return None
+
+
+def generate_url_slug(
+    title: str,
+    content_type: str,
+    target_site: str,
+    country: str = None
+) -> str:
+    """
+    Generate SEO-friendly URL slug with site and content type prefixes.
+
+    URL Structure: {site}/{content_type}/{country?}/{slug}
+
+    Examples:
+        relocation.quest:
+            - guide + "Italy Digital Nomad Visa" → relocation/guide/italy-digital-nomad-visa
+            - comparison + "Spain vs Portugal" → relocation/comparison/spain-vs-portugal-digital-nomad-visa
+
+        placement.quest:
+            - guide + country="germany" → placement/guide/germany/tech-job-market
+            - market + country="germany" → placement/market/germany/tech-salaries-2025
+
+    Args:
+        title: Article title
+        content_type: Content type (guide, comparison, etc.)
+        target_site: Target site (relocation, placement, rainmaker)
+        country: Optional country for location-specific content
+
+    Returns:
+        Full slug with site and content type prefixes
+    """
+    import re
+
+    # Sanitize title (remove punctuation, lowercase, hyphens)
+    base_slug = re.sub(r'[^a-z0-9\s-]', '', title.lower())
+    base_slug = re.sub(r'\s+', '-', base_slug).strip('-')[:100]
+
+    # Build URL path with site prefix
+    if target_site == 'placement' and country:
+        # placement.quest includes country in path
+        return f"{target_site}/{content_type}/{country}/{base_slug}"
+    else:
+        # relocation.quest and rainmaker.quest don't include country
+        return f"{target_site}/{content_type}/{base_slug}"
+
+
 class ArticleOrchestrator:
     """
     Orchestrates the Template Intelligence pipeline for SERP-competitive article generation
@@ -406,7 +511,8 @@ class ArticleOrchestrator:
                 editor_result["feedback"],
                 status="review" if decision == "review" else "approved",
                 template_guidance=template_guidance,  # Include archetype/template
-                eeat_score=editor_result.get("eeat_score", 0)  # E-E-A-T score from editor
+                eeat_score=editor_result.get("eeat_score", 0),  # E-E-A-T score from editor
+                topic=topic  # Pass topic for content_type and country detection
             )
 
             await self._update_job_status(
@@ -590,10 +696,11 @@ class ArticleOrchestrator:
         editor_feedback: str,
         status: str = "draft",
         template_guidance: Dict = None,
-        eeat_score: int = 0
+        eeat_score: int = 0,
+        topic: str = None
     ) -> str:
         """
-        Create article in database
+        Create article in database with site-prefixed URL structure
 
         Returns:
             Article UUID
@@ -603,19 +710,22 @@ class ArticleOrchestrator:
         try:
             query = """
                 INSERT INTO articles
-                (title, slug, content, excerpt, target_site, status, quality_score,
+                (title, slug, content, excerpt, target_site, content_type, country, status, quality_score,
                  keywords, meta_title, meta_description, reading_time_minutes,
                  target_archetype, surface_template, eeat_score)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                 RETURNING id
             """
 
-            # Generate URL-safe slug (remove all punctuation except hyphens)
-            import re
+            # Detect content type from topic or title
             title = article_data.get("title", "untitled")
-            slug = re.sub(r'[^a-z0-9\s-]', '', title.lower())  # Remove punctuation
-            slug = re.sub(r'\s+', '-', slug)  # Replace spaces with hyphens
-            slug = re.sub(r'-+', '-', slug).strip('-')[:100]  # Clean up multiple hyphens
+            content_type = detect_content_type(topic or title)
+
+            # Extract country if present
+            country = extract_country(topic or "", title)
+
+            # Generate full slug with site + content_type prefix
+            slug = generate_url_slug(title, content_type, target_site, country)
 
             # Extract Template Intelligence metadata
             target_archetype = template_guidance.get("detected_archetype") if template_guidance else None
@@ -629,6 +739,8 @@ class ArticleOrchestrator:
                     article_data.get("content"),
                     article_data.get("excerpt"),
                     target_site,
+                    content_type,
+                    country,
                     status,
                     quality_score,
                     article_data.get("keywords", []),
@@ -644,6 +756,9 @@ class ArticleOrchestrator:
                 "orchestrator.article_created",
                 article_id=article_id,
                 title=article_data.get("title"),
+                slug=slug,
+                content_type=content_type,
+                country=country
             )
 
             return str(article_id)
